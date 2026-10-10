@@ -69,8 +69,8 @@
       <tbody>
         <tr><td>0 — fundament</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>1 — monitoring</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
-        <tr><td>2 — zlecenia i komunikator</td><td><span class="tag todo">w toku</span></td><td>—</td></tr>
-        <tr><td>3 — CMR</td><td><span class="tag todo">czeka</span></td><td>—</td></tr>
+        <tr><td>2 — zlecenia i komunikator</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
+        <tr><td>3 — CMR</td><td><span class="tag todo">w toku</span></td><td>—</td></tr>
         <tr><td>3b — skrzynka klientów</td><td><span class="tag todo">czeka</span></td><td>—</td></tr>
       </tbody>
     </table></div>
@@ -131,6 +131,41 @@
     <li>„Zastosuj objazd”. <span class="expect">Komunikat „Objazd zastosowany”, ETA ~11:41, PO 4K21 przestaje być czerwony, w szczegółach „Pojazd jedzie objazdem”.</span></li>
     <li>Przełącz na 60× i obserwuj do ~11:00. <span class="expect">GD 2M88 dostaje „długie oczekiwanie na rampie” i robi się czerwony (nie zdąży przed odpoczynkiem dobowym). Ok. 12:30 awaria busa WX 9T04, ok. 13:10 kontrola ITD WB 6P77 — oba z alertami.</span></li>
     <li>Z kluczem API: <span class="expect">alerty mają dopisek „wyjaśnienie AI”, a w Dzienniku AI widać wywołania „Wyjaśnienie alertu” z kosztem rzędu ułamków centa.</span></li>
+  </ol>
+
+
+  <h2 id="etap2">Etap 2 — zlecenia i komunikator <span class="tag done">gotowe</span></h2>
+  <h3>Co powstało</h3>
+  <ul>
+    <li><strong>Zlecenia:</strong> kolumna „Nowe zlecenia” i wiersz każdego kierowcy (teraz + kolejka albo „brak kolejnych zleceń”). Przydział przeciąganiem albo przyciskiem „Przydziel…”.</li>
+    <li><strong>Klocki:</strong> podczas przeciągania przy każdym kierowcy widać stopień dopasowania i powody (km do załadunku, godzina załadunku, znajomość klienta, odpoczynek po drodze). Pojazdy za małe, bez ADR albo niezdążające „odpadają” z powodem i nie da się na nie upuścić zlecenia.</li>
+    <li><strong>SMS ze zleceniem:</strong> z szablonu (adresy, okna, uwagi punktów, referencje 1:1), z prośbą „Potwierdź odpisując OK”.</li>
+    <li><strong>Odpowiedzi kierowców:</strong> AI (lub reguły bez klucza) nadaje kategorię: potwierdzenie → „W realizacji”; odmowa → zlecenie wraca do puli + alert; warunek/pytanie → alert bez zmiany statusu; problem w trasie → alert; luźna wiadomość → nic.</li>
+    <li><strong>Eskalacja:</strong> brak odpowiedzi → przypomnienie po 20 min, alert po 40 min (10/20 min, gdy załadunek za mniej niż 2 h).</li>
+    <li><strong>Boty kierowców:</strong> odpowiadają po 2–15 min, czasem z warunkiem, pytaniem albo milczą. Kierowcy busów odmawiają częściej.</li>
+    <li><strong>Komunikator:</strong> wątki z priorytetami, etykiety kategorii, gotowe odpowiedzi od AI, panel bieżącego zlecenia kierowcy. Spedytor odpisuje z programu.</li>
+    <li><strong>Telefon kierowcy</strong> (górny pasek): wcielasz się w kierowcę i odpisujesz jak on. Bot tego kierowcy w tym czasie milczy.</li>
+    <li><strong>Formularz nowego zlecenia</strong> z książką punktów klienta (godziny, wymagania, notatki trafiają do SMS-a).</li>
+  </ul>
+  <h3>Decyzje, które podjąłem sam (do Twojej oceny)</h3>
+  <ul>
+    <li><strong>Reguły awaryjne też potwierdzają.</strong> Bez klucza API jednoznaczne krótkie odpowiedzi („ok”, „OK jadę”, „przyjmuję”, „nie dam rady”) dostają pewność 0,8, więc demo bez AI nadal zmienia status. Wszystko dwuznaczne idzie do spedytora.</li>
+    <li><strong>Czekanie liczy się jako odpoczynek.</strong> Czekanie na okno albo postój po rozładunku dłuższy niż 45 min to przerwa, a dłuższy niż 11 h to odpoczynek dobowy. Bez tego kierowca czekający całą noc na poranny załadunek „wpadał” w limit.</li>
+    <li><strong>Bez zdublowanych alertów.</strong> Zgłoszenie z trasy (np. „złapałem gumę”) nie tworzy drugiego alertu, gdy system już wie o awarii z incydentu.</li>
+    <li><strong>Szkice z maili czekają w skrzynce.</strong> Zlecenie ZL-1043 (Logistyka Wisła) pojawia się na razie jako zwykłe nowe zlecenie; w etapie 3b przyjdzie jako mail z szkicem AI.</li>
+  </ul>
+  <h3>Testy do przeklikania</h3>
+  <ol class="checks">
+    <li>Reset, tempo 60×. Ok. 09:05 pojawia się ZL-1042, ok. 09:20 system wysyła je kierowcy busa (Jakub Grabowski). <span class="expect">Ok. 09:26 odmowa: „Nie zdążę…”, alert „ZL-1042: kierowca odmówił”, zlecenie wraca do puli.</span></li>
+    <li>Ok. 09:10 pojawia się ZL-1043 (Gądki → Leipzig, 12 palet). Złap je i przeciągnij nad listą kierowców. <span class="expect">Przy każdym kierowcy klocek; busy „odpadają: za mała pojemność”; upuszczenie na nie daje komunikat błędu.</span></li>
+    <li>Otwórz „Telefon kierowcy” i wybierz np. Michała Woźniaka, potem przydziel mu ZL-1043. <span class="expect">Na telefonie przychodzi pełny SMS ze zleceniem; na tablicy status „Wysłane do kierowcy”.</span></li>
+    <li>Na telefonie odpisz „ok, ale będę 2 h później”. <span class="expect">Alert „odpowiedź z warunkiem lub pytaniem”, status bez zmian.</span></li>
+    <li>Odpisz „OK jadę”. <span class="expect">Status „W realizacji”, informacja w powiadomieniach. Na mapie auto rusza na załadunek po potwierdzeniu.</span></li>
+    <li>Zamknij telefon i przydziel inne zlecenie innemu kierowcy. <span class="expect">Bot odpowiada po kilku minutach symulacji. Jeśli milczy: po 20 min przypomnienie SMS, po 40 min alert „nie potwierdził”.</span></li>
+    <li>Komunikator → wątek kierowcy. <span class="expect">Wiadomości z etykietami kategorii, nad polem 2–3 gotowe odpowiedzi; kliknięcie wstawia tekst, „Wyślij” wysyła SMS widoczny też na telefonie.</span></li>
+    <li>„Cofnij przydział” na karcie w kolejce. <span class="expect">Zlecenie wraca do puli, kierowca dostaje SMS o odwołaniu.</span></li>
+    <li>„Nowe zlecenie”: bez klienta → komunikat błędu; z klientem i punktami → zlecenie ZL-10xx w puli.</li>
+    <li>Z kluczem API: <span class="expect">etykiety z ikoną ✦ (klasyfikacja AI), w Dzienniku AI wywołania „Wiadomość kierowcy”.</span></li>
   </ol>
 
   <footer>
