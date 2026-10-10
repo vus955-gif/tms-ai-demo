@@ -51,3 +51,6 @@ next-env.d.ts
 
 # env example is committed
 !.env.example
+
+# local Claude Code config
+/.claude/

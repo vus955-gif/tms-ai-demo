@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/**": ["./data/routes/**", "./drizzle/**"],
   },
+  async redirects() {
+    return [{ source: "/", destination: "/monitoring", permanent: false }];
+  },
   turbopack: {
     rules: {
       "*.css": {

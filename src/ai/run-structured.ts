@@ -86,15 +86,15 @@ export async function runStructured<T>(opts: RunStructuredOptions<T>): Promise<A
     });
   };
 
-  const useFallback = async (reason: AiFallbackReason, extra: Parameters<typeof log>[0] | null = null) => {
+  const fallBack = async (reason: AiFallbackReason, extra: Parameters<typeof log>[0] | null = null) => {
     const value = opts.fallback();
     await log({ ...(extra ?? {}), output: value, fallback: true, reason });
     return { value, source: "fallback" as const, reason, logId };
   };
 
-  if (!client) return useFallback("no_api_key");
+  if (!client) return fallBack("no_api_key");
   const blocked = await budgetBlock(opts.db, opts.sandboxId, realNow);
-  if (blocked) return useFallback(blocked);
+  if (blocked) return fallBack(blocked);
 
   let inputTokens = 0;
   let outputTokens = 0;
@@ -134,7 +134,7 @@ export async function runStructured<T>(opts: RunStructuredOptions<T>): Promise<A
     }
   }
 
-  return useFallback(lastReason, {
+  return fallBack(lastReason, {
     output: null,
     fallback: true,
     error: lastError,
