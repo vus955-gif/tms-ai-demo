@@ -36,3 +36,10 @@ describe("static routes", () => {
     expect(() => getRoute("pt-nowhere", "pt-baza-lodz")).toThrow(MissingRouteError);
   });
 });
+
+describe("route keys from outside", () => {
+  it("refuses keys that could leave the routes directory", () => {
+    expect(hasRoute("..", "..")).toBe(false);
+    expect(() => getRoute("../../package", "x")).toThrow(MissingRouteError);
+  });
+});

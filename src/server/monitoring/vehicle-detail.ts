@@ -105,11 +105,14 @@ export async function vehicleDetail(db: Executor, sandboxId: string, vehicleId: 
   };
 }
 
-/** Switches a vehicle onto an alternative route that ends where its current route ends. */
-export async function applyReroute(db: Db, sandboxId: string, vehicleId: string, routeKey: string) {
+/** Switches a vehicle onto the alternative route of an active incident (same destination). */
+export async function applyReroute(db: Db, sandboxId: string, vehicleId: string, routeKey: string, simNow?: Date) {
   const fleet = await loadFleet(db, sandboxId);
   const state = fleet.states.get(vehicleId);
   if (!state || !state.routeKey || state.mode === "idle") throw new HttpError(409, "Pojazd nie jest w trasie.");
+  const at = (simNow ?? state.lastReportAt ?? new Date()).getTime();
+  const offered = fleet.incidents.some((i) => i.alternativeRouteKey === routeKey && isActive(i, at));
+  if (!offered) throw new HttpError(409, "Ten objazd nie jest teraz dostępny.");
   if (!hasRouteKey(routeKey)) throw new HttpError(404, "Nie ma takiej trasy objazdu.");
   const current = getRouteByKey(state.routeKey);
   const alt = getRouteByKey(routeKey);
