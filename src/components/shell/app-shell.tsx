@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useSnapshot } from "@/hooks/use-snapshot";
 import { cn } from "@/lib/utils";
+import { AlertsButton } from "@/components/alerts/alerts-panel";
 import { AiBadge } from "./ai-badge";
 import { ClockControls } from "./clock-controls";
 import { ResetDialog } from "./reset-dialog";
@@ -26,7 +27,7 @@ export function AppShell({ children, toolbar }: { children: ReactNode; toolbar?:
 
   return (
     <div className="flex h-dvh min-h-0 flex-col bg-muted/30">
-      <header className="flex h-12 shrink-0 items-center gap-3 border-b bg-background px-3">
+      <header className="relative flex h-12 shrink-0 items-center gap-3 border-b bg-background px-3">
         <Link href="/monitoring" className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="flex size-7 items-center justify-center rounded-md bg-brand text-brand-foreground">
             <Truck className="size-4" aria-hidden />
@@ -38,6 +39,7 @@ export function AppShell({ children, toolbar }: { children: ReactNode; toolbar?:
         <ResetDialog snapshot={snapshot} />
         <div className="flex-1" />
         {toolbar}
+        <AlertsButton />
         <AiBadge status={snapshot?.ai} />
       </header>
       {isError && (

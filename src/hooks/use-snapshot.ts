@@ -51,3 +51,11 @@ export function interpolatedSimNow(snapshot: ClientSnapshot, realNowMs: number):
   const base = new Date(snapshot.simNow).getTime();
   return snapshot.running ? base + (realNowMs - snapshot.fetchedAt) * snapshot.speed : base;
 }
+
+/**
+ * True once the first /api/tick has answered, i.e. the world cookie is set.
+ * Other queries wait for it so parallel first requests do not create extra worlds.
+ */
+export function useWorldReady(): boolean {
+  return Boolean(useSnapshot().data);
+}

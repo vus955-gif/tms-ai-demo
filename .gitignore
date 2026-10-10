@@ -54,3 +54,6 @@ next-env.d.ts
 
 # local Claude Code config
 /.claude/
+
+# copied at predev/prebuild
+/public/maplibre/

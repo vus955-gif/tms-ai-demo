@@ -4,6 +4,7 @@ import type { Db, Executor } from "@/db/types";
 import { getRouteByKey, hasRouteKey } from "@/adapters/routing/static-routes";
 import { nearestProgressS, positionAt, sliceCoordinates } from "@/simulation/geo";
 import { predictArrival } from "@/simulation/vehicle-sim";
+import { resolveAlerts } from "../alerts/repository";
 import { HttpError } from "../http";
 import { buildEnv, isActive } from "./env";
 import { loadFleet } from "./fleet-data";
@@ -111,8 +112,10 @@ export async function applyReroute(db: Db, sandboxId: string, vehicleId: string,
   const state = fleet.states.get(vehicleId);
   if (!state || !state.routeKey || state.mode === "idle") throw new HttpError(409, "Pojazd nie jest w trasie.");
   const at = (simNow ?? state.lastReportAt ?? new Date()).getTime();
-  const offered = fleet.incidents.some((i) => i.alternativeRouteKey === routeKey && isActive(i, at));
-  if (!offered) throw new HttpError(409, "Ten objazd nie jest teraz dostępny.");
+  const incident = fleet.incidents.find((i) => i.alternativeRouteKey === routeKey && isActive(i, at));
+  if (!incident) throw new HttpError(409, "Ten objazd nie jest teraz dostępny.");
+  // The dispatcher acted on the incident alert for this vehicle.
+  await resolveAlerts(db, sandboxId, `incident:${incident.id}:${vehicleId}`, new Date(at));
   if (!hasRouteKey(routeKey)) throw new HttpError(404, "Nie ma takiej trasy objazdu.");
   const current = getRouteByKey(state.routeKey);
   const alt = getRouteByKey(routeKey);

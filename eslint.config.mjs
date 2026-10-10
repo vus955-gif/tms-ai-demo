@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Copied third-party build output
+    "public/maplibre/**",
   ]),
 ]);
 

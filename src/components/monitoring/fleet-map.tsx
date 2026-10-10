@@ -1,17 +1,15 @@
 "use client";
 
-import { LngLatBounds, Map as MapLibreMap, NavigationControl, type GeoJSONSource, type MapLayerMouseEvent } from "maplibre-gl";
+import { LngLatBounds, Map as MapLibreMap, NavigationControl, setWorkerUrl, type GeoJSONSource, type MapLayerMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 import type { VehicleView } from "@/server/monitoring/views";
 import type { VehicleDetail } from "@/server/monitoring/vehicle-detail";
+import { RISK_COLOR } from "./colors";
 
-export const RISK_COLOR: Record<VehicleView["risk"], string> = {
-  green: "#16a34a",
-  yellow: "#d97706",
-  red: "#dc2626",
-  gray: "#94a3b8",
-};
+
+// The bundler does not emit MapLibre worker; scripts/copy-maplibre-worker.mjs puts it in public/.
+setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
 const STYLE_URL = process.env.NEXT_PUBLIC_MAP_STYLE_URL || "https://tiles.openfreemap.org/styles/positron";
 const FALLBACK_STYLE_URL = process.env.NEXT_PUBLIC_MAP_STYLE_FALLBACK_URL || "";

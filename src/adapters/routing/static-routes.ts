@@ -27,8 +27,8 @@ export function getRouteByKey(key: string, dir = ROUTES_DIR): StoredRoute {
   const cached = cache.get(key);
   if (cached) return cached;
   const file = fileFor(key, dir);
-  if (!file || !existsSync(file)) throw new MissingRouteError(key);
-  const route = JSON.parse(readFileSync(file, "utf8")) as StoredRoute;
+  if (!file || !existsSync(/*turbopackIgnore: true*/ file)) throw new MissingRouteError(key);
+  const route = JSON.parse(readFileSync(/*turbopackIgnore: true*/ file, "utf8")) as StoredRoute;
   cache.set(key, route);
   return route;
 }
@@ -40,7 +40,7 @@ export function getRoute(from: string, to: string, dir = ROUTES_DIR): StoredRout
 export function hasRouteKey(key: string, dir = ROUTES_DIR): boolean {
   if (cache.has(key)) return true;
   const file = fileFor(key, dir);
-  return file !== null && existsSync(file);
+  return file !== null && existsSync(/*turbopackIgnore: true*/ file);
 }
 
 export function hasRoute(from: string, to: string, dir = ROUTES_DIR): boolean {
@@ -48,8 +48,8 @@ export function hasRoute(from: string, to: string, dir = ROUTES_DIR): boolean {
 }
 
 export function listRouteKeys(dir = ROUTES_DIR): string[] {
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir)
+  if (!existsSync(/*turbopackIgnore: true*/ dir)) return [];
+  return readdirSync(/*turbopackIgnore: true*/ dir)
     .filter((f) => f.endsWith(".json"))
     .map((f) => f.slice(0, -".json".length));
 }

@@ -2,7 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { alerts, incidents, type AlertAction, type AlertSeverity, type OrderStatus, type VehicleMode } from "@/db/schema";
 import type { Executor } from "@/db/types";
 import { getRouteByKey } from "@/adapters/routing/static-routes";
-import { drivingAllowance } from "@/domain/driving-time";
+import { dailyLimitMin, drivingAllowance } from "@/domain/driving-time";
 import { STATUS_LABEL } from "@/domain/order-lifecycle";
 import type { RiskState } from "@/domain/risk";
 import { distanceFraction } from "@/simulation/geo";
@@ -57,6 +57,7 @@ export type VehicleView = {
   /** Minutes of driving left today/until a break; null when Regulation 561 does not apply. */
   drivingLeftMin: number | null;
   untilBreakMin: number | null;
+  dailyLimitMin: number | null;
   continuousMin: number;
   dailyMin: number;
   rerouted: boolean;
@@ -112,10 +113,8 @@ export function vehicleViews(fleet: FleetData): VehicleView[] {
     const trailer = fleet.trailerByVehicle.get(vehicle.id);
     const order = currentOrderOf(fleet, vehicle.id);
     const moving = order && ["POTWIERDZONE", "ZALADUNEK", "W_DRODZE"].includes(order.status);
-    const allowance = drivingAllowance(
-      { continuousMin: state.continuousMin, dailyMin: state.dailyMin, splitFirstPart: state.splitFirstPart, extensionsUsed: state.extensionsUsed },
-      vehicle.subjectTo561,
-    );
+    const clock = { continuousMin: state.continuousMin, dailyMin: state.dailyMin, splitFirstPart: state.splitFirstPart, extensionsUsed: state.extensionsUsed };
+    const allowance = drivingAllowance(clock, vehicle.subjectTo561);
     const progress = state.routeKey && state.mode !== "idle" ? distanceFraction(getRouteByKey(state.routeKey), state.progressS) : null;
     const pointCity = state.pointId ? (fleet.points.get(state.pointId)?.city ?? null) : null;
     return {
@@ -138,6 +137,7 @@ export function vehicleViews(fleet: FleetData): VehicleView[] {
       subjectTo561: vehicle.subjectTo561,
       drivingLeftMin: Number.isFinite(allowance.remainingMin) ? allowance.remainingMin : null,
       untilBreakMin: Number.isFinite(allowance.untilBreakMin) ? allowance.untilBreakMin : null,
+      dailyLimitMin: vehicle.subjectTo561 ? dailyLimitMin(clock) : null,
       continuousMin: state.continuousMin,
       dailyMin: state.dailyMin,
       rerouted: Boolean(state.reroutedFrom),

@@ -1,17 +1,15 @@
-import { Map } from "lucide-react";
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { Suspense } from "react";
+import { ClientOnly } from "@/components/client-only";
+import { MonitoringView } from "@/components/monitoring/monitoring-view";
+
+const Loading = () => <div className="p-6 text-sm text-muted-foreground">Wczytywanie floty…</div>;
 
 export default function MonitoringPage() {
   return (
-    <ComingSoon
-      icon={Map}
-      title="Monitoring floty"
-      stage="1"
-      items={[
-        "Mapa z pozycjami 14 pojazdów i lista z czasem jazdy oraz ETA",
-        "Stany zielony / żółty / czerwony liczone z przepisów 561/2006",
-        "Alerty AI z wyjaśnieniem i propozycją objazdu",
-      ]}
-    />
+    <ClientOnly fallback={<Loading />}>
+      <Suspense fallback={<Loading />}>
+        <MonitoringView />
+      </Suspense>
+    </ClientOnly>
   );
 }

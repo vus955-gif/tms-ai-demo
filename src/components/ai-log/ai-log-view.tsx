@@ -9,7 +9,7 @@ import { FALLBACK_REASON_LABEL } from "@/components/shell/ai-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { POLL_MS } from "@/hooks/use-snapshot";
+import { POLL_MS, useWorldReady } from "@/hooks/use-snapshot";
 import { getJson, postJson } from "@/lib/api";
 import { formatInt, formatSimClock, formatUsd } from "@/lib/format";
 
@@ -26,10 +26,12 @@ const LOG_KEY = ["ai-log"] as const;
 
 export function AiLogView() {
   const queryClient = useQueryClient();
+  const ready = useWorldReady();
   const log = useQuery({
     queryKey: LOG_KEY,
     queryFn: () => getJson<{ entries: AiLogEntry[] }>("/api/ai/log?limit=100"),
     refetchInterval: POLL_MS,
+    enabled: ready,
   });
   const diagnostics = useMutation({
     mutationFn: () => postJson<Diagnostics>("/api/ai/diagnostics"),
@@ -48,7 +50,7 @@ export function AiLogView() {
             Każde wywołanie AI w tym świecie demo: co analizowało, co zwróciło i ile kosztowało.
           </p>
         </div>
-        <Button variant="outline" onClick={() => diagnostics.mutate()} disabled={diagnostics.isPending} data-testid="ai-diagnostics">
+        <Button variant="outline" onClick={() => diagnostics.mutate()} disabled={!ready || diagnostics.isPending} data-testid="ai-diagnostics">
           <Stethoscope />
           Sprawdź AI
         </Button>
