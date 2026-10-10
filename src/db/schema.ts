@@ -214,6 +214,13 @@ export const orders = pgTable(
     source: text("source").$type<"scenario" | "manual" | "email">().notNull(),
     sourceMessageId: text("source_message_id"),
     createdSim: ts("created_sim").notNull(),
+    arrivedPickupAt: ts("arrived_pickup_at"),
+    departedPickupAt: ts("departed_pickup_at"),
+    arrivedDeliveryAt: ts("arrived_delivery_at"),
+    unloadedAt: ts("unloaded_at"),
+    /** Latest predicted arrival at the delivery point (for lists and client views). */
+    etaPredicted: ts("eta_predicted"),
+    risk: text("risk").$type<"green" | "yellow" | "red" | null>(),
   },
   (t) => [
     primaryKey({ columns: [t.sandboxId, t.id] }),
@@ -293,6 +300,110 @@ export const aiLog = pgTable(
   (t) => [
     primaryKey({ columns: [t.sandboxId, t.id] }),
     index("ai_log_created_idx").on(t.sandboxId, t.createdReal),
+  ],
+);
+
+export type VehicleMode = "driving" | "break" | "daily_rest" | "handling" | "waiting" | "stopped" | "idle";
+export type LegPurpose = "to_pickup" | "to_delivery";
+
+/** Live state of each vehicle at `lastTickSim` (re-anchored every tick). */
+export const vehicleStates = pgTable(
+  "vehicle_states",
+  {
+    sandboxId: sandboxRef(),
+    vehicleId: text("vehicle_id").notNull(),
+    driverId: text("driver_id").notNull(),
+    mode: text("mode").$type<VehicleMode>().notNull(),
+    /** End of a timed mode (break, rest, handling, waiting, stopped). */
+    modeUntil: ts("mode_until"),
+    /** Mode to return to after a break/rest/stop. */
+    resumeMode: text("resume_mode").$type<VehicleMode | null>(),
+    routeKey: text("route_key"),
+    /** Base (car-profile) seconds already covered on `routeKey`. */
+    progressS: doublePrecision("progress_s").notNull().default(0),
+    legPurpose: text("leg_purpose").$type<LegPurpose | null>(),
+    orderId: text("order_id"),
+    pointId: text("point_id"),
+    continuousMin: doublePrecision("continuous_min").notNull().default(0),
+    dailyMin: doublePrecision("daily_min").notNull().default(0),
+    splitFirstPart: boolean("split_first_part").notNull().default(false),
+    extensionsUsed: integer("extensions_used").notNull().default(0),
+    reportPhaseS: integer("report_phase_s").notNull().default(0),
+    lastReportAt: ts("last_report_at"),
+    lastReportLng: doublePrecision("last_report_lng"),
+    lastReportLat: doublePrecision("last_report_lat"),
+    lastReportProgressS: doublePrecision("last_report_progress_s"),
+    currentActivityId: text("current_activity_id"),
+    reroutedFrom: text("rerouted_from"),
+    /** Extra handling minutes waiting to be applied at the next/current stop (ramp waits). */
+    pendingExtraMin: integer("pending_extra_min").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.sandboxId, t.vehicleId] })],
+);
+
+export type IncidentKind = "traffic_accident" | "ramp_wait" | "breakdown" | "road_check";
+
+export const incidents = pgTable(
+  "incidents",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    kind: text("kind").$type<IncidentKind>().notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    /** Area incidents (traffic): centre and radius; vehicle incidents: vehicleId. */
+    lat: doublePrecision("lat"),
+    lng: doublePrecision("lng"),
+    radiusM: integer("radius_m"),
+    /** Speed multiplier inside the area (0.1 = ten times slower). */
+    speedFactor: doublePrecision("speed_factor"),
+    vehicleId: text("vehicle_id"),
+    extraMinutes: integer("extra_minutes"),
+    alternativeRouteKey: text("alternative_route_key"),
+    startSim: ts("start_sim").notNull(),
+    endSim: ts("end_sim"),
+  },
+  (t) => [primaryKey({ columns: [t.sandboxId, t.id] })],
+);
+
+export type AlertSeverity = "critical" | "warning" | "info";
+export type AlertStatus = "open" | "acknowledged" | "resolved";
+export const ALERT_ACTIONS = [
+  "pokaz_objazd",
+  "zastosuj_objazd",
+  "powiadom_klienta",
+  "napisz_do_kierowcy",
+  "przydziel_innego",
+  "brak",
+] as const;
+export type AlertAction = (typeof ALERT_ACTIONS)[number];
+
+export const alerts = pgTable(
+  "alerts",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    kind: text("kind").notNull(),
+    severity: text("severity").$type<AlertSeverity>().notNull(),
+    vehicleId: text("vehicle_id"),
+    orderId: text("order_id"),
+    driverId: text("driver_id"),
+    messageId: text("message_id"),
+    incidentId: text("incident_id"),
+    dedupeKey: text("dedupe_key").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    bodySource: text("body_source").$type<"ai" | "template">().notNull().default("template"),
+    actions: jsonb("actions").$type<AlertAction[]>().notNull().default(sql`'[]'::jsonb`),
+    facts: jsonb("facts").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    status: text("status").$type<AlertStatus>().notNull().default("open"),
+    createdSim: ts("created_sim").notNull(),
+    resolvedSim: ts("resolved_sim"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sandboxId, t.id] }),
+    index("alerts_status_idx").on(t.sandboxId, t.status),
+    index("alerts_dedupe_idx").on(t.sandboxId, t.dedupeKey),
   ],
 );
 
