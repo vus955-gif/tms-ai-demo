@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Raport z nocy</title>
+<style>
+  :root {
+    --bg: #faf9f6; --surface: #fff; --surface-2: #f3f1ec; --ink: #1c1f24; --muted: #5d6471; --line: #e3e0d8;
+    --accent: #0f5c8c; --accent-soft: #e5eff6; --good: #1f7a4d; --good-soft: #e6f3eb; --warn: #8f5600; --warn-soft: #fbf0dc;
+    --bad: #a3302a; --bad-soft: #f8e5e3; --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139;
+      --accent: #6db4e3; --accent-soft: #182a37; --good: #6fcf9a; --good-soft: #15281e; --warn: #f0b45a; --warn-soft: #2c2314;
+      --bad: #f08a83; --bad-soft: #2e1918;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139;
+    --accent: #6db4e3; --accent-soft: #182a37; --good: #6fcf9a; --good-soft: #15281e; --warn: #f0b45a; --warn-soft: #2c2314;
+    --bad: #f08a83; --bad-soft: #2e1918;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16.5px; line-height: 1.65; }
+  .page { max-width: 52rem; margin: 0 auto; padding: 56px 24px 96px; }
+  @media (max-width: 600px) { .page { padding: 32px 16px 64px; } }
+  h1 { font-size: 2.2rem; margin: .2em 0 .3em; line-height: 1.2; }
+  h2 { font-size: 1.5rem; margin: 3rem 0 1rem; padding-top: 1.3rem; border-top: 1px solid var(--line); line-height: 1.25; }
+  h3 { font-size: 1.12rem; margin: 1.8rem 0 .6rem; }
+  p { margin: 0 0 1em; }
+  ul, ol { margin: 0 0 1em; padding-left: 1.3em; }
+  li { margin: .3em 0; }
+  a { color: var(--accent); }
+  code { font-family: "Cascadia Code", Consolas, Menlo, monospace; font-size: .86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  pre { font-family: "Cascadia Code", Consolas, Menlo, monospace; font-size: .85rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; overflow-x: auto; }
+  .eyebrow { font-size: .82rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 650; }
+  .lead { font-size: 1.12rem; color: var(--muted); }
+  .box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 22px; margin: 1.2rem 0; }
+  .box.key { border-left: 4px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; }
+  .note { background: var(--warn-soft); border-radius: 10px; padding: 12px 16px; margin: 1rem 0; font-size: .95rem; }
+  .tag { display: inline-block; font-size: .7rem; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; padding: 1px 8px; border-radius: 5px; vertical-align: 2px; }
+  .tag.done { background: var(--good-soft); color: var(--good); }
+  .tag.part { background: var(--warn-soft); color: var(--warn); }
+  .tag.todo { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); margin: 1rem 0; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  ol.checks { list-style: none; padding-left: 0; counter-reset: c; }
+  ol.checks > li { counter-increment: c; position: relative; padding-left: 2.2em; margin: .55em 0; }
+  ol.checks > li::before { content: "☐"; position: absolute; left: .2em; color: var(--accent); font-size: 1.1em; }
+  .expect { color: var(--muted); font-size: .94rem; }
+  footer { margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: .86rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="eyebrow">Raport z nocnej pracy · 10/11 października 2026</div>
+  <h1>Co zrobiłem w nocy i jak to przetestować</h1>
+  <p class="lead">Każdy etap ma opis, decyzje podjęte bez Ciebie oraz listę testów do przeklikania. Wszystko działa lokalnie, nic nie zostało opublikowane.</p>
+
+  <div class="box key" id="status">
+    <strong>Stan na koniec nocy</strong>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Etap</th><th>Stan</th><th>Testy automatyczne</th></tr></thead>
+      <tbody>
+        <tr><td>0 — fundament</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
+        <tr><td>1 — monitoring</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
+        <tr><td>2 — zlecenia i komunikator</td><td><span class="tag todo">w toku</span></td><td>—</td></tr>
+        <tr><td>3 — CMR</td><td><span class="tag todo">czeka</span></td><td>—</td></tr>
+        <tr><td>3b — skrzynka klientów</td><td><span class="tag todo">czeka</span></td><td>—</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <h2 id="start">Jak uruchomić</h2>
+  <ol>
+    <li>W katalogu projektu: <code>npm install</code> (raz).</li>
+    <li>Klucz API: skopiuj <code>.env.example</code> do <code>.env.local</code> i wpisz <code>ANTHROPIC_API_KEY=…</code>. Bez klucza wszystko działa, tylko AI jest w trybie awaryjnym (proste reguły zamiast modelu).</li>
+    <li><code>npm run dev</code> i otwórz <a href="http://localhost:3000">http://localhost:3000</a>.</li>
+  </ol>
+  <p>Baza danych to wbudowany Postgres (PGlite) w katalogu <code>.pglite/</code>. Żeby zacząć od zera, zatrzymaj serwer i usuń ten katalog. W samej aplikacji wystarczy przycisk ↺ w górnym pasku.</p>
+  <div class="note"><strong>Ważne przy teście:</strong> symulacja płynie 10× szybciej (minuta realna = 10 minut). Przycisk 60× przyspiesza, a ▌▌ zatrzymuje czas, gdy chcesz coś spokojnie obejrzeć.</div>
+
+  <h2 id="etap0">Etap 0 — fundament <span class="tag done">gotowe</span></h2>
+  <h3>Co powstało</h3>
+  <ul>
+    <li>Aplikacja Next.js 16 + TypeScript, baza Postgres (PGlite lokalnie, Neon na produkcji), migracje.</li>
+    <li>Światy demo: każdy odwiedzający ma własny, z resetem i wygasaniem po 24 h.</li>
+    <li>Zegar symulacji z tempem 1×/10×/60× i pauzą, silnik aktualizacji odporny na dwie karty naraz.</li>
+    <li>Dane scenariusza: 14 pojazdów, 11 naczep, 14 kierowców, 8 fikcyjnych klientów, 24 punkty w PL/DE/CZ.</li>
+    <li>552 trasy policzone przez OSRM i zapisane w repo (licencja ODbL).</li>
+    <li>Warstwa AI (Claude Haiku 5.5): limity na świat i dzienny budżet, tryb awaryjny, dziennik AI z kosztami.</li>
+  </ul>
+  <h3>Testy do przeklikania</h3>
+  <ol class="checks">
+    <li>Otwórz demo. <span class="expect">Widzisz zegar „dzień · 08:3x”, znacznik AI i menu z 6 pozycjami.</span></li>
+    <li>Kliknij ▌▌ i odczekaj 10 s. <span class="expect">Zegar stoi. Ponowne kliknięcie go puszcza.</span></li>
+    <li>Kliknij 60×. <span class="expect">Minuty na zegarze zmieniają się co sekundę.</span></li>
+    <li>Kliknij ↺ → „Zacznij od nowa”. <span class="expect">Zegar wraca do 08:30, tempo do 10×.</span></li>
+    <li>Wejdź w „Dziennik AI” → „Sprawdź AI”. <span class="expect">Bez klucza: diagnostyka mówi „brak klucza”. Z kluczem: pokazuje, czy Haiku 5.5 obsługuje obrazy (ważne dla CMR) i zapisuje próbne wywołanie z kosztem.</span></li>
+  </ol>
+
+  <h2 id="etap1">Etap 1 — monitoring <span class="tag done">gotowe</span></h2>
+  <h3>Co powstało</h3>
+  <ul>
+    <li>Mapa (OpenFreeMap) z pozycjami w kolorach ryzyka i listą: kierowca, trasa, postęp, pozostały czas jazdy, ETA z oknem, „ostatni raport GPS”.</li>
+    <li>Symulacja jazdy z przepisami 561/2006: przerwa po 4:30, limit dzienny 9/10 h, odpoczynek 11 h. Statusy zleceń zmieniają się same przy wjeździe i wyjeździe (GPS).</li>
+    <li>Prognoza ETA z rozbiciem (jazda, przerwy, odpoczynek, załadunek), stany zielony / żółty / czerwony.</li>
+    <li>Zdarzenia scenariusza: wypadek na A2 (z objazdem przez Kostrzyn), oczekiwanie na rampie, awaria busa, kontrola ITD.</li>
+    <li>Powiadomienia z akcjami. Z kluczem API AI przepisuje je zrozumiałym językiem; bez klucza zostają teksty z szablonu.</li>
+  </ul>
+  <h3>Decyzje, które podjąłem sam (do Twojej oceny)</h3>
+  <ul>
+    <li><strong>Doprecyzowany stan żółty.</strong> Zgodnie ze specyfikacją każda długa trasa z przerwą byłaby „żółta” cały czas. Ustawiłem: żółty = zdąży, ale obowiązkowa przerwa wypada w ciągu najbliższej godziny jazdy albo zapas do końca okna jest mniejszy niż 30 min.</li>
+    <li><strong>Ciężarówki jeżdżą wolniej niż samochody.</strong> OSRM liczy czasy dla aut osobowych, więc mnożę je: ciągnik ×1,2, bus ×1,08.</li>
+    <li><strong>Dostrojony scenariusz.</strong> GD 2M88 wiezie towar do Janek zamiast do Mysłowic; okna i stany startowe ustawiłem tak, żeby historia wypadała w pierwszych ~30 minutach pokazu.</li>
+    <li><strong>Objazd można też zastosować.</strong> Poza „Pokaż objazd” dodałem „Zastosuj objazd”: auto przechodzi na trasę objazdu, a ETA się przelicza.</li>
+  </ul>
+  <h3>Testy do przeklikania</h3>
+  <ol class="checks">
+    <li>Monitoring po resecie. <span class="expect">14 pojazdów na mapie i liście. Trzy żółte na starcie (GD 2M88, PO 2C19, WB 6P77 — przerwa wkrótce), trzy szare (wolne w bazach).</span></li>
+    <li>Bus EL 3B12 lub PO 6N88. <span class="expect">W kolumnie „Jazda” jest „nie dotyczy” (bus w przewozie krajowym).</span></li>
+    <li>Filtry „Busy”, „Ciągniki”, „Zagrożone”. <span class="expect">Lista się zawęża.</span></li>
+    <li>Kliknij PO 2C19. <span class="expect">Panel: zlecenie ZL-1035, prognoza z rozbiciem, „Jazda ciągła 4:xx / 4:30”. Po kilku minutach kierowca robi przerwę (tryb „przerwa do hh:mm”), a potem wraca do zielonego.</span></li>
+    <li>Ok. 2 min po starcie (08:50 symulacji): wypadek na A2. <span class="expect">Dzwonek pokazuje 2. Alert krytyczny: PO 4K21 nie zdąży (ETA ~13:55 przy oknie do 12:15). Alert o wypadku z „Objazd przez Kostrzyn: ETA ~11:40”.</span></li>
+    <li>W alercie kliknij „Pokaż objazd”. <span class="expect">Mapa przybliża PO 4K21, fioletowa przerywana linia pokazuje objazd.</span></li>
+    <li>„Zastosuj objazd”. <span class="expect">Komunikat „Objazd zastosowany”, ETA ~11:41, PO 4K21 przestaje być czerwony, w szczegółach „Pojazd jedzie objazdem”.</span></li>
+    <li>Przełącz na 60× i obserwuj do ~11:00. <span class="expect">GD 2M88 dostaje „długie oczekiwanie na rampie” i robi się czerwony (nie zdąży przed odpoczynkiem dobowym). Ok. 12:30 awaria busa WX 9T04, ok. 13:10 kontrola ITD WB 6P77 — oba z alertami.</span></li>
+    <li>Z kluczem API: <span class="expect">alerty mają dopisek „wyjaśnienie AI”, a w Dzienniku AI widać wywołania „Wyjaśnienie alertu” z kosztem rzędu ułamków centa.</span></li>
+  </ol>
+
+  <footer>
+    Kod: MIT. Trasy: © OpenStreetMap contributors (ODbL), OSRM. Dane w demo są fikcyjne.
+  </footer>
+</main>
+</body>
+</html>
