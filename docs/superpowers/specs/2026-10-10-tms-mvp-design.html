@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Specyfikacja MVP TMS</title>
+<style>
+  :root {
+    --bg: #faf9f6; --surface: #ffffff; --surface-2: #f3f1ec; --ink: #1c1f24; --muted: #5d6471;
+    --line: #e3e0d8; --accent: #0f5c8c; --accent-soft: #e5eff6; --good: #1f7a4d; --good-soft: #e6f3eb;
+    --warn: #8f5600; --warn-soft: #fbf0dc; --bad: #a3302a; --bad-soft: #f8e5e3; --violet: #5b3fa6;
+    --violet-soft: #eeeafa; --radius: 12px;
+    --shadow: 0 1px 2px rgba(20,22,26,.04), 0 4px 16px rgba(20,22,26,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3;
+      --line: #2d3139; --accent: #6db4e3; --accent-soft: #182a37; --good: #6fcf9a; --good-soft: #15281e;
+      --warn: #f0b45a; --warn-soft: #2c2314; --bad: #f08a83; --bad-soft: #2e1918; --violet: #b4a2f0;
+      --violet-soft: #241f38; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3;
+    --line: #2d3139; --accent: #6db4e3; --accent-soft: #182a37; --good: #6fcf9a; --good-soft: #15281e;
+    --warn: #f0b45a; --warn-soft: #2c2314; --bad: #f08a83; --bad-soft: #2e1918; --violet: #b4a2f0;
+    --violet-soft: #241f38; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-padding-top: 16px; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16.5px; line-height: 1.65; text-rendering: optimizeLegibility;
+  }
+  .page { max-width: 54rem; margin: 0 auto; padding: 56px 24px 96px; }
+  @media (max-width: 600px) { .page { padding: 32px 16px 64px; } body { font-size: 16px; } }
+  h1, h2, h3, h4 { line-height: 1.25; letter-spacing: -0.01em; }
+  h1 { font-size: 2.3rem; margin: .2em 0 .35em; font-weight: 700; }
+  h2 { font-size: 1.55rem; margin: 3.4rem 0 1rem; padding-top: 1.4rem; border-top: 1px solid var(--line); font-weight: 650; }
+  h3 { font-size: 1.2rem; margin: 2.2rem 0 .7rem; font-weight: 650; }
+  h4 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 1.4rem 0 .5rem; font-weight: 650; }
+  p { margin: 0 0 1em; }
+  ul, ol { margin: 0 0 1em; padding-left: 1.3em; }
+  li { margin: .3em 0; }
+  li::marker { color: var(--muted); }
+  strong { font-weight: 650; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  code { font-family: "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace; font-size: .86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  pre { font-family: "Cascadia Code", Consolas, Menlo, monospace; font-size: .82rem; line-height: 1.5; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; }
+  .eyebrow { font-size: .82rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 650; }
+  .lead { font-size: 1.12rem; color: var(--muted); max-width: 44rem; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1.2rem; }
+  .chip { display: inline-block; font-size: .78rem; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+  nav.toc { margin: 2rem 0 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  nav.toc ol { margin: 0; columns: 2; column-gap: 2rem; padding-left: 1.3em; }
+  nav.toc li { margin: .15em 0; break-inside: avoid; font-size: .93rem; }
+  nav.toc a { text-decoration: none; color: var(--ink); }
+  nav.toc a:hover { color: var(--accent); text-decoration: underline; }
+  @media (max-width: 640px) { nav.toc ol { columns: 1; } }
+  .box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; margin: 1.3rem 0; box-shadow: var(--shadow); }
+  .box.key { border-left: 4px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; }
+  .note { background: var(--accent-soft); border-radius: 10px; padding: 12px 16px; margin: 1.1rem 0; font-size: .94rem; }
+  .note.warn { background: var(--warn-soft); }
+  .table-wrap { overflow-x: auto; margin: 1.1rem 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 650; background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  td code { white-space: nowrap; }
+  .tag { display: inline-block; font-size: .68rem; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; padding: 1px 7px; border-radius: 5px; vertical-align: 2px; white-space: nowrap; }
+  .tag.mvp { background: var(--accent-soft); color: var(--accent); }
+  .tag.later { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+  .tag.ai { background: var(--violet-soft); color: var(--violet); }
+  .tag.ok { background: var(--good-soft); color: var(--good); }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); }
+  .tag.bad { background: var(--bad-soft); color: var(--bad); }
+  .ac li { list-style: none; position: relative; padding-left: 1.6em; }
+  .ac { padding-left: 0; }
+  .ac li::before { content: "☐"; position: absolute; left: 0; color: var(--accent); }
+  footer { margin-top: 4rem; padding-top: 1.4rem; border-top: 1px solid var(--line); font-size: .86rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="page">
+
+<header>
+  <div class="eyebrow">Specyfikacja projektowa · wersja 1 · 10 października 2026</div>
+  <h1>TMS z&nbsp;AI: specyfikacja MVP</h1>
+  <p class="lead">Demo systemu zarządzania transportem drogowym z&nbsp;monitoringiem floty, komunikacją z&nbsp;kierowcami i&nbsp;klientami oraz AI wspierającym spedytora. Zakres: etapy 0, 1, 2, 3 i&nbsp;3b.</p>
+  <div class="meta">
+    <span class="chip">Status: do przeglądu</span>
+    <span class="chip">Licencja kodu: MIT</span>
+    <span class="chip">Hosting: Vercel</span>
+    <span class="chip">AI: claude-haiku-5-5</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Spis treści">
+  <ol>
+    <li><a href="#cel">Cel, odbiorcy, kryteria sukcesu</a></li>
+    <li><a href="#zasady">Zasady projektowe</a></li>
+    <li><a href="#zakres">Zakres MVP i poza zakresem</a></li>
+    <li><a href="#architektura">Architektura</a></li>
+    <li><a href="#tick">Silnik aktualizacji i czas symulacji</a></li>
+    <li><a href="#dane">Model danych</a></li>
+    <li><a href="#domena">Reguły domenowe</a></li>
+    <li><a href="#cykl">Cykl życia zlecenia</a></li>
+    <li><a href="#ai">AI: funkcje, zasady, limity</a></li>
+    <li><a href="#scenariusz">Symulator i scenariusz demo</a></li>
+    <li><a href="#ui">Interfejs</a></li>
+    <li><a href="#bledy">Obsługa błędów</a></li>
+    <li><a href="#bezpieczenstwo">Bezpieczeństwo, prywatność, licencje</a></li>
+    <li><a href="#konfiguracja">Konfiguracja i struktura repozytorium</a></li>
+    <li><a href="#testy">Testy i kryteria akceptacji</a></li>
+    <li><a href="#kolejne">Kolejne etapy</a></li>
+    <li><a href="#ryzyka">Ryzyka i sprawy do weryfikacji</a></li>
+    <li><a href="#decyzje">Rejestr decyzji</a></li>
+  </ol>
+</nav>
+
+<!-- 1 -->
+<h2 id="cel">1. Cel, odbiorcy, kryteria sukcesu</h2>
+<p><strong>Cel.</strong> Pokazać na działającej aplikacji, jak AI odciąża spedytora w&nbsp;firmie transportowej z&nbsp;własną flotą: pilnuje czasu jazdy i&nbsp;terminowości, czyta wiadomości kierowców i&nbsp;klientów, odczytuje dokumenty CMR i&nbsp;przygotowuje szkice. Decyzje zawsze podejmuje człowiek.</p>
+<p><strong>Odbiorcy (założenie robocze).</strong> Firma transportowa, której demo jest pokazywane, oraz publiczność na GitHubie. Architektura ma być realnym fundamentem pod wdrożenie: symulator, bramki komunikacyjne i&nbsp;routing to wymienne moduły.</p>
+<div class="box key">
+  <strong>Kryteria sukcesu MVP</strong>
+  <ul>
+    <li>Osoba z&nbsp;linkiem otwiera demo i&nbsp;w&nbsp;ciągu kilku minut widzi kilkanaście jadących pojazdów oraz pierwszy sensowny alert AI z&nbsp;uzasadnieniem i&nbsp;propozycją objazdu.</li>
+    <li>W&nbsp;ok. 30 minutach pokazu można przejść pełną pętlę: mail od klienta → szkic zlecenia → przydział kierowcy → SMS → potwierdzenie → monitoring → CMR → zamknięcie.</li>
+    <li>Demo działa bez klucza API (tryb awaryjny) i&nbsp;nie przekracza ustalonego dziennego budżetu AI.</li>
+    <li>Wszystkie kryteria akceptacji z&nbsp;sekcji <a href="#testy">15</a> są spełnione, a&nbsp;automatyczne testy przechodzą.</li>
+  </ul>
+</div>
+
+<!-- 2 -->
+<h2 id="zasady">2. Zasady projektowe</h2>
+<ol>
+  <li><strong>Człowiek decyduje, AI podpowiada.</strong> AI w&nbsp;MVP ustawia tylko dwa statusy zlecenia (<code>POTWIERDZONE</code>, <code>DO_ZAMKNIECIA</code>), żaden z&nbsp;nich nie jest końcowy. AI może tworzyć szkice zleceń i&nbsp;wiadomości, ale nie wysyła niczego samodzielnie.</li>
+  <li><strong>Algorytm liczy, AI rozmawia.</strong> Czas jazdy, ETA, ryzyko, dopasowanie kierowcy i&nbsp;dopasowanie CMR do zlecenia liczy deterministyczny kod w&nbsp;<code>domain/</code>. AI dostaje gotowe fakty i&nbsp;odpowiada wyłącznie w&nbsp;ściśle zdefiniowanym formacie (schemat JSON).</li>
+  <li><strong>Automatyczne wiadomości to szablony.</strong> Przypomnienie dla kierowcy i&nbsp;prośba o&nbsp;ponowne zdjęcie CMR wychodzą automatycznie, ale ich treść pochodzi z&nbsp;szablonu, nie od AI.</li>
+  <li><strong>Jedno źródło stanu.</strong> Kolor pojazdu na mapie, na liście i&nbsp;w&nbsp;alertach pochodzi z&nbsp;jednej funkcji domenowej.</li>
+  <li><strong>Reguły widoczności dla klienta w&nbsp;jednym miejscu.</strong> Klient może poznać: numery rejestracyjne, status, ETA, postęp trasy. Nigdy: imię, nazwisko i&nbsp;dane kontaktowe kierowcy ani informacje o&nbsp;innych zleceniach. Z&nbsp;tej samej funkcji korzysta AI przy szkicach odpowiedzi.</li>
+  <li><strong>Demo nigdy nie staje.</strong> Brak klucza, błąd lub limit AI przełącza system na proste reguły z&nbsp;komunikatem w&nbsp;panelu.</li>
+  <li><strong>Wszystko fikcyjne.</strong> Firmy, osoby, numery telefonów i&nbsp;rejestracyjne są zmyślone. Demo nie wysyła prawdziwych SMS-ów ani maili.</li>
+</ol>
+
+<!-- 3 -->
+<h2 id="zakres">3. Zakres MVP i poza zakresem</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Etap</th><th>Zakres</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag mvp">0</span> Fundament</td><td>Szkielet aplikacji, baza i&nbsp;migracje, model danych, zegar symulacji, silnik aktualizacji, światy demo (tworzenie, reset, wygasanie), dane scenariusza, trasy wyliczone skryptem, warstwa AI z&nbsp;limitami i&nbsp;trybem awaryjnym, dziennik AI.</td></tr>
+    <tr><td><span class="tag mvp">1</span> Monitoring</td><td>Mapa z&nbsp;pozycjami, lista pojazdów z&nbsp;filtrami, czas jazdy wg 561/2006, ETA z&nbsp;rozbiciem, stany zielony/żółty/czerwony, zdarzenia drogowe z&nbsp;objazdami, centrum powiadomień z&nbsp;alertami AI.</td></tr>
+    <tr><td><span class="tag mvp">2</span> Zlecenia i&nbsp;komunikator</td><td>Panel zleceń dla każdego kierowcy z&nbsp;kolejką, ręczne zakładanie zlecenia z&nbsp;podpowiedziami z&nbsp;książki punktów, „klocki” dopasowania, przydział przeciąganiem, SMS ze zleceniem z&nbsp;szablonu, komunikator z&nbsp;kierowcami (wątki, odpowiedzi spedytora, priorytety i&nbsp;gotowe odpowiedzi od AI), klasyfikacja odpowiedzi, drabina eskalacji, narzędzie demo „Telefon kierowcy”.</td></tr>
+    <tr><td><span class="tag mvp">3</span> CMR</td><td>Zdjęcie CMR w&nbsp;MMS lub mailu (galeria próbek albo własne zdjęcie), odczyt przez AI, kontrola jakości, dopasowanie do zlecenia, kolejki „Do zamknięcia” i&nbsp;„Do weryfikacji”, zamknięcie przez spedytora, alert o&nbsp;braku CMR.</td></tr>
+    <tr><td><span class="tag mvp">3b</span> Skrzynka klientów</td><td>Skrzynka maili od klientów w&nbsp;programie, kategorie nadawane przez AI, szkic zlecenia z&nbsp;maila, szkic odpowiedzi na pytanie o&nbsp;status, oznaczanie reklamacji, rozpoznawanie zapytań ofertowych (oznaczone „Sprzedaż – wkrótce”), narzędzie demo „Poczta klienta”.</td></tr>
+  </tbody>
+</table></div>
+
+<h4>Poza zakresem MVP</h4>
+<ul>
+  <li>Dodawanie nowych klientów i&nbsp;punktów (dane klientów i&nbsp;punktów pochodzą ze scenariusza; nowe zlecenia tylko między znanymi punktami). Przechodzi do etapu 4.</li>
+  <li>Moduł sprzedaży i&nbsp;wycen, szablony i&nbsp;zlecenia stałe, panel klienta, kartoteka floty i&nbsp;terminarz kierowcy (sekcja <a href="#kolejne">16</a>).</li>
+  <li>Tygodniowe i&nbsp;dwutygodniowe limity jazdy (56&nbsp;h / 90&nbsp;h), skrócone odpoczynki dobowe, odpoczynki tygodniowe, zakazy ruchu ciężarówek w&nbsp;dni wolne.</li>
+  <li>Realne integracje: GPS/telematyka, bramka SMS/MMS, poczta, giełdy transportowe, Comarch ERP Optima, dane o&nbsp;ruchu. Opisze je dokument wdrożeniowy.</li>
+  <li>Logowanie i&nbsp;role (poza opcjonalnym hasłem do całego demo).</li>
+  <li>Pełna obsługa telefonów komórkowych w&nbsp;panelu spedytora (panel projektujemy na komputer; narzędzia demo działają też na telefonie).</li>
+</ul>
+
+<!-- 4 -->
+<h2 id="architektura">4. Architektura</h2>
+<p>Stos zgodnie z&nbsp;dokumentem <a href="../../analizy/2026-10-10-decyzje-techniczne.html">Decyzje techniczne</a>: Next.js + TypeScript, Tailwind CSS + shadcn/ui, MapLibre GL + OpenFreeMap, Postgres w&nbsp;Neon (lokalnie PGlite) + Drizzle, Claude Haiku 5.5 przez <code>@anthropic-ai/sdk</code>, Zod, TanStack Query, dnd-kit, date-fns, Vitest, Playwright.</p>
+
+<h3>4.1 Moduły</h3>
+<pre>src/
+  domain/              czysta logika, bez bazy i sieci; najmocniej testowana
+    driving-time/      reguły 561/2006: pozostały czas jazdy, wymagane przerwy
+    eta/               ETA z rozbiciem (jazda, przerwy, odpoczynek, korki)
+    risk/              stan zielony / żółty / czerwony
+    order-lifecycle/   maszyna stanów zlecenia z kontrolą autora zmiany
+    matching/          „klocki”: filtr twardy + ranking z uzasadnieniem
+    escalation/        terminy przypomnień i alertów po SMS-ie
+    cmr-matching/      dopasowanie odczytanego CMR do zlecenia
+    visibility/        co wolno pokazać klientowi
+  simulation/
+    clock.ts           czas symulacji, tempo, pauza
+    plan.ts            plan pojazdu: odcinki jazdy, przerwy, załadunek, rozładunek
+    positions.ts       pozycja w danej chwili + rytm raportów GPS
+    scenario/          dane startowe i harmonogram zdarzeń
+    bots/              boty kierowców i klientów (deterministyczny generator losowy)
+  ai/
+    functions/         klasyfikacja wiadomości, odczyt CMR, wyjaśnienie alertu,
+                       szkic wiadomości, analiza maila klienta
+    fallback/          proste reguły dla każdej funkcji
+    budget.ts          limity wywołań i kosztów
+    log.ts             zapis do dziennika AI
+  ports/               interfejsy wymiennych modułów
+    position-source.ts message-gateway.ts routing.ts ai-assistant.ts
+  adapters/            implementacje: symulator, statyczne trasy, Anthropic, reguły
+  server/
+    tick/              silnik aktualizacji
+    repositories/      dostęp do danych
+  db/                  schemat Drizzle, migracje, zasiew świata demo
+  app/                 trasy Next.js: strony panelu, API
+scripts/
+  precompute-routes.ts generuje trasy z serwera OSRM (uruchamiany ręcznie)
+  generate-cmr.ts      generuje próbki CMR (szablon HTML → PNG → zniekształcenia)
+data/
+  routes/              trasy GeoJSON (licencja ODbL, © OpenStreetMap contributors)
+public/cmr-samples/    wygenerowane próbki CMR
+evals/                 zestaw kontrolny AI (dane + skrypt uruchamiany ręcznie)</pre>
+
+<h3>4.2 Wymienne moduły (porty)</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Port</th><th>Implementacja w&nbsp;MVP</th><th>Implementacja produkcyjna (dokument wdrożeniowy)</th></tr></thead>
+  <tbody>
+    <tr><td><code>PositionSource</code></td><td>Symulator: pozycja liczona z&nbsp;planu i&nbsp;czasu</td><td>Telematyka: pozycje przychodzące jako zdarzenia</td></tr>
+    <tr><td><code>MessageGateway</code></td><td>Symulowany telefon i&nbsp;poczta (zapis w&nbsp;bazie, boty odpowiadają)</td><td>Bramka SMS/MMS, poczta przez webhook</td></tr>
+    <tr><td><code>RoutingProvider</code></td><td>Statyczne trasy z&nbsp;<code>data/routes</code> (wszystkie pary znanych punktów + objazdy)</td><td>Silnik tras z&nbsp;profilem ciężarowym</td></tr>
+    <tr><td><code>AiAssistant</code></td><td>Anthropic (Haiku 5.5) z&nbsp;zapasowymi regułami</td><td>Bez zmian</td></tr>
+  </tbody>
+</table></div>
+
+<h3>4.3 Przepływ danych</h3>
+<ol>
+  <li>Panel co 15&nbsp;s wysyła <code>POST /api/tick</code>. Świat demo rozpoznawany jest po anonimowym ciasteczku.</li>
+  <li>Serwer przesuwa zegar symulacji do „teraz”, obsługuje po kolei zaległe zdarzenia (sekcja <a href="#tick">5</a>), w&nbsp;razie potrzeby wywołuje AI i&nbsp;zapisuje wyniki.</li>
+  <li>Odpowiedź zawiera migawkę stanu: pojazdy z&nbsp;pozycjami i&nbsp;stanem ryzyka, zlecenia, liczniki nieprzeczytanych wiadomości, otwarte alerty, czas symulacji.</li>
+  <li>Akcje użytkownika (przydział, wysłanie wiadomości, zatwierdzenie CMR) idą osobnymi wywołaniami API. Każda akcja najpierw wykonuje aktualizację, potem zmianę.</li>
+</ol>
+
+<!-- 5 -->
+<h2 id="tick">5. Silnik aktualizacji i&nbsp;czas symulacji</h2>
+<h3>5.1 Zegar</h3>
+<ul>
+  <li><strong>Pola świata:</strong> <code>sim_origin</code> (początek symulacji), <code>sim_elapsed_ms</code> (czas symulacji zgromadzony do ostatniej zmiany tempa lub pauzy), <code>running</code>, <code>speed</code> (1, 10 albo 60), <code>real_resumed_at</code>.</li>
+  <li><strong>Czas symulacji:</strong> <code>sim_now = sim_origin + sim_elapsed_ms + (running ? (real_now − real_resumed_at) × speed : 0)</code>.</li>
+  <li>Zmiana tempa lub pauza „zamraża” zgromadzony czas i&nbsp;ustawia nowe <code>real_resumed_at</code>.</li>
+  <li><strong>Początek symulacji:</strong> godzina 08:30 (Europe/Warsaw) w&nbsp;ostatni dzień roboczy (pon–pt) nie późniejszy niż data utworzenia świata.</li>
+  <li><strong>Domyślne tempo</strong> 10×.</li>
+</ul>
+
+<h3>5.2 Rytm GPS</h3>
+<p>Pozycja pokazywana w&nbsp;panelu to pozycja z&nbsp;ostatniego raportu trackera. Raport przychodzi co 150&nbsp;s czasu symulacji z&nbsp;przesunięciem fazy zależnym od pojazdu, żeby auta nie przeskakiwały jednocześnie. Przy tempie 10× daje to przeskok co ok. 15&nbsp;s. Lista pokazuje „ostatni raport: X min temu”.</p>
+
+<h3>5.3 Kroki jednej aktualizacji</h3>
+<ol>
+  <li>Wczytaj świat razem z&nbsp;numerem wersji (<code>version</code>).</li>
+  <li>Oblicz <code>sim_now</code>.</li>
+  <li>Pobierz zaplanowane zdarzenia z&nbsp;<code>due_sim ≤ sim_now</code> i&nbsp;obsłuż je w&nbsp;kolejności czasu. Typy zdarzeń: start i&nbsp;koniec zdarzenia drogowego, wiadomość bota kierowcy, mail bota klienta, termin eskalacji, termin „brak CMR”.</li>
+  <li>Dla każdego aktywnego zlecenia porównaj stan planu w&nbsp;chwili poprzedniej i&nbsp;bieżącej aktualizacji. Przekroczone granice czynności (przyjazd na załadunek, wyjazd, przyjazd na rozładunek) dają przejścia statusów z&nbsp;autorem <code>system</code>.</li>
+  <li>Dla każdego aktywnego zlecenia policz ryzyko. Zmiana stanu tworzy alert (klucz deduplikacji: zlecenie + stan). Powrót do zielonego zamyka otwarty alert ryzyka.</li>
+  <li>Wywołania AI dla nowych wiadomości i&nbsp;alertów (sekcja <a href="#ai">9</a>).</li>
+  <li>Zapis z&nbsp;warunkiem <code>WHERE version = n</code> i&nbsp;podbiciem wersji. Przy konflikcie, czyli równoległej aktualizacji z&nbsp;innej karty, zmiany są odrzucane, a&nbsp;odpowiedź zawiera aktualną migawkę.</li>
+</ol>
+
+<h3>5.4 Nadrabianie zaległości</h3>
+<p>Jeśli świat był nieodwiedzany, zdarzenia obsługuje się po kolei aż do <code>sim_now</code>. Żeby nie wywoływać AI dla historii, której nikt nie zobaczy:</p>
+<ul>
+  <li>Alerty, które w&nbsp;trakcie nadrabiania powstały i&nbsp;zostały zamknięte, dostają tekst z&nbsp;szablonu.</li>
+  <li>AI jest wywoływane tylko dla alertów otwartych w&nbsp;chwili <code>sim_now</code> i&nbsp;dla co najwyżej 10 najnowszych wiadomości.</li>
+  <li>Jedna aktualizacja obsługuje co najwyżej 500 zdarzeń. Resztę obsłuży kolejna.</li>
+</ul>
+
+<h3>5.5 Światy demo</h3>
+<ul>
+  <li><strong>Tworzenie:</strong> świat powstaje przy pierwszej wizycie. Zasiew kopiuje dane scenariusza do tabel z&nbsp;<code>sandbox_id</code> i&nbsp;tworzy harmonogram zdarzeń.</li>
+  <li><strong>Losowość:</strong> generator jest deterministyczny i&nbsp;domyślnie ma stałe ziarno, więc każdy pokaz przebiega tak samo. Przełącznik „losowy przebieg” zmienia ziarno.</li>
+  <li><strong>Reset:</strong> usuwa dane świata i&nbsp;zakłada go od nowa.</li>
+  <li><strong>Wygasanie:</strong> świat wygasa po 24&nbsp;h od ostatniej wizyty. Sprzątanie wygasłych światów odbywa się przy okazji aktualizacji, najwyżej 5 światów na raz.</li>
+  <li><strong>Limit:</strong> najwyżej 20 nowych światów na adres IP na dobę. Po przekroczeniu limitu kolejna wizyta z&nbsp;tego adresu dostaje najstarszy z&nbsp;jego światów, zresetowany.</li>
+</ul>
+
+<!-- 6 -->
+<h2 id="dane">6. Model danych</h2>
+<p>Wszystkie tabele poza <code>sandboxes</code> i&nbsp;<code>ai_budget_daily</code> mają <code>sandbox_id</code> z&nbsp;usuwaniem kaskadowym. Czasy symulacji to <code>timestamptz</code> w&nbsp;UTC; interfejs pokazuje Europe/Warsaw. Identyfikatory pochodzące ze scenariusza (punkty, pojazdy, kierowcy, klienci) są stałymi tekstami, np. <code>pt-poznan-wisla</code>, dzięki czemu trasy w&nbsp;plikach odwołują się do tych samych kluczy.</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>Tabela</th><th>Najważniejsze pola</th></tr></thead>
+  <tbody>
+    <tr><td><code>sandboxes</code></td><td>id, created_at, last_seen_at, expires_at, seed, sim_origin, sim_elapsed_ms, running, speed, real_resumed_at, version, ip_hash, ai_calls_hour_window, ai_calls_in_window</td></tr>
+    <tr><td><code>vehicles</code></td><td>id, kind (<code>bus</code> | <code>solo</code> | <code>tractor</code>), plates, body (<code>plandeka</code> | <code>chlodnia</code> | <code>skrzynia</code>), capacity_pallets, capacity_kg, adr, subject_to_561, international, odometer_km, home_point_id</td></tr>
+    <tr><td><code>trailers</code></td><td>id, plates, body, capacity_pallets, capacity_kg, adr</td></tr>
+    <tr><td><code>couplings</code></td><td>id, vehicle_id, trailer_id, from_sim, to_sim (null = aktualne)</td></tr>
+    <tr><td><code>drivers</code></td><td>id, first_name, last_name, phone, email (opcjonalny), adr_certificate, vehicle_id, refusal_propensity (parametr bota)</td></tr>
+    <tr><td><code>driver_activities</code></td><td>id, driver_id, type (<code>driving</code> | <code>break</code> | <code>daily_rest</code> | <code>other_work</code>), start_sim, end_sim, source (<code>seed</code> | <code>plan</code>)</td></tr>
+    <tr><td><code>clients</code></td><td>id, name, tax_id (fikcyjny), email_domain, is_key</td></tr>
+    <tr><td><code>client_contacts</code></td><td>id, client_id, name, email, phone</td></tr>
+    <tr><td><code>points</code></td><td>id, client_id (null = baza firmy), name, address, city, country, lat, lng, opening_hours (JSON), requirements, notes</td></tr>
+    <tr><td><code>orders</code></td><td>id, number (<code>ZL-1043</code>), client_id, pickup_point_id, pickup_from, pickup_to, delivery_point_id, delivery_from, delivery_to, cargo_pallets, cargo_kg, body_required, adr_required, references (JSON), notes, status, driver_id, vehicle_id, trailer_id, etd (planowany wyjazd z&nbsp;załadunku), eta_agreed (umówione ETA = koniec okna dostawy, o&nbsp;ile nie ustalono inaczej), source (<code>scenario</code> | <code>manual</code> | <code>email</code>), source_message_id, created_sim</td></tr>
+    <tr><td><code>driver_client_history</code></td><td>driver_id, client_id, completed_orders (liczba wcześniejszych zleceń; zasiew ze scenariusza, zwiększana przy zamknięciu zlecenia)</td></tr>
+    <tr><td><code>order_status_changes</code></td><td>id, order_id, from_status, to_status, actor (<code>dispatcher</code> | <code>driver</code> | <code>ai</code> | <code>system</code>), reason, at_sim</td></tr>
+    <tr><td><code>vehicle_plans</code></td><td>id, vehicle_id, order_ids, legs (JSON: odcinki jazdy z&nbsp;kluczem trasy, przerwy, odpoczynki, załadunek, rozładunek z&nbsp;czasami), computed_at_sim</td></tr>
+    <tr><td><code>incidents</code></td><td>id, kind (<code>traffic_accident</code> | <code>ramp_wait</code> | <code>breakdown</code> | <code>road_check</code>), route_key i&nbsp;zakres odcinka albo vehicle_id, start_sim, end_sim, slowdown_factor albo extra_minutes, description, alternative_route_key</td></tr>
+    <tr><td><code>scheduled_events</code></td><td>id, due_sim, type, payload (JSON), processed_at_sim</td></tr>
+    <tr><td><code>messages</code></td><td>id, channel (<code>sms</code> | <code>mms</code> | <code>email</code>), direction (<code>in</code> | <code>out</code>), party (<code>driver</code> | <code>client</code>), driver_id, client_contact_id, thread_key, subject, body, attachments (JSON: id próbki albo znacznik „zdjęcie nie zapisane”), state (<code>draft</code> | <code>sent</code> | <code>received</code>), sent_by (<code>dispatcher</code> | <code>system</code>), at_sim, read_at_sim, order_id, ai_category, ai_priority, ai_summary, ai_suggested_replies (JSON), ai_confidence, ai_extracted (JSON), classified_by (<code>ai</code> | <code>rules</code>)</td></tr>
+    <tr><td><code>documents</code></td><td>id, message_id, kind (<code>cmr</code>), image_ref, extracted (JSON), quality (JSON: legible, stamp, signature, remarks), match_candidates (JSON z&nbsp;wynikami), matched_order_id, match_score, status (<code>do_zamkniecia</code> | <code>do_weryfikacji</code> | <code>nieczytelny</code> | <code>zatwierdzony</code> | <code>odrzucony</code>), decided_by, decided_at_sim</td></tr>
+    <tr><td><code>alerts</code></td><td>id, kind, severity (<code>critical</code> | <code>warning</code> | <code>info</code>), vehicle_id, order_id, driver_id, message_id, dedupe_key, title, body, body_source (<code>ai</code> | <code>template</code>), actions (JSON, wartości z&nbsp;zamkniętej listy), status (<code>open</code> | <code>acknowledged</code> | <code>resolved</code>), created_sim, resolved_sim</td></tr>
+    <tr><td><code>ai_log</code></td><td>id, function, model, input_ref, output (JSON), input_tokens, output_tokens, cost_usd, latency_ms, fallback_used, error, at_sim, created_real, action_taken, reverted</td></tr>
+    <tr><td><code>ai_budget_daily</code></td><td>day (data UTC), cost_usd, calls (globalnie, bez <code>sandbox_id</code>)</td></tr>
+  </tbody>
+</table></div>
+<p>Trasy nie są w&nbsp;bazie. Leżą w&nbsp;plikach <code>data/routes/*.geojson</code> z&nbsp;kluczem <code>{from_point_id}__{to_point_id}</code> i&nbsp;wariantami objazdów <code>…__alt-{incident}</code>. Każda trasa zawiera geometrię, długość i&nbsp;czasy przejazdu dla odcinków.</p>
+
+<!-- 7 -->
+<h2 id="domena">7. Reguły domenowe</h2>
+
+<h3>7.1 Czas jazdy (uproszczony model 561/2006)</h3>
+<ul>
+  <li><strong>Przerwa:</strong> po 4&nbsp;h 30&nbsp;min łącznej jazdy wymagana jest przerwa 45&nbsp;min. Przerwę dzieloną 15&nbsp;+&nbsp;30&nbsp;min zalicza się w&nbsp;tej kolejności.</li>
+  <li><strong>Limit dzienny:</strong> 9&nbsp;h jazdy między odpoczynkami dobowymi, 10&nbsp;h jeśli kierowca ma niewykorzystane wydłużenie. Dane startowe określają, ile z&nbsp;dwóch wydłużeń w&nbsp;tygodniu już wykorzystano.</li>
+  <li><strong>Odpoczynek dobowy:</strong> 11&nbsp;h. Skróconych odpoczynków w&nbsp;MVP nie modelujemy.</li>
+  <li><strong>Pozostały czas jazdy</strong> = min(4:30 − jazda od ostatniej kwalifikowanej przerwy, limit dzienny − jazda od ostatniego odpoczynku dobowego).</li>
+  <li><strong>Busy:</strong> przy <code>subject_to_561 = false</code> (bus w&nbsp;przewozie krajowym) zamiast liczby lista pokazuje „nie dotyczy”, a&nbsp;ryzyko liczone jest tylko względem okna dostawy. Bus w&nbsp;przewozie międzynarodowym ma <code>subject_to_561 = true</code>.</li>
+  <li><strong>Boty kierowców</strong> stosują się do reguł: plan pojazdu zawsze wstawia wymagane przerwy i&nbsp;odpoczynki.</li>
+</ul>
+
+<h3>7.2 ETA</h3>
+<ul>
+  <li><strong>Wejście:</strong> bieżąca pozycja na planie, pozostałe odcinki, rejestr aktywności kierowcy, zdarzenia drogowe, pora dnia.</li>
+  <li><strong>Czas odcinka</strong> = czas z&nbsp;trasy × współczynnik pory dnia × spowolnienie ze zdarzenia. Współczynniki: 07:00–09:00 → 1,20; 15:00–18:00 → 1,25; pozostałe godziny → 1,00.</li>
+  <li><strong>Przerwy i&nbsp;odpoczynki:</strong> symulacja jazdy wstawia przerwę 45&nbsp;min, gdy łączna jazda przekroczyłaby 4:30, i&nbsp;odpoczynek dobowy 11&nbsp;h, gdy przekroczony byłby limit dzienny.</li>
+  <li><strong>Czynności:</strong> załadunek i&nbsp;rozładunek trwają po 45&nbsp;min, chyba że punkt określa inaczej. Czekanie na rampie dodaje <code>extra_minutes</code>.</li>
+  <li><strong>Wynik:</strong> ETA oraz rozbicie (jazda, przerwy, odpoczynek, opóźnienie od zdarzeń), z&nbsp;którego AI buduje wyjaśnienie.</li>
+</ul>
+
+<h3>7.3 Ryzyko (zielony / żółty / czerwony)</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Stan</th><th>Warunek</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag ok">zielony</span></td><td>ETA ≤ koniec okna dostawy i&nbsp;do przyjazdu nie jest potrzebna obowiązkowa przerwa</td></tr>
+    <tr><td><span class="tag warn">żółty</span></td><td>ETA ≤ koniec okna dostawy, ale przed przyjazdem potrzebna jest przerwa 45&nbsp;min</td></tr>
+    <tr><td><span class="tag bad">czerwony</span></td><td>ETA &gt; koniec okna dostawy albo przed przyjazdem potrzebny jest odpoczynek dobowy</td></tr>
+  </tbody>
+</table></div>
+<p>Dla zlecenia przed załadunkiem ryzyko liczone jest względem okna załadunku. Pojazd bez zlecenia jest szary.</p>
+
+<h3>7.4 Dopasowanie kierowcy do zlecenia („klocki”)</h3>
+<p><strong>Punkt startowy pojazdu:</strong> punkt rozładunku ostatniego zlecenia w&nbsp;kolejce albo, jeśli pojazd nie ma zlecenia, punkt, w&nbsp;którym stoi (baza albo ostatni rozładunek). To zawsze znany punkt, więc trasa dojazdu jest wyliczona.</p>
+<p><strong>Filtr twardy</strong> (niespełniony warunek oznacza „odpada” z&nbsp;podanym powodem):</p>
+<ul>
+  <li>pojemność w&nbsp;paletach i&nbsp;kg (pojazdu albo naczepy),</li>
+  <li>typ zabudowy (zlecenie suche może jechać chłodnią, ze stosownym oznaczeniem),</li>
+  <li>ADR pojazdu, naczepy i&nbsp;kierowcy,</li>
+  <li>możliwość dojazdu na załadunek przed końcem okna, z&nbsp;uwzględnieniem kolejki i&nbsp;reguł czasu jazdy.</li>
+</ul>
+<p><strong>Ranking</strong> (jawne wagi w&nbsp;konfiguracji): puste km do załadunku, zapas czasu jazdy po wykonaniu zlecenia, zapas czasu do końca okna załadunku, liczba wcześniejszych zleceń dla tego klienta. Wynik to stopnie <em>wysokie / średnie / niskie</em> plus lista powodów po polsku, np. „18&nbsp;km od załadunku”, „zostaje 6:40 jazdy”, „był u&nbsp;klienta 6 razy”, „chłodnia na towar suchy”. Ranking nie ocenia kierowców jako osób.</p>
+
+<h3>7.5 Eskalacja po wysłaniu zlecenia</h3>
+<ul>
+  <li><strong>Przypomnienie:</strong> brak odpowiedzi po X&nbsp;min symulacji → automatyczne przypomnienie z&nbsp;szablonu.</li>
+  <li><strong>Alert:</strong> brak odpowiedzi po kolejnych Y&nbsp;min → alert <code>warning</code> „Kierowca nie potwierdził zlecenia”.</li>
+  <li><strong>Wartości:</strong> domyślnie X&nbsp;=&nbsp;20, Y&nbsp;=&nbsp;20. Gdy początek okna załadunku wypada za mniej niż 2&nbsp;h: X&nbsp;=&nbsp;10, Y&nbsp;=&nbsp;10. Wartości są w&nbsp;konfiguracji.</li>
+  <li><strong>Anulowanie:</strong> odpowiedź kierowcy w&nbsp;dowolnym momencie anuluje zaplanowane kroki eskalacji.</li>
+</ul>
+
+<h3>7.6 Brak CMR</h3>
+<p>Brak dokumentu w&nbsp;ciągu 2&nbsp;h symulacji od zakończenia rozładunku (przyjazd + czas rozładunku z&nbsp;planu): prośba z&nbsp;szablonu do kierowcy. Po kolejnych 2&nbsp;h: alert <code>info</code>.</p>
+
+<h3>7.7 Dopasowanie CMR</h3>
+<ul>
+  <li><strong>Kandydaci:</strong> zlecenia kierowcy-nadawcy w&nbsp;statusie <code>ROZLADUNEK</code>. Brak kandydatów → <code>do_weryfikacji</code> (np. CMR wysłany przed rozładunkiem albo duplikat).</li>
+  <li><strong>Wynik dopasowania</strong> (0–1, liczony w&nbsp;<code>domain/</code> z&nbsp;pól odczytanych przez AI): zgodność odbiorcy z&nbsp;klientem lub punktem dostawy, miasto dostawy, data, numery referencyjne. Waga każdego czynnika jest w&nbsp;konfiguracji.</li>
+  <li><strong>Wynik ≥ 0,85, dokument czytelny:</strong> status <code>do_zamkniecia</code>, a&nbsp;zlecenie przechodzi do <code>DO_ZAMKNIECIA</code> (autor <code>ai</code>). Brak pieczątki lub podpisu odbiorcy (pole 24) albo adnotacje o&nbsp;szkodzie dają ostrzeżenie przy dokumencie i&nbsp;alert <code>info</code>.</li>
+  <li><strong>Wynik &lt; 0,85:</strong> status <code>do_weryfikacji</code>; zlecenie bez zmian.</li>
+  <li><strong>Dokument nieczytelny:</strong> status <code>nieczytelny</code> i&nbsp;automatyczna prośba z&nbsp;szablonu o&nbsp;ponowne zdjęcie.</li>
+</ul>
+
+<h3>7.8 Widoczność dla klienta</h3>
+<p>Funkcja <code>clientView(order)</code> zwraca wyłącznie: numer zlecenia, numery rejestracyjne (pojazd + naczepa), status w&nbsp;wersji dla klienta, ETA, postęp trasy w&nbsp;procentach. Korzystają z&nbsp;niej szkice odpowiedzi do klientów w&nbsp;MVP i&nbsp;panel klienta w&nbsp;etapie 5. Test automatyczny pilnuje, żeby do szkicu nie trafiło imię, nazwisko ani telefon kierowcy.</p>
+
+<!-- 8 -->
+<h2 id="cykl">8. Cykl życia zlecenia</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Z</th><th>Do</th><th>Kto</th><th>Kiedy</th></tr></thead>
+  <tbody>
+    <tr><td>—</td><td><code>SZKIC</code></td><td>ai</td><td>Mail klienta z&nbsp;kategorią „zamówienie transportu”</td></tr>
+    <tr><td>—</td><td><code>NOWE</code></td><td>dispatcher, system</td><td>Formularz spedytora; zlecenie ze scenariusza</td></tr>
+    <tr><td><code>SZKIC</code></td><td><code>NOWE</code></td><td>dispatcher</td><td>Zatwierdzenie szkicu (po ewentualnej poprawce)</td></tr>
+    <tr><td><code>SZKIC</code></td><td><code>ANULOWANE</code></td><td>dispatcher</td><td>Odrzucenie szkicu</td></tr>
+    <tr><td><code>NOWE</code></td><td><code>PRZYPISANE</code></td><td>dispatcher, system</td><td>Spedytor: przeciągnięcie na kierowcę. System: wyłącznie zdarzenia scenariusza</td></tr>
+    <tr><td><code>PRZYPISANE</code></td><td><code>WYSLANE</code></td><td>system</td><td>Wysłanie SMS-a ze zleceniem (od razu po przypisaniu)</td></tr>
+    <tr><td><code>PRZYPISANE</code>, <code>WYSLANE</code></td><td><code>NOWE</code></td><td>dispatcher</td><td>Cofnięcie przydziału (do kierowcy idzie SMS z&nbsp;szablonu o&nbsp;odwołaniu)</td></tr>
+    <tr><td><code>WYSLANE</code></td><td><code>POTWIERDZONE</code></td><td>ai, dispatcher</td><td>AI: kategoria „potwierdzenie” z&nbsp;pewnością ≥ 0,8. Spedytor: ręcznie</td></tr>
+    <tr><td><code>WYSLANE</code></td><td><code>NOWE</code></td><td>system, dispatcher</td><td>Odmowa z&nbsp;pewnością ≥ 0,8 (system, plus alert); przy niższej pewności tylko alert</td></tr>
+    <tr><td><code>POTWIERDZONE</code></td><td><code>ZALADUNEK</code></td><td>system</td><td>Przyjazd na punkt załadunku (wg planu i&nbsp;GPS)</td></tr>
+    <tr><td><code>ZALADUNEK</code></td><td><code>W_DRODZE</code></td><td>system</td><td>Wyjazd z&nbsp;punktu załadunku</td></tr>
+    <tr><td><code>W_DRODZE</code></td><td><code>ROZLADUNEK</code></td><td>system</td><td>Przyjazd na punkt rozładunku</td></tr>
+    <tr><td><code>ROZLADUNEK</code></td><td><code>DO_ZAMKNIECIA</code></td><td>ai, dispatcher</td><td>AI: CMR dopasowany (7.7). Spedytor: z&nbsp;kolejki weryfikacji</td></tr>
+    <tr><td><code>DO_ZAMKNIECIA</code></td><td><code>ZAMKNIETE</code></td><td>dispatcher</td><td>Zatwierdzenie zamknięcia</td></tr>
+    <tr><td><code>DO_ZAMKNIECIA</code></td><td><code>ROZLADUNEK</code></td><td>dispatcher</td><td>Odrzucenie dopasowania CMR</td></tr>
+    <tr><td><code>NOWE</code> … <code>POTWIERDZONE</code></td><td><code>ANULOWANE</code></td><td>dispatcher</td><td>Anulowanie przed załadunkiem</td></tr>
+  </tbody>
+</table></div>
+<p>Plan pojazdu obejmuje zlecenie dopiero od statusu <code>POTWIERDZONE</code>: kierowca nie jedzie na załadunek niepotwierdzonego zlecenia. Moduł <code>order-lifecycle</code> odrzuca przejście, którego nie ma w&nbsp;tabeli, albo przejście wykonane przez niedozwolonego autora. Każde przejście zapisuje się w&nbsp;<code>order_status_changes</code>. Przejścia AI można cofnąć z&nbsp;dziennika AI: wraca poprzedni status, a&nbsp;przejście cofające ma autora <code>dispatcher</code>.</p>
+
+<!-- 9 -->
+<h2 id="ai">9. AI: funkcje, zasady, limity</h2>
+<h3>9.1 Wspólne zasady</h3>
+<ul>
+  <li><strong>Model i&nbsp;format:</strong> model <code>claude-haiku-5-5</code>, odpowiedź w&nbsp;formacie JSON wymuszonym schematem (<code>output_config.format</code>, schematy w&nbsp;Zod). Niska staranność rozumowania (<code>effort: low</code>) dla klasyfikacji, domyślna dla odczytu CMR.</li>
+  <li><strong>Czas i&nbsp;błędy:</strong> limit 10&nbsp;s na wywołanie. Przy błędzie albo niezgodności ze schematem jedno ponowienie, potem tryb awaryjny.</li>
+  <li><strong>Dane od użytkownika:</strong> tekst wpisany przez użytkownika trafia do promptu jako oznaczony blok danych, nigdy jako instrukcja. Długość: wiadomość kierowcy do 500 znaków, mail do 4000 znaków.</li>
+  <li><strong>Akcje:</strong> AI wybiera akcje wyłącznie z&nbsp;zamkniętej listy w&nbsp;schemacie.</li>
+  <li><strong>Dziennik:</strong> każde wywołanie (także awaryjne) trafia do <code>ai_log</code> z&nbsp;tokenami i&nbsp;kosztem.</li>
+  <li><strong>Obrazy:</strong> obsługę obrazów przez <code>claude-haiku-5-5</code> potwierdzamy przez Models API na starcie etapu 0. Gdyby jej nie było, odczyt CMR przechodzi na <code>claude-sonnet-5-5</code> (decyzja 13).</li>
+</ul>
+
+<h3>9.2 Funkcje</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Funkcja</th><th>Wejście</th><th>Wyjście (schemat)</th><th>Tryb awaryjny</th></tr></thead>
+  <tbody>
+    <tr><td><code>classifyDriverMessage</code></td><td>Treść, kontekst kierowcy (bieżące zlecenie, zlecenie czekające na potwierdzenie)</td><td>category: <code>potwierdzenie</code> | <code>odmowa</code> | <code>warunek_pytanie</code> | <code>operacyjne</code> | <code>dokument</code> | <code>luzne</code> | <code>niejasne</code>; subtype dla operacyjnych: <code>awaria</code> | <code>opoznienie</code> | <code>kontrola</code> | <code>wypadek</code> | <code>inne</code>; related_order_id; summary; priority: <code>wysoki</code> | <code>normalny</code> | <code>niski</code>; confidence; suggested_replies (≤ 3, każda ≤ 160 znaków)</td><td>Słowa kluczowe (np. „ok”, „jadę”, „przyjmuję” → potwierdzenie; „nie dam rady”, „nie pojadę” → odmowa; „?” → pytanie); niska pewność; bez gotowych odpowiedzi</td></tr>
+    <tr><td><code>readCmr</code></td><td>Obraz</td><td>legible; fields: cmr_number, sender, consignee, place_of_delivery, delivery_date, goods, packages, weight_kg, references; consignee_stamp; consignee_signature; remarks</td><td>Dokument trafia do <code>do_weryfikacji</code> z&nbsp;notatką „odczyt automatyczny niedostępny”</td></tr>
+    <tr><td><code>explainAlert</code></td><td>Fakty z&nbsp;domeny (stan, ETA, rozbicie, zdarzenie, objazd z&nbsp;różnicą czasu)</td><td>title (≤ 80 znaków); body (≤ 2 zdania); actions: <code>pokaz_objazd</code> | <code>powiadom_klienta</code> | <code>napisz_do_kierowcy</code> | <code>przydziel_innego</code> | <code>brak</code></td><td>Zdanie z&nbsp;szablonu dla danego typu alertu i&nbsp;domyślne akcje</td></tr>
+    <tr><td><code>draftMessage</code></td><td>Cel (<code>opoznienie_dla_klienta</code> | <code>status_dla_klienta</code> | <code>odpowiedz_kierowcy</code> | <code>prosba_o_brakujace_dane</code>), fakty (dla klienta tylko z&nbsp;<code>clientView</code>)</td><td>subject (dla maili), body</td><td>Szablon tekstu dla danego celu</td></tr>
+    <tr><td><code>triageClientEmail</code></td><td>Mail, kontekst klienta (punkty klienta, jego aktywne zlecenia w&nbsp;<code>clientView</code>)</td><td>category: <code>zamowienie_transportu</code> | <code>zapytanie_o_status</code> | <code>reklamacja</code> | <code>zapytanie_ofertowe</code> | <code>inne</code>; summary; priority; related_order_id; extracted_order (pickup_point_id i&nbsp;delivery_point_id wybrane z&nbsp;listy punktów klienta, okna, palety, kg, zabudowa, ADR, referencje); missing_fields</td><td>Kategoria <code>inne</code>, bez szkicu; spedytor czyta mail sam</td></tr>
+  </tbody>
+</table></div>
+
+<h3>9.3 Limity i&nbsp;koszty</h3>
+<ul>
+  <li><strong>Na świat demo:</strong> najwyżej 60 wywołań AI na godzinę realną (<code>AI_CALLS_PER_SANDBOX_PER_HOUR</code>).</li>
+  <li><strong>Globalnie:</strong> dzienny budżet w&nbsp;USD (<code>AI_DAILY_BUDGET_USD</code>, domyślnie 2). Po przekroczeniu wszystkie światy przechodzą w&nbsp;tryb awaryjny do północy UTC.</li>
+  <li><strong>Szacunek:</strong> pełny 30-minutowy pokaz to ok. 40 wywołań, czyli rząd 1 centa przy cenach Haiku 5.5 (0,10 / 0,50&nbsp;USD za mln tokenów).</li>
+  <li><strong>Bez klucza:</strong> brak <code>ANTHROPIC_API_KEY</code> oznacza stały tryb awaryjny z&nbsp;komunikatem „AI wyłączone w&nbsp;tej instalacji”.</li>
+</ul>
+
+<!-- 10 -->
+<h2 id="scenariusz">10. Symulator i&nbsp;scenariusz demo</h2>
+<h3>10.1 Dane startowe</h3>
+<ul>
+  <li><strong>Pojazdy:</strong> 14, czyli 5 busów (dwa w&nbsp;przewozie międzynarodowym) i&nbsp;9 ciągników.</li>
+  <li><strong>Naczepy:</strong> 11, czyli 9 podpiętych i&nbsp;2 zapasowe; 1 chłodnia, 1 z&nbsp;ADR.</li>
+  <li><strong>Kierowcy:</strong> 14, w&nbsp;tym 2 z&nbsp;uprawnieniami ADR. Kierowcy busów mają podwyższoną skłonność do odmów.</li>
+  <li><strong>Klienci:</strong> 8 fikcyjnych, 3 oznaczeni jako kluczowi, każdy z&nbsp;1–2 kontaktami.</li>
+  <li><strong>Punkty:</strong> 24 w&nbsp;Polsce, Niemczech i&nbsp;Czechach, w&nbsp;tym 3 bazy firmy (Poznań, Łódź, Wrocław). Przykładowe kierunki: Poznań → Berlin, Gdańsk → Katowice, Warszawa → Praga, Wrocław → Drezno, Łódź → Gdynia, Poznań → Lipsk.</li>
+  <li><strong>Stan na start:</strong> 11 pojazdów w&nbsp;trasie, 3 w&nbsp;bazach. Rejestry aktywności ustawione tak, że 2 kierowców wejdzie w&nbsp;stan żółty w&nbsp;ciągu ok. 10&nbsp;min symulacji, a&nbsp;1 zbliża się do limitu dziennego.</li>
+  <li><strong>Historia:</strong> liczba wcześniejszych zleceń per kierowca i&nbsp;klient, potrzebna do rankingu.</li>
+</ul>
+
+<h3>10.2 Harmonogram zdarzeń (czas symulacji od startu; przy 10× minuta realna = 10 min symulacji)</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>T+</th><th>Zdarzenie</th><th>Co pokazuje</th></tr></thead>
+  <tbody>
+    <tr><td>20 min</td><td>Wypadek na A2, korek na odcinku trasy PO&nbsp;4K21</td><td>Stan czerwony, alert AI z&nbsp;objazdem i&nbsp;różnicą czasu</td></tr>
+    <tr><td>40 min</td><td>Mail klienta z&nbsp;zamówieniem transportu</td><td>Szkic zlecenia z&nbsp;maila, klocki, przydział</td></tr>
+    <tr><td>50 min</td><td>Zlecenie ze scenariusza wysłane do kierowcy busa; po 6&nbsp;min odmowa</td><td>Odmowa, alert, zlecenie wraca do puli</td></tr>
+    <tr><td>60 min</td><td>Luźna wiadomość kierowcy („stoję na parkingu w&nbsp;Strykowie”)</td><td>Niski priorytet, brak alertu</td></tr>
+    <tr><td>90 min</td><td>Długie czekanie na rampie przy załadunku GD&nbsp;2M88</td><td>Przejście żółty → czerwony</td></tr>
+    <tr><td>120 min</td><td>Mail klienta „gdzie jest auto?”</td><td>Szkic odpowiedzi z&nbsp;ETA, bez danych kierowcy</td></tr>
+    <tr><td>150 min</td><td>Rozładunek DW&nbsp;3H56, MMS z&nbsp;ostrym CMR</td><td>Dopasowanie, „Do zamknięcia”, zamknięcie</td></tr>
+    <tr><td>200 min</td><td>Rozładunek innego auta, MMS z&nbsp;rozmazanym CMR; po 15&nbsp;min ponowne, ostre zdjęcie</td><td>Kontrola jakości i&nbsp;automatyczna prośba</td></tr>
+    <tr><td>240 min</td><td>Awaria busa („złapałem gumę pod Łodzią”)</td><td>Wiadomość operacyjna i&nbsp;alert</td></tr>
+    <tr><td>280 min</td><td>Kontrola drogowa, postój 40&nbsp;min</td><td>Opóźnienie i&nbsp;przeliczone ETA</td></tr>
+    <tr><td>300 min</td><td>Mail z&nbsp;reklamacją (uszkodzone palety)</td><td>Oznaczenie reklamacji, wysoki priorytet</td></tr>
+  </tbody>
+</table></div>
+<p>Po zakończeniu harmonogramu świat żyje dalej. Co 60&nbsp;min symulacji (±15&nbsp;min) bot klienta wysyła mail z&nbsp;nowym zamówieniem na znanych kierunkach, a&nbsp;pojazdy po rozładunku wracają do baz albo czekają na zlecenia.</p>
+
+<h3>10.3 Boty</h3>
+<ul>
+  <li><strong>Kierowcy</strong> odpowiadają po 2–15&nbsp;min symulacji. Odpowiedzi losowane są z&nbsp;puli wariantów: potwierdzenia, warunki („ok, ale będę 2&nbsp;h później”), pytania („jaki numer rampy?”), odmowy.</li>
+  <li><strong>Brak odpowiedzi</strong> z&nbsp;prawdopodobieństwem 0,15 uruchamia eskalację.</li>
+  <li><strong>Prawdopodobieństwo odmowy:</strong> kierowca busa 0,5, kierowca ciągnika 0,1. Dotyczy zleceń przydzielonych przez użytkownika.</li>
+  <li><strong>„Telefon kierowcy”:</strong> gdy użytkownik wciela się w&nbsp;danego kierowcę, bot tego kierowcy milknie.</li>
+</ul>
+
+<!-- 11 -->
+<h2 id="ui">11. Interfejs</h2>
+<p>Układ wg makiety z&nbsp;rozmowy. UX oceniamy w&nbsp;testach. Interfejs jest po polsku, panel spedytora projektowany na ekran od 1280&nbsp;px szerokości.</p>
+<ul>
+  <li><strong>Górny pasek:</strong> zegar symulacji, tempo (1× / 10× / 60×), pauza, reset świata, przełącznik „losowy przebieg”, narzędzia demo „Telefon kierowcy” i&nbsp;„Poczta klienta”, dzwonek z&nbsp;liczbą otwartych alertów, znacznik stanu AI (aktywne / tryb awaryjny).</li>
+  <li><strong>Menu:</strong> Monitoring, Zlecenia, Komunikator (licznik), Skrzynka (licznik), Dokumenty (licznik), Dziennik AI.</li>
+  <li><strong>Monitoring:</strong>
+    <ul>
+      <li>Mapa i&nbsp;lista obok siebie. Lista: rejestracja (ciągnik + naczepa), kierowca, trasa, pasek postępu, pozostały czas jazdy, ETA z&nbsp;oknem, kropka stanu, „ostatni raport”.</li>
+      <li>Filtry: wszystkie, busy, ciągniki, zagrożone.</li>
+      <li>Kliknięcie wiersza centruje mapę, pokazuje trasę i&nbsp;szczegóły z&nbsp;rozbiciem ETA.</li>
+      <li>Alerty: panel boczny z&nbsp;kartami (tytuł, wyjaśnienie, przyciski akcji). „Pokaż objazd” rysuje trasę alternatywną na mapie.</li>
+    </ul>
+  </li>
+  <li><strong>Zlecenia:</strong>
+    <ul>
+      <li>Kolumna „Nowe zlecenia” (z&nbsp;oznaczeniem szkiców z&nbsp;maila) i&nbsp;wiersze kierowców: bieżące zlecenie plus kolejka albo puste pole.</li>
+      <li>Podczas przeciągania wiersze kierowców pokazują klocki dopasowania z&nbsp;powodami.</li>
+      <li>Przycisk „Nowe zlecenie” otwiera formularz: klient z&nbsp;podpowiedziami, punkty z&nbsp;książki punktów klienta z&nbsp;notatkami, okna, ładunek.</li>
+    </ul>
+  </li>
+  <li><strong>Komunikator:</strong> lista wątków kierowców (nieprzeczytane, priorytet, kategoria), rozmowa z&nbsp;polem odpowiedzi i&nbsp;gotowymi odpowiedziami od AI, panel bieżącego zlecenia kierowcy.</li>
+  <li><strong>Skrzynka:</strong> lista maili z&nbsp;kategorią i&nbsp;priorytetem; podgląd maila obok szkicu (zlecenia albo odpowiedzi). Zatwierdzenie, edycja, odrzucenie. Zapytania ofertowe oznaczone „Sprzedaż – wkrótce”.</li>
+  <li><strong>Dokumenty:</strong> kolejki „Do zamknięcia”, „Do weryfikacji”, „Nieczytelne”; zdjęcie obok odczytanych pól, ostrzeżenia, wynik dopasowania z&nbsp;kandydatami; przyciski „Zamknij zlecenie”, „Przypisz do innego”, „Odrzuć”.</li>
+  <li><strong>Dziennik AI:</strong> lista wywołań z&nbsp;funkcją, wynikiem, podjętą akcją, kosztem i&nbsp;przyciskiem „Cofnij” dla przejść statusów.</li>
+  <li><strong>Telefon kierowcy:</strong> wysuwany panel w&nbsp;kształcie telefonu. Wybór kierowcy, wątek SMS, pole tekstu, galeria próbek CMR, wgranie własnego zdjęcia (JPEG/PNG/WebP do 5&nbsp;MB, plik nie jest zapisywany).</li>
+  <li><strong>Poczta klienta:</strong> wysuwany panel. Wybór klienta i&nbsp;kontaktu, temat, treść, wysłanie do skrzynki spedytora.</li>
+</ul>
+
+<!-- 12 -->
+<h2 id="bledy">12. Obsługa błędów</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Sytuacja</th><th>Zachowanie</th></tr></thead>
+  <tbody>
+    <tr><td>Błąd lub przekroczony czas AI</td><td>Jedno ponowienie, potem reguły awaryjne; wpis w&nbsp;dzienniku; znacznik „tryb awaryjny” przy danym elemencie</td></tr>
+    <tr><td>Odpowiedź AI niezgodna ze schematem</td><td>Jak wyżej</td></tr>
+    <tr><td>Limit świata albo budżet dzienny</td><td>Tryb awaryjny z&nbsp;komunikatem i&nbsp;informacją, kiedy AI wróci</td></tr>
+    <tr><td>Baza niedostępna lub uśpiona</td><td>Wskaźnik ładowania; po 3 nieudanych próbach komunikat „Nie udało się połączyć z&nbsp;bazą. Spróbuj ponownie” i&nbsp;przycisk</td></tr>
+    <tr><td>Konflikt równoległej aktualizacji</td><td>Zwrócenie aktualnej migawki, bez komunikatu</td></tr>
+    <tr><td>Niedozwolone przejście statusu</td><td>Akcja odrzucona; komunikat z&nbsp;powodem (np. „Zlecenia po załadunku nie można anulować”)</td></tr>
+    <tr><td>Niepoprawny plik zdjęcia</td><td>Komunikat przy polu: dozwolone typy i&nbsp;rozmiar</td></tr>
+    <tr><td>Za długi tekst</td><td>Licznik znaków przy polu; blokada wysłania z&nbsp;komunikatem</td></tr>
+    <tr><td>Kafelki mapy niedostępne</td><td>Przełączenie na zapasowe źródło z&nbsp;<code>MAP_STYLE_FALLBACK_URL</code>; lista działa niezależnie od mapy</td></tr>
+  </tbody>
+</table></div>
+
+<!-- 13 -->
+<h2 id="bezpieczenstwo">13. Bezpieczeństwo, prywatność, licencje</h2>
+<ul>
+  <li><strong>Dane:</strong> wyłącznie fikcyjne. Demo nie wysyła prawdziwych SMS-ów ani maili; port <code>MessageGateway</code> w&nbsp;MVP ma tylko implementację symulowaną.</li>
+  <li><strong>Klucz API:</strong> wyłącznie po stronie serwera.</li>
+  <li><strong>Własne zdjęcia:</strong> przetwarzane w&nbsp;pamięci i&nbsp;nie zapisywane. W&nbsp;bazie zostaje tylko wynik odczytu.</li>
+  <li><strong>Ciasteczko świata:</strong> losowy identyfikator, <code>HttpOnly</code>, <code>SameSite=Lax</code>, <code>Secure</code> w&nbsp;produkcji. Adres IP przechowujemy wyłącznie jako skrót kryptograficzny.</li>
+  <li><strong>Opcjonalne hasło:</strong> <code>DEMO_PASSWORD</code> włącza prostą bramkę hasła dla całego demo.</li>
+  <li><strong>Licencje:</strong> kod na licencji MIT. Trasy w&nbsp;<code>data/routes</code> pochodzą z&nbsp;OpenStreetMap i&nbsp;podlegają ODbL. Plik <code>data/routes/LICENSE</code> plus atrybucja w&nbsp;README i&nbsp;w&nbsp;interfejsie („© OpenStreetMap contributors”, OSRM jako źródło tras). Atrybucję kafelków OpenFreeMap dodaje MapLibre.</li>
+  <li><strong>README</strong> po angielsku i&nbsp;po polsku: opis, uruchomienie lokalne, zmienne środowiskowe, licencje, uwaga o&nbsp;fikcyjności danych.</li>
+</ul>
+
+<!-- 14 -->
+<h2 id="konfiguracja">14. Konfiguracja i&nbsp;struktura repozytorium</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Zmienna</th><th>Domyślnie</th><th>Opis</th></tr></thead>
+  <tbody>
+    <tr><td><code>DATABASE_URL</code></td><td>brak (lokalnie PGlite)</td><td>Połączenie z&nbsp;Neon</td></tr>
+    <tr><td><code>ANTHROPIC_API_KEY</code></td><td>brak</td><td>Bez klucza: stały tryb awaryjny</td></tr>
+    <tr><td><code>AI_DAILY_BUDGET_USD</code></td><td>2</td><td>Globalny dzienny budżet AI</td></tr>
+    <tr><td><code>AI_CALLS_PER_SANDBOX_PER_HOUR</code></td><td>60</td><td>Limit wywołań na świat</td></tr>
+    <tr><td><code>DEMO_PASSWORD</code></td><td>brak</td><td>Włącza hasło do demo</td></tr>
+    <tr><td><code>MAP_STYLE_URL</code></td><td>styl OpenFreeMap</td><td>Źródło kafelków</td></tr>
+    <tr><td><code>MAP_STYLE_FALLBACK_URL</code></td><td>brak</td><td>Zapasowe źródło kafelków</td></tr>
+    <tr><td><code>SIM_DEFAULT_SPEED</code></td><td>10</td><td>Domyślne tempo symulacji</td></tr>
+    <tr><td><code>SANDBOX_TTL_HOURS</code></td><td>24</td><td>Czas życia świata</td></tr>
+  </tbody>
+</table></div>
+<p><strong>Skrypty npm:</strong></p>
+<ul>
+  <li><code>dev</code>, <code>build</code>, <code>start</code>;</li>
+  <li><code>test</code> (Vitest), <code>test:e2e</code> (Playwright), <code>eval:ai</code> (zestaw kontrolny, płatny, uruchamiany ręcznie);</li>
+  <li><code>db:generate</code>, <code>db:migrate</code>;</li>
+  <li><code>routes:precompute</code>, <code>cmr:generate</code>.</li>
+</ul>
+<p><strong>Wdrożenia:</strong> lokalnie i&nbsp;jako prywatny podgląd na Vercelu przez CLI po każdym etapie (każde wdrożenie za Twoją zgodą). Region <code>fra1</code>, baza Neon we Frankfurcie.</p>
+
+<!-- 15 -->
+<h2 id="testy">15. Testy i&nbsp;kryteria akceptacji</h2>
+<h3>15.1 Testy automatyczne</h3>
+<ul>
+  <li><strong>Jednostkowe (Vitest, najpierw test):</strong>
+    <ul>
+      <li>reguły czasu jazdy (tabela przypadków: przerwa dzielona, wydłużenie dnia, bus bez 561);</li>
+      <li>ETA z&nbsp;rozbiciem; stany ryzyka na granicach warunków;</li>
+      <li>wszystkie dozwolone i&nbsp;przykładowe niedozwolone przejścia statusów z&nbsp;autorami;</li>
+      <li>filtry i&nbsp;ranking klocków; terminy eskalacji; dopasowanie CMR;</li>
+      <li><code>clientView</code> (brak danych kierowcy); zegar (pauza, zmiana tempa); pozycja w&nbsp;czasie i&nbsp;rytm raportów;</li>
+      <li>reguły awaryjne AI.</li>
+    </ul>
+  </li>
+  <li><strong>Integracyjne (Vitest + PGlite):</strong> silnik aktualizacji (kolejność zdarzeń, idempotentność, konflikt wersji, nadrabianie z&nbsp;limitem wywołań AI), zasiew i&nbsp;reset świata, przepływy API z&nbsp;atrapą AI.</li>
+  <li><strong>Przeglądarkowe (Playwright, z&nbsp;atrapą AI):</strong>
+    <ul>
+      <li>przeciągnięcie zlecenia → SMS → potwierdzenie bota → zielone „w&nbsp;realizacji”;</li>
+      <li>MMS z&nbsp;CMR → „Do zamknięcia” → zamknięcie;</li>
+      <li>mail → szkic → zatwierdzenie jako NOWE;</li>
+      <li>odpowiedź spedytora w&nbsp;komunikatorze widoczna w&nbsp;Telefonie kierowcy.</li>
+    </ul>
+  </li>
+  <li><strong>Zestaw kontrolny AI (prawdziwe API, uruchamiany ręcznie):</strong>
+    <ul>
+      <li>40 wiadomości kierowców: trafność kategorii ≥ 90%, zero wiadomości z&nbsp;warunkiem lub pytaniem sklasyfikowanych jako „potwierdzenie”;</li>
+      <li>12 próbek CMR: wszystkie nieczytelne wykryte, trafność pól na czytelnych ≥ 90%;</li>
+      <li>15 maili klientów: trafność kategorii ≥ 90%, poprawne punkty w&nbsp;szkicach zleceń ≥ 85%.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>15.2 Kryteria akceptacji etapów (Twój test ręczny)</h3>
+<h4>Etap 0 — fundament</h4>
+<ul class="ac">
+  <li>Pierwsza wizyta tworzy świat; odświeżenie strony zachowuje stan; reset przywraca stan początkowy.</li>
+  <li>Zegar płynie z&nbsp;tempem 10×; pauza zatrzymuje czas; zmiana tempa działa bez skoków czasu.</li>
+  <li>Bez klucza API aplikacja działa, a&nbsp;górny pasek pokazuje „tryb awaryjny”.</li>
+  <li>Dziennik AI pokazuje wywołania z&nbsp;kosztem.</li>
+</ul>
+<h4>Etap 1 — monitoring</h4>
+<ul class="ac">
+  <li>Mapa pokazuje 14 pojazdów; auta przesuwają się co ok. 15&nbsp;s (przy 10×); lista i&nbsp;mapa mają te same kolory stanów.</li>
+  <li>Filtry listy działają; kliknięcie wiersza centruje mapę i&nbsp;pokazuje rozbicie ETA.</li>
+  <li>W&nbsp;ciągu ok. 2&nbsp;min realnych pojawia się alert o&nbsp;wypadku na A2 z&nbsp;wyjaśnieniem; „Pokaż objazd” rysuje trasę alternatywną.</li>
+  <li>Dwaj kierowcy przechodzą w&nbsp;stan żółty przed obowiązkową przerwą, a&nbsp;po przerwie wracają do zielonego.</li>
+  <li>Bus w&nbsp;przewozie krajowym pokazuje „nie dotyczy” w&nbsp;kolumnie czasu jazdy.</li>
+</ul>
+<h4>Etap 2 — zlecenia i&nbsp;komunikator</h4>
+<ul class="ac">
+  <li>Formularz nowego zlecenia podpowiada klientów i&nbsp;ich punkty z&nbsp;notatkami.</li>
+  <li>Podczas przeciągania klocki pokazują stopień dopasowania i&nbsp;powody; pojazd za mały oznaczony „odpada”.</li>
+  <li>Po przydziale kierowca dostaje SMS z&nbsp;szablonu (widoczny w&nbsp;Telefonie kierowcy); status „Wysłane”.</li>
+  <li>Odpowiedź „ok jadę” zmienia status na „Potwierdzone” (zielone); „ok, ale będę 2&nbsp;h później” daje alert, bez zmiany statusu.</li>
+  <li>Odmowa kierowcy busa daje alert i&nbsp;powrót zlecenia do puli.</li>
+  <li>Brak odpowiedzi daje automatyczne przypomnienie, a&nbsp;później alert.</li>
+  <li>Spedytor odpisuje z&nbsp;komunikatora; gotowe odpowiedzi AI wstawiają się jednym kliknięciem; luźne wiadomości nie tworzą alertów.</li>
+</ul>
+<h4>Etap 3 — CMR</h4>
+<ul class="ac">
+  <li>Ostre zdjęcie z&nbsp;galerii daje dokument w&nbsp;„Do zamknięcia” przypięty do właściwego zlecenia; spedytor zamyka zlecenie.</li>
+  <li>Rozmazane zdjęcie daje status „Nieczytelny” i&nbsp;automatyczną prośbę o&nbsp;ponowne zdjęcie.</li>
+  <li>Zdjęcie bez pieczątki odbiorcy daje ostrzeżenie przy dokumencie.</li>
+  <li>CMR niepasujący do żadnego zlecenia trafia do „Do weryfikacji”; ręczne przypisanie działa.</li>
+  <li>Własne zdjęcie jest odczytywane i&nbsp;nie zostaje zapisane.</li>
+  <li>Brak CMR po rozładunku daje prośbę do kierowcy, a&nbsp;później alert.</li>
+</ul>
+<h4>Etap 3b — skrzynka klientów</h4>
+<ul class="ac">
+  <li>Mail z&nbsp;zamówieniem daje szkic zlecenia z&nbsp;poprawnie dobranymi punktami; zatwierdzenie tworzy zlecenie „Nowe”.</li>
+  <li>Mail „gdzie jest auto?” daje szkic odpowiedzi z&nbsp;rejestracją, statusem, ETA i&nbsp;postępem, bez danych kierowcy.</li>
+  <li>Reklamacja ma wysoki priorytet; zapytanie ofertowe ma oznaczenie „Sprzedaż – wkrótce”.</li>
+  <li>Poczta klienta pozwala napisać własny mail jako wybrany klient; skrzynka go kategoryzuje.</li>
+  <li>Pełna pętla od maila do zamknięcia zlecenia przechodzi bez błędów w&nbsp;ok. 30&nbsp;min pokazu.</li>
+</ul>
+
+<!-- 16 -->
+<h2 id="kolejne">16. Kolejne etapy (każdy z&nbsp;własną specyfikacją)</h2>
+<ol>
+  <li><strong>Sprzedaż i&nbsp;wyceny</strong> (pierwszy po testach MVP):
+    <ul>
+      <li>Zapytania Sea/Rail/Air przez zaufanych agentów: kontrola kompletności danych; automatyczne potwierdzenie dla klienta i&nbsp;zapytanie do agentów bez danych klienta (z&nbsp;przełącznikiem „automatycznie / do zatwierdzenia”); zbieranie stawek z&nbsp;przypomnieniami i&nbsp;terminem; zestawienie dla handlowca; szkice negocjacji i&nbsp;ofert.</li>
+      <li>Wyceny drogowe dla własnej floty: stawki za km i&nbsp;marże w&nbsp;bazie.</li>
+      <li>Przełącznik roli „Spedytor / Handlowiec”.</li>
+    </ul>
+  </li>
+  <li><strong>Szablony i&nbsp;zlecenia stałe:</strong> paczki zleceń zatwierdzane jednym kliknięciem, prognoza „kółek”, dodawanie klientów i&nbsp;punktów.</li>
+  <li><strong>Panel klienta:</strong> śledzenie od ETD do umówionego ETA, przedłużanie przez spedytora z&nbsp;przypomnieniem, wcześniejsze zamknięcie po dostawie; klient widzi rejestracje, status, ETA, postęp.</li>
+  <li><strong>Kartoteka floty i&nbsp;terminarz kierowcy:</strong> pojazdy, naczepy, przepinanie, przeglądy, tachograf, ubezpieczenie, serwisy wg km lub daty, dokumenty serwisowe z&nbsp;odczytem AI; prawo jazdy, kod 95, badania, karta kierowcy, ADR.</li>
+  <li><strong>Dokument „Wyzwania i&nbsp;możliwości realnego wdrożenia”:</strong> telematyka i&nbsp;tachograf, bramka SMS/MMS z&nbsp;przychodzącymi MMS-ami, poczta, giełdy transportowe, routing ciężarowy i&nbsp;dane o&nbsp;ruchu, Comarch ERP Optima, RODO i&nbsp;Kodeks pracy, AI Act, plan Vercel.</li>
+</ol>
+
+<!-- 17 -->
+<h2 id="ryzyka">17. Ryzyka i&nbsp;sprawy do weryfikacji</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Ryzyko</th><th>Plan</th></tr></thead>
+  <tbody>
+    <tr><td>Haiku 5.5 bez obsługi obrazów albo za słaby odczyt CMR</td><td>Sprawdzenie przez Models API na starcie etapu 0; zestaw kontrolny w&nbsp;etapie 3; zapas: Sonnet 5.5 dla odczytu CMR</td></tr>
+    <tr><td>Serwer demo OSRM niedostępny przy generowaniu tras</td><td>Skrypt jednorazowy z&nbsp;ponawianiem; alternatywa: openrouteservice z&nbsp;darmowym kluczem</td></tr>
+    <tr><td>OpenFreeMap niedostępny</td><td>Zapasowe źródło w&nbsp;konfiguracji; lista działa bez mapy</td></tr>
+    <tr><td>Złożoność nadrabiania zaległych zdarzeń</td><td>Testy integracyjne z&nbsp;długimi przerwami; limity zdarzeń i&nbsp;wywołań AI na jedną aktualizację</td></tr>
+    <tr><td>Plan Hobby Vercela tylko do użytku niekomercyjnego</td><td>Decyzja przed publicznym wdrożeniem</td></tr>
+    <tr><td>Uśpiona baza Neon spowalnia pierwsze wejście</td><td>Wskaźnik ładowania; akceptowalne w&nbsp;demo</td></tr>
+  </tbody>
+</table></div>
+
+<!-- 18 -->
+<h2 id="decyzje">18. Rejestr decyzji (10 października 2026)</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Decyzja</th><th>Źródło</th></tr></thead>
+  <tbody>
+    <tr><td>Prosty, porządny TMS z&nbsp;modułem monitoringu i&nbsp;AI; demo jako aplikacja webowa na Vercelu; repozytorium GitHub na licencji MIT</td><td>Ty</td></tr>
+    <tr><td>Kolejność: MVP (0–3b) → testy → sprzedaż → etapy 4–6 → testy → publiczny GitHub i&nbsp;wdrożenie</td><td>Ty, z&nbsp;moimi uzupełnieniami: lokalny git od początku, prywatne podglądy na Vercelu, testy na trzech poziomach</td></tr>
+    <tr><td>Architektura: symulacja liczona z&nbsp;czasu, aktualizacja wywoływana przez otwarty panel</td><td>Podejście A, Twoja akceptacja</td></tr>
+    <tr><td>Stos technologiczny: 19 decyzji z&nbsp;dokumentu decyzji technicznych</td><td>Rekomendacje przyjęte bez zmian</td></tr>
+    <tr><td>Dopasowanie kierowcy do zlecenia zamiast oceny kierowcy</td><td>Ty (4.8)</td></tr>
+    <tr><td>Panel klienta: okno ETD → umówione ETA, ręczne przedłużenie; rejestracje, status, ETA, postęp, bez danych kontaktowych</td><td>Ty (4.2)</td></tr>
+    <tr><td>CMR przez MMS lub mail (MMS ważny, bo wielu kierowców nie radzi sobie z&nbsp;mailem)</td><td>Ty (4.5)</td></tr>
+    <tr><td>Terminarz kierowcy w&nbsp;zakresie (etap 6); sekcja „czego brakuje” przyjęta</td><td>Ty</td></tr>
+    <tr><td>Komunikator z&nbsp;kierowcami (odpisywanie z&nbsp;programu) i&nbsp;skrzynka mailowa klientów</td><td>Ty</td></tr>
+    <tr><td>Skrzynka klientów w&nbsp;MVP jako etap 3b</td><td>Ty (opcja A)</td></tr>
+    <tr><td>Moduł sprzedaży jako pierwszy etap po testach MVP</td><td>Ty (opcja A)</td></tr>
+    <tr><td>Układ ekranów do oceny w&nbsp;testach</td><td>Ty</td></tr>
+  </tbody>
+</table></div>
+
+<footer>
+  Specyfikacja powstała w&nbsp;procesie brainstormingu na podstawie dokumentów <a href="../../analizy/2026-10-10-ocena-wizji-tms.html">Ocena wizji TMS</a> i&nbsp;<a href="../../analizy/2026-10-10-decyzje-techniczne.html">Decyzje techniczne</a>. Kolejny krok po akceptacji: plan wdrożenia etapów 0–3b.
+</footer>
+
+</main>
+</body>
+</html>

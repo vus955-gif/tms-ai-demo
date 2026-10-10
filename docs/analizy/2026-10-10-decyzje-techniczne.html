@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decyzje techniczne TMS</title>
+<style>
+  :root {
+    --bg: #faf9f6;
+    --surface: #ffffff;
+    --surface-2: #f3f1ec;
+    --ink: #1c1f24;
+    --muted: #5d6471;
+    --line: #e3e0d8;
+    --accent: #0f5c8c;
+    --accent-soft: #e5eff6;
+    --good: #1f7a4d;
+    --good-soft: #e6f3eb;
+    --warn: #8f5600;
+    --warn-soft: #fbf0dc;
+    --bad: #a3302a;
+    --bad-soft: #f8e5e3;
+    --violet: #5b3fa6;
+    --violet-soft: #eeeafa;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(20, 22, 26, .04), 0 4px 16px rgba(20, 22, 26, .04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3;
+      --line: #2d3139; --accent: #6db4e3; --accent-soft: #182a37; --good: #6fcf9a; --good-soft: #15281e;
+      --warn: #f0b45a; --warn-soft: #2c2314; --bad: #f08a83; --bad-soft: #2e1918; --violet: #b4a2f0;
+      --violet-soft: #241f38; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3;
+    --line: #2d3139; --accent: #6db4e3; --accent-soft: #182a37; --good: #6fcf9a; --good-soft: #15281e;
+    --warn: #f0b45a; --warn-soft: #2c2314; --bad: #f08a83; --bad-soft: #2e1918; --violet: #b4a2f0;
+    --violet-soft: #241f38; --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px; line-height: 1.65; text-rendering: optimizeLegibility;
+  }
+  .page { max-width: 52rem; margin: 0 auto; padding: 56px 24px 96px; }
+  @media (max-width: 600px) { .page { padding: 32px 16px 64px; } body { font-size: 16px; } }
+
+  h1, h2, h3 { line-height: 1.25; letter-spacing: -0.01em; }
+  h1 { font-size: 2.3rem; margin: .2em 0 .35em; font-weight: 700; }
+  h2 { font-size: 1.55rem; margin: 3.2rem 0 1rem; padding-top: 1.4rem; border-top: 1px solid var(--line); font-weight: 650; }
+  h3 { font-size: 1.15rem; margin: 0 0 .7rem; font-weight: 650; }
+  p { margin: 0 0 1em; }
+  ul, ol { margin: 0 0 1em; padding-left: 1.3em; }
+  li { margin: .3em 0; }
+  li::marker { color: var(--muted); }
+  strong { font-weight: 650; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  code { font-family: "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace; font-size: .88em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+
+  .eyebrow { font-size: .82rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 650; }
+  .lead { font-size: 1.15rem; color: var(--muted); max-width: 42rem; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1.2rem; }
+  .chip { display: inline-block; font-size: .8rem; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+
+  .note { background: var(--accent-soft); border-radius: 10px; padding: 14px 18px; margin: 1.2rem 0; font-size: .95rem; }
+
+  /* Tabela przeglądowa */
+  .table-wrap { overflow-x: auto; margin: 1.2rem 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 14px; border-bottom: 1px solid var(--line); }
+  th { font-size: .76rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 650; background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  .overview td:first-child { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700; width: 2.5rem; }
+  .overview td:nth-child(2) { font-weight: 600; }
+  .overview a { color: inherit; text-decoration: none; }
+  .overview a:hover { color: var(--accent); text-decoration: underline; }
+
+  /* Karta decyzji */
+  .decision { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; margin: 1.3rem 0; box-shadow: var(--shadow); }
+  @media (max-width: 600px) { .decision { padding: 18px 16px; } }
+  .kicker { display: inline-block; font-size: .75rem; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: .2rem; }
+  .rec { background: var(--good-soft); border-radius: 10px; padding: 12px 16px; margin: .4rem 0 1rem; }
+  .rec .label { font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--good); }
+  .rec .name { font-weight: 650; font-size: 1.02rem; margin: 2px 0 6px; }
+  .rec ul { margin: 0; font-size: .94rem; }
+  .rec .minus { color: var(--muted); }
+  .opts { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  .opts-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  .opts th { background: var(--surface-2); }
+  .opts td:first-child { font-weight: 600; width: 26%; }
+  .opts td:nth-child(2) { width: 37%; }
+  .plus { color: var(--good); font-weight: 700; margin-right: 4px; }
+  .neg { color: var(--bad); font-weight: 700; margin-right: 4px; }
+  .when { font-size: .9rem; color: var(--muted); margin-top: .9rem; }
+  .when b { color: var(--ink); }
+
+  .tag { display: inline-block; font-size: .68rem; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; padding: 1px 7px; border-radius: 5px; vertical-align: 2px; margin-left: 4px; white-space: nowrap; }
+  .tag.fakt { background: var(--good-soft); color: var(--good); }
+  .tag.interp { background: var(--violet-soft); color: var(--violet); }
+  .tag.weryf { background: var(--warn-soft); color: var(--warn); }
+
+  footer { margin-top: 4rem; padding-top: 1.4rem; border-top: 1px solid var(--line); font-size: .88rem; color: var(--muted); }
+  footer h3 { font-size: 1rem; color: var(--ink); margin-top: 1.2rem; }
+  footer ul { padding-left: 1.1em; }
+</style>
+</head>
+<body>
+<main class="page">
+
+  <header>
+    <div class="eyebrow">Decyzje techniczne · etapy 0–3 · 10 października 2026</div>
+    <h1>Decyzje techniczne: opcje i rekomendacje</h1>
+    <p class="lead">Każda decyzja ma rekomendację i&nbsp;realne alternatywy z&nbsp;plusami i&nbsp;minusami. Domyślnie przyjmuję rekomendacje. Wystarczy wskazać numery decyzji, które chcesz zmienić.</p>
+    <div class="meta">
+      <span class="chip">Hosting: Vercel</span>
+      <span class="chip">Architektura: symulacja liczona z&nbsp;czasu (podejście A)</span>
+      <span class="chip">AI: Claude Haiku 5.5</span>
+    </div>
+  </header>
+
+  <h2 id="przeglad">Przegląd rekomendacji</h2>
+  <div class="table-wrap">
+    <table class="overview">
+      <thead><tr><th>#</th><th>Decyzja</th><th>Rekomendacja</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><a href="#d1">Język i framework</a></td><td>Next.js + TypeScript</td></tr>
+        <tr><td>2</td><td><a href="#d2">Wygląd i komponenty</a></td><td>Tailwind CSS + shadcn/ui</td></tr>
+        <tr><td>3</td><td><a href="#d3">Biblioteka mapy</a></td><td>MapLibre GL JS</td></tr>
+        <tr><td>4</td><td><a href="#d4">Kafelki mapy</a></td><td>OpenFreeMap z&nbsp;przełącznikiem na zapasowe źródło</td></tr>
+        <tr><td>5</td><td><a href="#d5">Trasy</a></td><td>Wyliczone raz skryptem (OSRM), zapisane w&nbsp;repo</td></tr>
+        <tr><td>6</td><td><a href="#d6">Baza danych</a></td><td>Postgres w&nbsp;Neon; lokalnie i&nbsp;w&nbsp;testach PGlite</td></tr>
+        <tr><td>7</td><td><a href="#d7">Dostęp do bazy</a></td><td>Drizzle ORM</td></tr>
+        <tr><td>8</td><td><a href="#d8">Zdjęcia CMR</a></td><td>Galeria próbek + własne zdjęcie bez zapisu pliku</td></tr>
+        <tr><td>9</td><td><a href="#d9">Odświeżanie panelu</a></td><td>Zapytanie co ok. 15&nbsp;s</td></tr>
+        <tr><td>10</td><td><a href="#d10">Świat demo</a></td><td>Osobny świat dla każdego odwiedzającego</td></tr>
+        <tr><td>11</td><td><a href="#d11">Logowanie</a></td><td>Bez logowania, opcjonalne hasło w&nbsp;konfiguracji</td></tr>
+        <tr><td>12</td><td><a href="#d12">Tempo symulacji</a></td><td>Domyślnie 10×, przełącznik 1×/10×/60× i&nbsp;pauza</td></tr>
+        <tr><td>13</td><td><a href="#d13">Modele AI</a></td><td>Haiku 5.5 do wszystkiego</td></tr>
+        <tr><td>14</td><td><a href="#d14">Tryb awaryjny AI</a></td><td>Proste reguły + komunikat w&nbsp;panelu</td></tr>
+        <tr><td>15</td><td><a href="#d15">Testy</a></td><td>Vitest + Playwright + zestaw kontrolny AI</td></tr>
+        <tr><td>16</td><td><a href="#d16">Próbki CMR</a></td><td>Szablon HTML → PNG → zniekształcenia</td></tr>
+        <tr><td>17</td><td><a href="#d17">Region hostingu</a></td><td>Frankfurt (Vercel i&nbsp;Neon), dane w&nbsp;UE</td></tr>
+        <tr><td>18</td><td><a href="#d18">Drobne decyzje</a></td><td>npm, Zod, TanStack Query, dnd-kit, date-fns</td></tr>
+        <tr><td>19</td><td><a href="#d19">Skrzynka klientów i komunikator</a></td><td>W demo symulacja; w&nbsp;realu poczta przychodząca przez webhook</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ====== A ====== -->
+  <h2>A. Fundament aplikacji</h2>
+
+  <section class="decision" id="d1">
+    <span class="kicker">Decyzja 1</span>
+    <h3>Język i framework</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Next.js + TypeScript</div>
+      <ul>
+        <li>Jeden język w&nbsp;całym projekcie. Te same typy obsługują logikę domenową, API i&nbsp;interfejs.</li>
+        <li>Interfejs i&nbsp;API w&nbsp;jednym projekcie, a&nbsp;Vercel jest twórcą Next.js, więc wdrożenie działa bez konfiguracji.</li>
+        <li class="minus">Minus: rozbudowany model (komponenty serwerowe i&nbsp;klienckie, cache). Trzeba go używać z&nbsp;dyscypliną.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>SvelteKit + TypeScript</td><td><span class="plus">+</span>Mniej kodu, świetna wydajność</td><td><span class="neg">−</span>Mniejszy wybór gotowych komponentów panelowych</td></tr>
+        <tr><td>React (Vite) + funkcje Vercel</td><td><span class="plus">+</span>Prostszy model: aplikacja w&nbsp;przeglądarce plus osobne API</td><td><span class="neg">−</span>Routing, API i&nbsp;wdrożenie trzeba składać ręcznie</td></tr>
+        <tr><td>Python (FastAPI) + React</td><td><span class="plus">+</span>Python jest wygodny do obliczeń</td><td><span class="neg">−</span>Dwa języki i&nbsp;dwa zestawy narzędzi, typy nie są współdzielone</td></tr>
+      </tbody>
+    </table></div>
+    <p class="when"><b>Kiedy zmienić:</b> gdyby firma wdrażająca system pracowała w&nbsp;innym stosie.</p>
+  </section>
+
+  <section class="decision" id="d2">
+    <span class="kicker">Decyzja 2</span>
+    <h3>Wygląd i komponenty</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Tailwind CSS + shadcn/ui</div>
+      <ul>
+        <li>Komponenty kopiujemy do repozytorium, więc mamy pełną kontrolę nad wyglądem. Licencja MIT.</li>
+        <li>Dostępność (klawiatura, czytniki ekranu) zapewnia sprawdzona biblioteka bazowa.</li>
+        <li class="minus">Minus: część komponentów (np. tabelę z&nbsp;sortowaniem) składamy sami.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Mantine</td><td><span class="plus">+</span>Bardzo dużo gotowców: tabele, daty, powiadomienia</td><td><span class="neg">−</span>Własny system stylów, mniej kontroli nad wyglądem</td></tr>
+        <tr><td>MUI</td><td><span class="plus">+</span>Dojrzały i&nbsp;kompletny</td><td><span class="neg">−</span>Ciężki, charakterystyczny wygląd trudno zmienić</td></tr>
+        <tr><td>Czysty CSS</td><td><span class="plus">+</span>Zero zależności</td><td><span class="neg">−</span>Dużo pracy przy dialogach, tabelach i&nbsp;dostępności</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ====== B ====== -->
+  <h2>B. Mapa i trasy</h2>
+
+  <section class="decision" id="d3">
+    <span class="kicker">Decyzja 3</span>
+    <h3>Biblioteka mapy</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">MapLibre GL JS (licencja BSD)</div>
+      <ul>
+        <li>Mapa wektorowa: płynny zoom, ostre napisy, styl mapy można wyciszyć pod panel.</li>
+        <li>Z&nbsp;OpenFreeMap sama dodaje wymagane oznaczenie autorstwa danych <span class="tag fakt">fakt</span>.</li>
+        <li class="minus">Minus: większa biblioteka niż Leaflet.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Leaflet</td><td><span class="plus">+</span>Najprostsza i&nbsp;najpopularniejsza</td><td><span class="neg">−</span>Mapy rastrowe, mniej płynna, trudniej dopasować styl</td></tr>
+        <tr><td>deck.gl na MapLibre</td><td><span class="plus">+</span>Świetna przy tysiącach obiektów i&nbsp;animacjach</td><td><span class="neg">−</span>Przerost formy przy kilkunastu autach</td></tr>
+        <tr><td>Mapbox / Google Maps</td><td><span class="plus">+</span>Gwarancje dostępności, dodatkowe usługi</td><td><span class="neg">−</span>Klucze, limity i&nbsp;koszty; odejście od otwartych map</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="decision" id="d4">
+    <span class="kicker">Decyzja 4</span>
+    <h3>Źródło kafelków mapy</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">OpenFreeMap + przełącznik na zapasowe źródło w&nbsp;konfiguracji</div>
+      <ul>
+        <li>Darmowe, bez rejestracji, bez klucza API, bez limitów odsłon i&nbsp;bez ciasteczek. Dane z&nbsp;OpenStreetMap <span class="tag fakt">fakt</span>.</li>
+        <li class="minus">Minus: brak gwarancji dostępności, serwis utrzymuje się z&nbsp;darowizn <span class="tag fakt">fakt</span>. Dlatego zapasowe źródło ustawiamy jedną zmienną.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Protomaps (własny plik mapy)</td><td><span class="plus">+</span>Pełna kontrola, brak zależności od cudzego serwera</td><td><span class="neg">−</span>Duży plik do hostowania (np. Cloudflare R2), więcej pracy</td></tr>
+        <tr><td>MapTiler (darmowy plan)</td><td><span class="plus">+</span>Ładne style, wsparcie</td><td><span class="neg">−</span>Klucz API i&nbsp;limity planu darmowego</td></tr>
+        <tr><td>tile.openstreetmap.org</td><td><span class="plus">+</span>Oficjalne kafelki OSM</td><td><span class="neg">−</span>Polityka użycia nie pozwala na intensywne wykorzystanie w&nbsp;aplikacjach; tylko raster</td></tr>
+      </tbody>
+    </table></div>
+    <p class="when"><b>Kiedy zmienić:</b> przy realnym wdrożeniu: Protomaps albo płatny dostawca z&nbsp;umową o&nbsp;dostępności.</p>
+  </section>
+
+  <section class="decision" id="d5">
+    <span class="kicker">Decyzja 5</span>
+    <h3>Trasy</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Trasy wyliczone raz skryptem z&nbsp;serwera demo OSRM i&nbsp;zapisane w&nbsp;repozytorium</div>
+      <ul>
+        <li>W demo nowe zlecenia powstają między znanymi punktami z&nbsp;książki punktów, więc wyliczamy trasy dla wszystkich par. To kilkaset zapytań wysłanych raz, powoli, zgodnie z&nbsp;polityką użycia serwera.</li>
+        <li>Dla zaplanowanych w&nbsp;scenariuszu wypadków wyliczamy też trasy alternatywne.</li>
+        <li>Działające demo w&nbsp;ogóle nie odpytuje cudzego serwera tras, więc jest stabilne.</li>
+        <li class="minus">Minus: OSRM liczy trasy dla samochodów osobowych, bez ograniczeń dla ciężarówek. Na głównych korytarzach (A1, A2, A4, S8) różnica jest niewielka <span class="tag interp">interpretacja</span>.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>openrouteservice, profil ciężarowy</td><td><span class="plus">+</span>Uwzględnia ograniczenia dla ciężarówek; darmowy plan ma 2000 tras dziennie, czyli z&nbsp;zapasem <span class="tag fakt">fakt</span></td><td><span class="neg">−</span>Wymaga darmowego klucza, czyli rejestracji po Twojej stronie</td></tr>
+        <tr><td>Trasy liczone na żywo</td><td><span class="plus">+</span>Dowolne adresy w&nbsp;nowych zleceniach</td><td><span class="neg">−</span>Serwery demo zabraniają intensywnego użycia; dochodzi też wyszukiwanie adresów</td></tr>
+        <tr><td>Własny serwer tras</td><td><span class="plus">+</span>Realny routing ciężarowy bez limitów</td><td><span class="neg">−</span>Osobny serwer poza Vercelem</td></tr>
+      </tbody>
+    </table></div>
+    <p class="when"><b>Kiedy zmienić:</b> jeśli zależy Ci na realizmie tras ciężarowych w&nbsp;demo, wystarczy darmowy klucz openrouteservice, a&nbsp;skrypt podmienimy.</p>
+  </section>
+
+  <!-- ====== C ====== -->
+  <h2>C. Dane</h2>
+
+  <section class="decision" id="d6">
+    <span class="kicker">Decyzja 6</span>
+    <h3>Baza danych</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Postgres w&nbsp;Neon (przez Marketplace Vercela) + PGlite lokalnie i&nbsp;w&nbsp;testach</div>
+      <ul>
+        <li>Postgres to standard w&nbsp;systemach typu TMS. Neon ma darmowy plan, usypia się bez ruchu i&nbsp;budzi przy pierwszym zapytaniu.</li>
+        <li>PGlite to Postgres skompilowany do WebAssembly. Ten sam SQL działa lokalnie bez Dockera i&nbsp;bez instalowania serwera.</li>
+        <li class="minus">Minus: pierwsze zapytanie po uśpieniu bazy trwa chwilę dłużej.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Supabase</td><td><span class="plus">+</span>Postgres z&nbsp;logowaniem, plikami i&nbsp;aktualizacjami na żywo</td><td><span class="neg">−</span>Darmowy projekt usypia się po tygodniu bez ruchu i&nbsp;trzeba go ręcznie wybudzić, co dla publicznego demo jest ryzykowne <span class="tag fakt">fakt</span></td></tr>
+        <tr><td>SQLite / libSQL (Turso)</td><td><span class="plus">+</span>Prosty, tani, szybki</td><td><span class="neg">−</span>Inny dialekt SQL niż typowy w&nbsp;produkcyjnym TMS</td></tr>
+        <tr><td>Redis (Upstash)</td><td><span class="plus">+</span>Idealny do krótkotrwałego stanu</td><td><span class="neg">−</span>Nie nadaje się na relacyjne dane: zlecenia, kierowcy, historia</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="decision" id="d7">
+    <span class="kicker">Decyzja 7</span>
+    <h3>Dostęp do bazy (ORM)</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Drizzle ORM</div>
+      <ul>
+        <li>Schemat bazy w&nbsp;TypeScripcie, zapytania bliskie SQL, migracje.</li>
+        <li>Ten sam kod działa z&nbsp;Neon i&nbsp;z&nbsp;PGlite.</li>
+        <li class="minus">Minus: mniej „magii” niż w&nbsp;Prismie, więc relacje trzeba opisać jawnie.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Prisma</td><td><span class="plus">+</span>Najpopularniejszy, świetna dokumentacja</td><td><span class="neg">−</span>Osobny język schematu, więcej warstw pośrednich</td></tr>
+        <tr><td>Kysely</td><td><span class="plus">+</span>Bardzo lekki, typowany konstruktor zapytań</td><td><span class="neg">−</span>Schemat i&nbsp;migracje w&nbsp;mniejszym stopniu „w&nbsp;pakiecie”</td></tr>
+        <tr><td>Czysty SQL</td><td><span class="plus">+</span>Pełna kontrola</td><td><span class="neg">−</span>Brak typów i&nbsp;migracji bez dodatkowej pracy</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="decision" id="d8">
+    <span class="kicker">Decyzja 8</span>
+    <h3>Zdjęcia CMR w&nbsp;demo</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Galeria gotowych próbek w&nbsp;„telefonie kierowcy” + własne zdjęcie bez zapisu pliku</div>
+      <ul>
+        <li>Własne zdjęcie trafia do AI, a&nbsp;w&nbsp;bazie zostaje tylko wynik odczytu. Sam plik nie jest przechowywany.</li>
+        <li>W&nbsp;publicznym demo nikt nie zostawi nieodpowiednich plików, a&nbsp;my nie płacimy za magazyn.</li>
+        <li class="minus">Minus: po odświeżeniu nie da się obejrzeć oryginału własnego zdjęcia.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Zapis plików (Vercel Blob)</td><td><span class="plus">+</span>Pełna historia dokumentów jak w&nbsp;prawdziwym TMS</td><td><span class="neg">−</span>Magazyn plików od anonimowych gości: moderacja i&nbsp;koszty</td></tr>
+        <tr><td>Tylko galeria</td><td><span class="plus">+</span>Najprościej</td><td><span class="neg">−</span>Nie da się pokazać AI na własnym dokumencie</td></tr>
+      </tbody>
+    </table></div>
+    <p class="when"><b>Kiedy zmienić:</b> w&nbsp;realnym wdrożeniu potrzebny jest trwały magazyn plików z&nbsp;okresem przechowywania zgodnym z&nbsp;przepisami.</p>
+  </section>
+
+  <!-- ====== D ====== -->
+  <h2>D. Działanie demo</h2>
+
+  <section class="decision" id="d9">
+    <span class="kicker">Decyzja 9</span>
+    <h3>Odświeżanie panelu</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Panel pyta serwer o&nbsp;aktualizację co ok. 15&nbsp;s</div>
+      <ul>
+        <li>Najprostsze rozwiązanie i&nbsp;dokładnie pasuje do modelu „aktualizacja na żądanie”.</li>
+        <li class="minus">Minus: zmiana pojawia się z&nbsp;opóźnieniem do 15&nbsp;s, w&nbsp;demo niezauważalnym.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Strumień zdarzeń (SSE) z&nbsp;Vercela</td><td><span class="plus">+</span>Zmiany od razu</td><td><span class="neg">−</span>Połączenie zrywa się najpóźniej po 300&nbsp;s i&nbsp;zużywa limity funkcji</td></tr>
+        <tr><td>Usługa czasu rzeczywistego (Pusher, Ably)</td><td><span class="plus">+</span>Prawdziwe powiadomienia wysyłane z&nbsp;serwera</td><td><span class="neg">−</span>Kolejna usługa, klucz i&nbsp;konfiguracja</td></tr>
+        <tr><td>Cron Vercela</td><td><span class="plus">+</span>Działa bez otwartego panelu</td><td><span class="neg">−</span>Na planie Hobby najwyżej raz dziennie, więc odpada <span class="tag fakt">fakt</span></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="decision" id="d10">
+    <span class="kicker">Decyzja 10</span>
+    <h3>Model świata demo</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Osobny świat dla każdego odwiedzającego</div>
+      <ul>
+        <li>Rozpoznajemy go po anonimowym ciasteczku. Świat ma przycisk resetu i&nbsp;wygasa po 24&nbsp;h.</li>
+        <li>Nikt nikomu nie przeszkadza, a&nbsp;każdy pokaz zaczyna się tak samo.</li>
+        <li class="minus">Minus: więcej danych w&nbsp;bazie, więc stare światy trzeba sprzątać. Robi to ta sama aktualizacja.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Jeden wspólny świat z&nbsp;resetem co kilka godzin</td><td><span class="plus">+</span>Najprostszy, „żywy” dla wielu osób naraz</td><td><span class="neg">−</span>Goście psują sobie pokaz nawzajem, po kilku godzinach chaos</td></tr>
+        <tr><td>Świat tylko w&nbsp;przeglądarce</td><td><span class="plus">+</span>Nie potrzebuje bazy</td><td><span class="neg">−</span>Brak widoku klienta w&nbsp;drugiej przeglądarce; serwer nie zna stanu</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="decision" id="d11">
+    <span class="kicker">Decyzja 11</span>
+    <h3>Logowanie</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Bez logowania + opcjonalne hasło włączane w&nbsp;konfiguracji</div>
+      <ul>
+        <li>Oglądający od razu jest spedytorem. Hasło włączysz jedną zmienną, gdyby demo miało być tylko dla wybranych osób.</li>
+        <li>Widok klienta (etap 5) otwiera się przez podpisany link do konkretnego zlecenia.</li>
+        <li class="minus">Minus: bez hasła każdy z&nbsp;linkiem zużywa limit AI. Chronią przed tym limity z&nbsp;decyzji 14.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Hasło zawsze włączone</td><td><span class="plus">+</span>Pełna kontrola, kto ogląda</td><td><span class="neg">−</span>Tarcie, hasło trzeba komuś przekazać</td></tr>
+        <tr><td>Pełne konta (Auth.js, Clerk)</td><td><span class="plus">+</span>Jak w&nbsp;produkcji, z&nbsp;rolami</td><td><span class="neg">−</span>Dużo pracy, w&nbsp;demo zbędne; trafia do dokumentu wdrożeniowego</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="decision" id="d12">
+    <span class="kicker">Decyzja 12</span>
+    <h3>Tempo symulacji</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Domyślnie 10×, przełącznik 1× / 10× / 60× i&nbsp;pauza</div>
+      <ul>
+        <li>Raport GPS co 2–3&nbsp;min symulacji to realnie co 12–18&nbsp;s. Czterogodzinny kurs zajmuje ok. 24&nbsp;min pokazu.</li>
+        <li class="minus">Minus: przy 10× trzeba czytać alerty na bieżąco. Pauza rozwiązuje to w&nbsp;trakcie prezentacji.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Domyślnie 1×</td><td><span class="plus">+</span>Pełny realizm</td><td><span class="neg">−</span>W&nbsp;pokazie przez kwadrans prawie nic się nie dzieje</td></tr>
+        <tr><td>Domyślnie 60×</td><td><span class="plus">+</span>Szybki pokaz całego dnia</td><td><span class="neg">−</span>Alerty i&nbsp;SMS-y przychodzą szybciej, niż da się je przeczytać</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ====== E ====== -->
+  <h2>E. AI</h2>
+
+  <section class="decision" id="d13">
+    <span class="kicker">Decyzja 13</span>
+    <h3>Modele AI</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Claude Haiku 5.5 do wszystkich czterech funkcji</div>
+      <ul>
+        <li>To Twój pierwotny wybór. Kosztuje 0,10&nbsp;USD za milion tokenów wejściowych i&nbsp;0,50&nbsp;USD za milion wyjściowych <span class="tag fakt">fakt</span>.</li>
+        <li>Obsługę zdjęć przez Haiku 5.5 potwierdzimy na starcie wdrożenia przez Models API <span class="tag weryf">do weryfikacji</span>.</li>
+        <li class="minus">Minus: przy bardzo trudnych zdjęciach CMR najmniejszy model może się mylić częściej. Pokaże to zestaw kontrolny.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Haiku + Sonnet 5.5 jako druga opinia przy niepewnym CMR</td><td><span class="plus">+</span>Wyższa trafność na trudnych zdjęciach</td><td><span class="neg">−</span>Sonnet jest ok. 20× droższy (2 / 10&nbsp;USD); dochodzi logika kaskady</td></tr>
+        <tr><td>Sonnet 5.5 do wszystkiego</td><td><span class="plus">+</span>Najwyższa jakość</td><td><span class="neg">−</span>20× drożej i&nbsp;wolniej; do klasyfikacji SMS-ów przerost</td></tr>
+      </tbody>
+    </table></div>
+    <p class="when"><b>Kiedy zmienić:</b> jeśli zestaw kontrolny pokaże zbyt niską trafność odczytu CMR. Wtedy dodajemy Sonneta tylko dla niepewnych przypadków.</p>
+  </section>
+
+  <section class="decision" id="d14">
+    <span class="kicker">Decyzja 14</span>
+    <h3>Tryb awaryjny AI i limity</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Proste reguły jako zapas + komunikat w&nbsp;panelu + limity kosztów</div>
+      <ul>
+        <li>Odpowiedzi kierowców rozpoznają słowa kluczowe. CMR trafia do kolejki ręcznej weryfikacji. Alert dostaje gotowe zdanie z&nbsp;szablonu.</li>
+        <li>Obowiązują limit wywołań na świat demo, dzienny limit kosztów dla całej aplikacji i&nbsp;ograniczona długość wpisywanego tekstu.</li>
+        <li>Demo nigdy nie „staje”: bez klucza albo po wyczerpaniu limitu działa dalej, tylko skromniej.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Nagrane odpowiedzi AI dla scenariusza</td><td><span class="plus">+</span>Pokaz wygląda identycznie bez klucza</td><td><span class="neg">−</span>Nie działa dla tekstów wpisanych przez oglądającego</td></tr>
+        <tr><td>Bez trybu awaryjnego</td><td><span class="plus">+</span>Mniej kodu</td><td><span class="neg">−</span>Brak klucza albo limitu oznacza zepsute demo</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ====== F ====== -->
+  <h2>F. Jakość</h2>
+
+  <section class="decision" id="d15">
+    <span class="kicker">Decyzja 15</span>
+    <h3>Testy</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Vitest + Playwright + zestaw kontrolny AI</div>
+      <ul>
+        <li><strong>Vitest:</strong> logika (przepisy 561, ETA, cykl życia zlecenia, dopasowanie). Najpierw test, potem kod.</li>
+        <li><strong>Playwright:</strong> kluczowe przepływy w&nbsp;przeglądarce, w&nbsp;tym widok w&nbsp;drugiej karcie.</li>
+        <li><strong>Zestaw kontrolny AI:</strong> skrypt z&nbsp;kilkudziesięcioma odpowiedziami kierowców i&nbsp;próbkami CMR. Uruchamiany ręcznie, bo korzysta z&nbsp;płatnego API (koszt to grosze).</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Jest zamiast Vitest</td><td><span class="plus">+</span>Bardzo popularny</td><td><span class="neg">−</span>Wolniejszy, więcej konfiguracji z&nbsp;nowoczesnym TypeScriptem</td></tr>
+        <tr><td>Cypress zamiast Playwright</td><td><span class="plus">+</span>Wygodny podgląd testów</td><td><span class="neg">−</span>Słabsza obsługa wielu kart, a&nbsp;widok klienta w&nbsp;drugiej karcie to nasz scenariusz</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="decision" id="d16">
+    <span class="kicker">Decyzja 16</span>
+    <h3>Próbki CMR</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Szablon HTML podobny do CMR → zrzut do PNG → zniekształcenia</div>
+      <ul>
+        <li>Szablon wypełniamy fikcyjnymi danymi, Playwright robi z&nbsp;niego obraz, a&nbsp;biblioteka sharp dodaje rozmycie, obrót, szum i&nbsp;cień.</li>
+        <li>Próbki są powtarzalne i&nbsp;łatwe do zmiany. Znamy „prawidłową odpowiedź”, więc nadają się do zestawu kontrolnego.</li>
+        <li class="minus">Minus: wyglądają „czyściej” niż prawdziwe zdjęcia z&nbsp;kabiny.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Obrazy z&nbsp;generatora AI</td><td><span class="plus">+</span>Wyglądają naturalnie</td><td><span class="neg">−</span>Generatory przekręcają tekst, więc nie nadają się do testu odczytu</td></tr>
+        <tr><td>Ręcznie wypełnione i&nbsp;sfotografowane druki</td><td><span class="plus">+</span>Najbardziej realistyczne</td><td><span class="neg">−</span>Ręczna praca po Twojej stronie; uwaga na dane osobowe na zdjęciach</td></tr>
+      </tbody>
+    </table></div>
+    <p class="when"><b>Uzupełnienie:</b> obie metody można połączyć. Kilka ręcznych zdjęć na fikcyjnych danych podniesie realizm zestawu kontrolnego.</p>
+  </section>
+
+  <section class="decision" id="d17">
+    <span class="kicker">Decyzja 17</span>
+    <h3>Region hostingu</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja</div>
+      <div class="name">Frankfurt dla Vercela i&nbsp;dla Neon</div>
+      <ul>
+        <li>Dane zostają w&nbsp;UE, co ułatwia sprawy RODO, a&nbsp;opóźnienia z&nbsp;Polski są małe.</li>
+        <li>Funkcje i&nbsp;baza w&nbsp;tym samym regionie, więc zapytania nie podróżują przez ocean.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>Domyślny region (USA)</td><td><span class="plus">+</span>Nic nie trzeba ustawiać</td><td><span class="neg">−</span>Dalej od użytkowników; dane poza UE</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="decision" id="d18">
+    <span class="kicker">Decyzja 18</span>
+    <h3>Drobne decyzje</h3>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Obszar</th><th>Rekomendacja</th><th>Alternatywy</th></tr></thead>
+      <tbody>
+        <tr><td>Menedżer pakietów</td><td>npm (jest w&nbsp;Node)</td><td>pnpm: szybszy i&nbsp;oszczędza dysk, ale trzeba go włączyć</td></tr>
+        <tr><td>Walidacja i&nbsp;schematy odpowiedzi AI</td><td>Zod: współpracuje z&nbsp;SDK Anthropic</td><td>Valibot: lżejszy, mniejszy ekosystem</td></tr>
+        <tr><td>Pobieranie danych w&nbsp;panelu</td><td>TanStack Query: cykliczne odświeżanie i&nbsp;cache</td><td>SWR: prostszy; czysty fetch: więcej ręcznej pracy</td></tr>
+        <tr><td>Przeciąganie zleceń</td><td>dnd-kit</td><td>pragmatic-drag-and-drop (Atlassian): bardzo wydajny; natywne HTML5: słabe na dotyku</td></tr>
+        <tr><td>Daty i&nbsp;strefy czasowe</td><td>date-fns; w&nbsp;bazie UTC, w&nbsp;interfejsie Europe/Warsaw</td><td>Day.js; Temporal: nowy standard, ale wsparcie wciąż nierówne</td></tr>
+        <tr><td>Wskaźniki postępu i&nbsp;czasu jazdy</td><td>Proste paski w&nbsp;CSS</td><td>Biblioteka wykresów: na tym etapie zbędna</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ====== G ====== -->
+  <h2>G. Komunikacja</h2>
+
+  <section class="decision" id="d19">
+    <span class="kicker">Decyzja 19</span>
+    <h3>Skrzynka mailowa klientów i komunikator z&nbsp;kierowcami</h3>
+    <div class="rec">
+      <div class="label">Rekomendacja: demo</div>
+      <div class="name">Symulowana skrzynka i&nbsp;komunikator w&nbsp;aplikacji</div>
+      <ul>
+        <li>Wiadomości od kierowców i&nbsp;maile od klientów przychodzą zgodnie ze scenariuszem. Oglądający może też sam napisać jako kierowca („Telefon kierowcy”) albo jako klient („Poczta klienta”).</li>
+        <li>Odpowiedzi spedytora wychodzą przez ten sam wymienny moduł wiadomości. W&nbsp;demo trafiają do symulatora: nic nie wychodzi na prawdziwe numery ani adresy.</li>
+      </ul>
+    </div>
+    <div class="rec">
+      <div class="label">Rekomendacja: realne wdrożenie</div>
+      <div class="name">Poczta przychodząca przez webhook (np. Postmark, Mailgun, SendGrid)</div>
+      <ul>
+        <li>Usługa odbiera maile na adres firmy i&nbsp;przekazuje je do aplikacji. Pasuje to do Vercela, bo nie wymaga stałego połączenia ze skrzynką.</li>
+        <li>Firma może zostać przy obecnej poczcie i&nbsp;ustawić przekierowanie kopii maili. Wysyłka odpowiedzi idzie przez API tej samej usługi.</li>
+        <li class="minus">Minus: kolejna usługa i&nbsp;konfiguracja domeny (rekordy DNS), żeby odpowiedzi nie lądowały w&nbsp;spamie.</li>
+      </ul>
+    </div>
+    <div class="opts-wrap"><table class="opts">
+      <thead><tr><th>Alternatywa (realna)</th><th>Plusy</th><th>Minusy</th></tr></thead>
+      <tbody>
+        <tr><td>IMAP/SMTP do istniejącej skrzynki</td><td><span class="plus">+</span>Działa z&nbsp;każdą pocztą, bez zmiany adresów</td><td><span class="neg">−</span>Wymaga cyklicznego odpytywania skrzynki (na Hobby potrzebny zewnętrzny harmonogram) i&nbsp;przechowywania haseł</td></tr>
+        <tr><td>Gmail API / Microsoft Graph</td><td><span class="plus">+</span>Powiadomienia o&nbsp;nowych mailach i&nbsp;pełna integracja ze skrzynką firmy</td><td><span class="neg">−</span>Osobna integracja dla każdego dostawcy, logowanie OAuth i&nbsp;proces weryfikacji aplikacji</td></tr>
+      </tbody>
+    </table></div>
+    <p class="when"><b>Uwaga:</b> realna bramka SMS/MMS do komunikatora z&nbsp;kierowcami i&nbsp;integracja poczty trafiają do dokumentu wdrożeniowego.</p>
+  </section>
+
+  <h2>Do decyzji w&nbsp;późniejszych etapach</h2>
+  <ul>
+    <li><strong>Etap 4 (szablony):</strong> format harmonogramów (dni tygodnia czy pełne reguły powtarzania).</li>
+    <li><strong>Etap 5 (panel klienta):</strong> podpisane linki czy konta klientów z&nbsp;hasłem.</li>
+    <li><strong>Dokument wdrożeniowy:</strong> bramka SMS z&nbsp;obsługą przychodzących MMS-ów, telematyka, routing ciężarowy, logowanie produkcyjne.</li>
+    <li><strong>Przed wdrożeniem:</strong> plan Vercel (Hobby wyłącznie do użytku niekomercyjnego).</li>
+  </ul>
+
+  <footer>
+    <h3>Skala pewności</h3>
+    <p><span class="tag fakt">fakt</span> potwierdzone w&nbsp;źródłach poniżej · <span class="tag interp">interpretacja</span> mój wniosek z&nbsp;faktów · <span class="tag weryf">do weryfikacji</span> sprawdzimy na starcie wdrożenia</p>
+    <h3>Źródła (stan na 10.10.2026)</h3>
+    <ul>
+      <li><a href="https://openfreemap.org">OpenFreeMap: strona projektu</a></li>
+      <li><a href="https://openrouteservice.org/plans/">openrouteservice: plany i&nbsp;limity</a></li>
+      <li><a href="https://github.com/Project-OSRM/osrm-backend/wiki/API%20Usage%20Policy">OSRM: polityka użycia serwera demo</a> · <a href="https://map.project-osrm.org/about.html">OSRM: informacje o&nbsp;operatorze</a></li>
+      <li><a href="https://automationatlas.io/answers/supabase-free-tier-limits-2026/">Supabase: limity darmowego planu 2026 (źródło zewnętrzne)</a></li>
+      <li><a href="https://vercel.com/docs/cron-jobs/usage-and-pricing">Vercel: limity cron</a> · <a href="https://vercel.com/docs/functions/limitations">Vercel: limity funkcji</a> · <a href="https://vercel.com/changelog/neon-now-available-on-vercel-marketplace">Neon w&nbsp;Marketplace Vercela</a></li>
+      <li>Cennik API Anthropic (Haiku 5.5, Sonnet 5.5), stan na 6.10.2026.</li>
+    </ul>
+  </footer>
+
+</main>
+</body>
+</html>

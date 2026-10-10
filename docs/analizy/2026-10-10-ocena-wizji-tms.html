@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ocena wizji TMS</title>
+<style>
+  :root {
+    --bg: #faf9f6;
+    --surface: #ffffff;
+    --surface-2: #f3f1ec;
+    --ink: #1c1f24;
+    --muted: #5d6471;
+    --line: #e3e0d8;
+    --accent: #0f5c8c;
+    --accent-soft: #e5eff6;
+    --good: #1f7a4d;
+    --good-soft: #e6f3eb;
+    --warn: #8f5600;
+    --warn-soft: #fbf0dc;
+    --bad: #a3302a;
+    --bad-soft: #f8e5e3;
+    --violet: #5b3fa6;
+    --violet-soft: #eeeafa;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(20, 22, 26, .04), 0 4px 16px rgba(20, 22, 26, .04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131519;
+      --surface: #1a1d22;
+      --surface-2: #20242a;
+      --ink: #e6e8eb;
+      --muted: #a1a8b3;
+      --line: #2d3139;
+      --accent: #6db4e3;
+      --accent-soft: #182a37;
+      --good: #6fcf9a;
+      --good-soft: #15281e;
+      --warn: #f0b45a;
+      --warn-soft: #2c2314;
+      --bad: #f08a83;
+      --bad-soft: #2e1918;
+      --violet: #b4a2f0;
+      --violet-soft: #241f38;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131519;
+    --surface: #1a1d22;
+    --surface-2: #20242a;
+    --ink: #e6e8eb;
+    --muted: #a1a8b3;
+    --line: #2d3139;
+    --accent: #6db4e3;
+    --accent-soft: #182a37;
+    --good: #6fcf9a;
+    --good-soft: #15281e;
+    --warn: #f0b45a;
+    --warn-soft: #2c2314;
+    --bad: #f08a83;
+    --bad-soft: #2e1918;
+    --violet: #b4a2f0;
+    --violet-soft: #241f38;
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+    text-rendering: optimizeLegibility;
+  }
+  .page { max-width: 50rem; margin: 0 auto; padding: 56px 24px 96px; }
+  @media (max-width: 600px) { .page { padding: 32px 16px 64px; } body { font-size: 16px; } }
+
+  /* Typografia */
+  h1, h2, h3 { line-height: 1.25; letter-spacing: -0.01em; }
+  h1 { font-size: 2.3rem; margin: .2em 0 .35em; font-weight: 700; }
+  h2 {
+    font-size: 1.55rem; margin: 3.2rem 0 1rem; padding-top: 1.4rem;
+    border-top: 1px solid var(--line); font-weight: 650;
+  }
+  h3 { font-size: 1.2rem; margin: 0 0 .6rem; font-weight: 650; }
+  h4 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 1.2rem 0 .4rem; font-weight: 650; }
+  p { margin: 0 0 1em; }
+  ul, ol { margin: 0 0 1em; padding-left: 1.3em; }
+  li { margin: .35em 0; }
+  li::marker { color: var(--muted); }
+  strong { font-weight: 650; }
+  a { color: var(--accent); text-underline-offset: 2px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* Nagłówek */
+  .eyebrow { font-size: .82rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 650; }
+  .lead { font-size: 1.15rem; color: var(--muted); max-width: 40rem; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1.2rem; }
+  .chip {
+    display: inline-block; font-size: .8rem; padding: 3px 10px; border-radius: 999px;
+    background: var(--surface-2); color: var(--muted); border: 1px solid var(--line);
+  }
+
+  /* Spis treści */
+  nav.toc {
+    margin: 2rem 0 0; padding: 18px 22px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  nav.toc ol { margin: 0; columns: 2; column-gap: 2rem; padding-left: 1.2em; }
+  nav.toc li { margin: .2em 0; break-inside: avoid; font-size: .95rem; }
+  nav.toc a { text-decoration: none; color: var(--ink); }
+  nav.toc a:hover { color: var(--accent); text-decoration: underline; }
+  @media (max-width: 600px) { nav.toc ol { columns: 1; } }
+
+  /* Ramki */
+  .box {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 22px 24px; margin: 1.4rem 0; box-shadow: var(--shadow);
+  }
+  .box.summary { border-left: 4px solid var(--accent); }
+  .box.summary ul { margin: 0; }
+  .box.summary li { margin: .55em 0; }
+  .note {
+    background: var(--accent-soft); border-radius: 10px; padding: 14px 18px; margin: 1.2rem 0;
+    font-size: .95rem;
+  }
+  .note.warn { background: var(--warn-soft); }
+
+  /* Karty modułów */
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 24px 26px; margin: 1.4rem 0; box-shadow: var(--shadow);
+  }
+  @media (max-width: 600px) { .card { padding: 18px 16px; } .box { padding: 18px 16px; } }
+  .card .vision {
+    background: var(--surface-2); border-radius: 8px; padding: 12px 16px; margin: .2rem 0 1rem;
+    font-size: .95rem; color: var(--muted);
+  }
+  .card .vision b { color: var(--ink); font-weight: 600; }
+  .card .why { border-top: 1px dashed var(--line); padding-top: .9rem; margin-top: 1rem; font-size: .95rem; color: var(--muted); }
+  .card .why b { color: var(--ink); }
+  .kicker { display: inline-block; font-size: .75rem; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: .3rem; }
+
+  /* Etykiety pewności */
+  .tag {
+    display: inline-block; font-size: .7rem; font-weight: 650; letter-spacing: .04em; text-transform: uppercase;
+    padding: 1px 7px; border-radius: 5px; vertical-align: 2px; margin-left: 4px; white-space: nowrap;
+  }
+  .tag.fakt { background: var(--good-soft); color: var(--good); }
+  .tag.interp { background: var(--violet-soft); color: var(--violet); }
+  .tag.weryf { background: var(--warn-soft); color: var(--warn); }
+
+  /* Tabele */
+  .table-wrap { overflow-x: auto; margin: 1.2rem 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  th { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 650; background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { font-weight: 600; }
+  .who { display: inline-block; font-size: .78rem; font-weight: 650; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .who.algo { background: var(--accent-soft); color: var(--accent); }
+  .who.ai { background: var(--violet-soft); color: var(--violet); }
+  .who.tpl { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+
+  /* Stany „czy się wyrobi” */
+  .states { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 1rem 0; }
+  @media (max-width: 640px) { .states { grid-template-columns: 1fr; } }
+  .state { border-radius: 10px; padding: 12px 14px; font-size: .9rem; }
+  .state b { display: block; margin-bottom: 2px; }
+  .state.g { background: var(--good-soft); } .state.g b { color: var(--good); }
+  .state.y { background: var(--warn-soft); } .state.y b { color: var(--warn); }
+  .state.r { background: var(--bad-soft); } .state.r b { color: var(--bad); }
+
+  /* Cykl życia zlecenia */
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px 4px; margin: 1.2rem 0 .6rem; }
+  .step {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 7px 11px;
+    font-size: .85rem; font-weight: 600; line-height: 1.3;
+  }
+  .step small { display: block; font-weight: 500; font-size: .72rem; margin-top: 2px; }
+  .step.s small { color: var(--accent); }
+  .step.k small { color: var(--warn); }
+  .step.ai small { color: var(--violet); }
+  .step.g small { color: var(--good); }
+  .step.ai { border-color: var(--violet); }
+  .arrow { align-self: center; color: var(--muted); font-size: .9rem; padding: 0 1px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .8rem; color: var(--muted); margin-bottom: 1rem; }
+  .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+  .legend .l-s::before { background: var(--accent); }
+  .legend .l-k::before { background: var(--warn); }
+  .legend .l-ai::before { background: var(--violet); }
+  .legend .l-g::before { background: var(--good); }
+
+  /* Etapy */
+  .phase-id { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent); white-space: nowrap; }
+  tr.mvp td { background: var(--accent-soft); }
+
+  /* Stopka */
+  footer { margin-top: 4rem; padding-top: 1.4rem; border-top: 1px solid var(--line); font-size: .88rem; color: var(--muted); }
+  footer h3 { font-size: 1rem; color: var(--ink); margin-top: 1.4rem; }
+  footer ul { padding-left: 1.1em; }
+  footer li { margin: .25em 0; }
+  .legend-tags { display: grid; gap: 6px; margin: .6rem 0 1rem; }
+</style>
+</head>
+<body>
+<main class="page">
+
+  <header>
+    <div class="eyebrow">Analiza robocza · 10 października 2026</div>
+    <h1>Ocena wizji TMS</h1>
+    <p class="lead">Co zostawić, co zmienić, czego brakuje i w&nbsp;jakiej kolejności to budować. Materiał do dalszej rozmowy, jeszcze nie specyfikacja.</p>
+    <div class="meta">
+      <span class="chip">Projekt: System monitoringu transportu</span>
+      <span class="chip">Licencja docelowa: MIT</span>
+      <span class="chip">Model AI: Claude Haiku 5.5</span>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Spis treści">
+    <ol>
+      <li><a href="#skrot">W skrócie</a></li>
+      <li><a href="#mocne">Co jest bardzo dobre</a></li>
+      <li><a href="#zasada">Zasada: algorytm liczy, AI rozmawia</a></li>
+      <li><a href="#moduly">Uwagi moduł po module</a></li>
+      <li><a href="#braki">Czego brakuje</a></li>
+      <li><a href="#etapy">Podział na etapy</a></li>
+      <li><a href="#wdrozenie">Dokument wdrożeniowy</a></li>
+      <li><a href="#pytania">Pytania otwarte</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1 -->
+  <h2 id="skrot">W skrócie</h2>
+  <div class="box summary">
+    <ul>
+      <li><strong>Wizja jest mocna i bliska prawdziwej pracy spedytora.</strong> Przez całość przewija się jedna zasada: AI podpowiada, decyduje człowiek. Zostaje jako fundament.</li>
+      <li><strong>AI trafia tam, gdzie daje najwięcej.</strong> Odpowiedzi kierowców pisane swobodnym tekstem i&nbsp;zdjęcia CMR to dane bez struktury. Z takimi danymi modele językowe radzą sobie najlepiej.</li>
+      <li><strong>Proponuję jedną zasadę porządkującą: algorytm liczy, AI rozmawia.</strong> Czas jazdy, ETA, dopasowanie kierowcy i&nbsp;treść SMS-a ze zleceniem powstają deterministycznie. AI czyta, interpretuje, wyjaśnia i&nbsp;szkicuje.</li>
+      <li><strong>Trzy największe zmiany:</strong>
+        <ol>
+          <li>dostęp klienta przypięty do <em>zlecenia</em>, nie do kierowcy;</li>
+          <li>„ocena kierowcy” zamieniona na „dopasowanie kierowcy do zlecenia”;</li>
+          <li>SMS ze szczegółami zlecenia budowany z&nbsp;szablonu, a nie pisany przez AI.</li>
+        </ol>
+      </li>
+      <li><strong>To sześć modułów plus fundament.</strong> Proponuję budować etapami. Minimalna wersja z&nbsp;pełną pętlą to monitoring → zlecenie → SMS z&nbsp;potwierdzeniem → CMR.</li>
+    </ul>
+  </div>
+
+  <!-- 2 -->
+  <h2 id="mocne">Co jest bardzo dobre</h2>
+  <ul>
+    <li><strong>Człowiek w pętli, konsekwentnie.</strong> AI nigdy samo nie przydziela kierowcy ani nie zamyka zlecenia. To właściwy poziom zaufania do automatu w&nbsp;branży, w&nbsp;której pomyłka kosztuje pusty kurs albo karę umowną.</li>
+    <li><strong>AI tam, gdzie dane są nieustrukturyzowane.</strong> Rozpoznanie „ok jadę”, „przyjąłem” i&nbsp;„👍” jako tej samej odpowiedzi czy odczyt odręcznego CMR-u to zadania, z&nbsp;którymi klasyczny kod sobie nie radzi.</li>
+    <li><strong>Zdrowy rozsądek przy szablonach.</strong> W wizji pada zdanie, że szablony „nie muszą być AI”. Ten sam test proponuję stosować w&nbsp;całym systemie.</li>
+    <li><strong>Pełna pętla zlecenia.</strong> Przypisanie, potwierdzenie, realizacja, dokument i&nbsp;zamknięcie. Właśnie to odróżnia TMS od mapy z&nbsp;kropkami.</li>
+    <li><strong>Optima i prawdziwy GPS w osobnym dokumencie.</strong> Demo zostaje proste, a&nbsp;jednocześnie pokazuje, że realne problemy wdrożenia są przemyślane.</li>
+  </ul>
+
+  <!-- 3 -->
+  <h2 id="zasada">Zasada: algorytm liczy, AI rozmawia</h2>
+  <p>Każdą funkcję warto przepuścić przez jedno pytanie: <em>czy wynik musi być dokładny i&nbsp;powtarzalny, czy trzeba zrozumieć coś napisanego przez człowieka?</em> To pierwsze robi kod, to drugie model językowy.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Zadanie</th><th>Kto</th><th>Dlaczego</th></tr></thead>
+      <tbody>
+        <tr><td>Pozostały czas jazdy i pracy</td><td><span class="who algo">Algorytm</span></td><td>Przepisy to arytmetyka na czasie. Wynik musi być powtarzalny i&nbsp;sprawdzalny.</td></tr>
+        <tr><td>ETA i terminowość „kółek”</td><td><span class="who algo">Algorytm</span></td><td>Trasa, model korków i&nbsp;obowiązkowe przerwy. Łatwo to przetestować.</td></tr>
+        <tr><td>Dopasowanie kierowcy do zlecenia</td><td><span class="who algo">Algorytm</span></td><td>Jawna formuła zamiast „czarnej skrzynki” oceniającej ludzi (zob. AI Act w sekcji 4.8).</td></tr>
+        <tr><td>Treść SMS-a ze zleceniem</td><td><span class="who tpl">Szablon</span></td><td>Nie ma ryzyka, że model przekręci adres, godzinę albo numer referencyjny.</td></tr>
+        <tr><td>Interpretacja odpowiedzi kierowcy</td><td><span class="who ai">AI</span></td><td>Swobodny tekst, literówki, skróty, emotikony.</td></tr>
+        <tr><td>Odczyt CMR ze zdjęcia</td><td><span class="who ai">AI</span></td><td>Odręczne wpisy, pieczątki, krzywe i&nbsp;nieostre zdjęcia.</td></tr>
+        <tr><td>Wyjaśnienie alertu i propozycja reakcji</td><td><span class="who ai">AI</span></td><td>Zamienia liczby na zdanie, które spedytor przeczyta w&nbsp;trzy sekundy.</td></tr>
+        <tr><td>Szkic wiadomości do klienta lub kierowcy</td><td><span class="who ai">AI</span> → spedytor</td><td>AI oszczędza czas na pisaniu. Wysłanie zatwierdza człowiek.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <strong>Koszt nie jest tu argumentem.</strong> Haiku 5.5 kosztuje 0,10&nbsp;USD za milion tokenów wejściowych i&nbsp;0,50&nbsp;USD za milion wyjściowych (cennik API Anthropic, stan na 6.10.2026) <span class="tag fakt">fakt</span>. Odczyt jednego zdjęcia CMR to ułamek centa. Zadania dzielimy między kod i&nbsp;AI ze względu na poprawność i&nbsp;powtarzalność, a&nbsp;nie oszczędność.
+  </div>
+
+  <!-- 4 -->
+  <h2 id="moduly">Uwagi moduł po module</h2>
+  <p>Każda karta ma ten sam układ: krótko Twoja wizja, potem moje propozycje, na końcu uzasadnienie.</p>
+
+  <!-- 4.1 -->
+  <section class="card" id="m-monitoring">
+    <span class="kicker">4.1</span>
+    <h3>Monitoring floty</h3>
+    <div class="vision"><b>Wizja:</b> mapa ze wszystkimi pojazdami i&nbsp;filtrem. Lista z&nbsp;kierowcą, rejestracją (ciągnik + naczepa), trasą, procentem ukończenia, pozostałym czasem pracy i&nbsp;ETA. AI pilnuje czasu pracy i&nbsp;mówi, czy kierowca się wyrobi.</div>
+
+    <h4>Propozycje</h4>
+    <ul>
+      <li><strong>Rozdzielić czas jazdy i czas pracy.</strong> To dwa różne liczniki z&nbsp;różnych przepisów. Dla ciężarówek kluczowy jest czas jazdy według rozporządzenia 561/2006 <span class="tag fakt">fakt</span>:
+        <ul>
+          <li>po 4,5&nbsp;h jazdy przerwa 45&nbsp;min (można ją podzielić na 15&nbsp;+&nbsp;30);</li>
+          <li>dziennie do 9&nbsp;h jazdy, dwa razy w&nbsp;tygodniu do 10&nbsp;h;</li>
+          <li>potem odpoczynek dobowy 11&nbsp;h, który można skrócić do 9&nbsp;h najwyżej trzy razy między odpoczynkami tygodniowymi.</li>
+        </ul>
+      </li>
+      <li><strong>Busy mają inne zasady.</strong> Rozporządzenie 561/2006 obejmuje pojazdy powyżej 3,5&nbsp;t. Od 1 lipca 2026&nbsp;r. busy 2,5–3,5&nbsp;t w&nbsp;zarobkowym transporcie międzynarodowym i&nbsp;kabotażu też muszą mieć tachograf i&nbsp;stosować te same limity, w&nbsp;krajowym nie <span class="tag fakt">fakt</span>. W&nbsp;demo wystarczy flaga przy pojeździe: „podlega 561/2006: tak/nie”.</li>
+      <li><strong>„Czy się wyrobi” jako trzy stany, a nie tak/nie:</strong>
+        <div class="states">
+          <div class="state g"><b>Zielony</b>Dojedzie w&nbsp;bieżącym czasie jazdy i&nbsp;w&nbsp;oknie dostawy.</div>
+          <div class="state y"><b>Żółty</b>Dojedzie, ale po obowiązkowej przerwie. ETA przesunięte, okno nadal realne.</div>
+          <div class="state r"><b>Czerwony</b>Nie dojedzie przed odpoczynkiem dobowym albo nie zdąży w&nbsp;oknie rozładunku.</div>
+        </div>
+      </li>
+      <li><strong>Okno czasowe dostawy obok ETA.</strong> Terminowość ma sens tylko w&nbsp;odniesieniu do umówionego okna.</li>
+      <li><strong>Centrum powiadomień zamiast wyskakujących okienek.</strong> Każdy alert ma priorytet (krytyczny, ostrzeżenie, informacja) i&nbsp;przyciski akcji: „Zadzwoń”, „Powiadom klienta”, „Pokaż objazd”. AI łączy powiązane alerty w&nbsp;jeden i&nbsp;nie powtarza ich. Inaczej po tygodniu spedytor zacznie je ignorować.</li>
+    </ul>
+    <div class="why"><b>Dlaczego:</b> spedytor dostaje odpowiedź w&nbsp;jednym spojrzeniu. AI nie musi niczego liczyć: dostaje gotowy wynik z&nbsp;algorytmu i&nbsp;dopisuje kontekst, np. „korek na A2 i&nbsp;przerwa przed Łodzią, rozładunek zagrożony”.</div>
+  </section>
+
+  <!-- 4.2 -->
+  <section class="card" id="m-klient">
+    <span class="kicker">4.2</span>
+    <h3>Dostęp klienta</h3>
+    <div class="vision"><b>Wizja:</b> konto klienta kluczowego przypinane pod kierowcę. Klient widzi jedno auto, nigdy całej floty.</div>
+
+    <h4>Propozycja: przypinać dostęp do zlecenia, nie do kierowcy</h4>
+    <ul>
+      <li><strong>Problem z przypięciem do kierowcy:</strong> po rozładunku ten sam kierowca jedzie do kolejnego klienta. Klient A widziałby wtedy, dokąd i&nbsp;dla kogo jedzie auto, czyli dane handlowe swojej konkurencji. Wystarczy też raz zapomnieć o&nbsp;odpięciu, a&nbsp;kierowca jest śledzony bez końca.</li>
+      <li><strong>Widoczność ograniczona w czasie.</strong> Mapa włącza się z&nbsp;rozpoczęciem realizacji zlecenia i&nbsp;wygasa sama krótko po dostawie.</li>
+      <li><strong>Konto klienta kluczowego</strong> pokazuje listę wyłącznie <em>jego</em> zleceń, bieżących i&nbsp;historycznych. Mapa jest dostępna tylko na czas realizacji.</li>
+      <li><strong>Opcja na później:</strong> jednorazowy link do śledzenia dla pozostałych klientów, bez logowania i&nbsp;z&nbsp;datą wygaśnięcia.</li>
+      <li><strong>Do decyzji:</strong> czy klient widzi imię i&nbsp;telefon kierowcy. Domyślnie proponuję tylko pozycję, status, ETA i&nbsp;postęp trasy, bez danych osobowych.</li>
+    </ul>
+    <div class="why"><b>Dlaczego:</b> lokalizacja kierowcy to dane osobowe (RODO) <span class="tag fakt">fakt</span>, a&nbsp;trasy jednego klienta są tajemnicą handlową wobec drugiego.</div>
+  </section>
+
+  <!-- 4.3 -->
+  <section class="card" id="m-zlecenia">
+    <span class="kicker">4.3</span>
+    <h3>Zlecenia i przydział („klocki”)</h3>
+    <div class="vision"><b>Wizja:</b> panel zleceń dla każdego kierowcy: bieżące zlecenie i&nbsp;kolejka (albo puste pole). Przy nowym zleceniu „klocki” z&nbsp;najbliższymi kierowcami i&nbsp;ich czasem pracy. Spedytor przypina zlecenie.</div>
+
+    <h4>Propozycje</h4>
+    <ul>
+      <li><strong>Cykl życia zlecenia jako jawna maszyna stanów.</strong> To kręgosłup TMS-a. Każda zmiana statusu ma autora (spedytor, kierowca, AI albo system) i&nbsp;trafia do historii.</li>
+      <li><strong>„Klocki” to filtr twardy plus ranking z uzasadnieniem.</strong>
+        <ul>
+          <li><em>Filtr:</em> pojemność (bus mieści zwykle 8–10 palet EUR, standardowa naczepa 33), typ zabudowy (plandeka, chłodnia), ADR, dostępny czas jazdy.</li>
+          <li><em>Ranking:</em> puste kilometry do załadunku, zapas czasu jazdy po zleceniu, kolizje z&nbsp;kolejką, znajomość klienta i&nbsp;punktu.</li>
+          <li>Każdy klocek pokazuje, skąd jego pozycja, np. „18&nbsp;km od załadunku · zostaje 2&nbsp;h&nbsp;10&nbsp;min jazdy · był u&nbsp;tego klienta 6&nbsp;razy”.</li>
+        </ul>
+      </li>
+      <li><strong>Przeciąganie zlecenia na kierowcę</strong> jako główny gest. Jest szybkie i&nbsp;dobrze wygląda w&nbsp;demo.</li>
+    </ul>
+
+    <h4>Cykl życia zlecenia (propozycja)</h4>
+    <div class="legend">
+      <span class="l-s">spedytor</span><span class="l-k">kierowca (SMS)</span><span class="l-ai">AI</span><span class="l-g">GPS / system</span>
+    </div>
+    <div class="flow" role="list" aria-label="Statusy zlecenia">
+      <div class="step s" role="listitem">Nowe<small>spedytor / szablon</small></div><span class="arrow">→</span>
+      <div class="step s" role="listitem">Przypisane<small>spedytor</small></div><span class="arrow">→</span>
+      <div class="step g" role="listitem">Wysłane do kierowcy<small>system (SMS)</small></div><span class="arrow">→</span>
+      <div class="step ai" role="listitem">Potwierdzone · w&nbsp;realizacji<small>AI po czystym „ok”</small></div><span class="arrow">→</span>
+      <div class="step g" role="listitem">Załadunek<small>GPS: wjazd w&nbsp;strefę</small></div><span class="arrow">→</span>
+      <div class="step g" role="listitem">W drodze<small>GPS: wyjazd ze strefy</small></div><span class="arrow">→</span>
+      <div class="step g" role="listitem">Rozładunek<small>GPS: wjazd w&nbsp;strefę</small></div><span class="arrow">→</span>
+      <div class="step ai" role="listitem">Do zamknięcia<small>AI po odczycie CMR</small></div><span class="arrow">→</span>
+      <div class="step s" role="listitem">Zamknięte<small>wyłącznie spedytor</small></div>
+    </div>
+    <p style="font-size:.92rem;color:var(--muted)">Ścieżki boczne: <strong>odmowa lub brak odpowiedzi</strong> → alert, zlecenie wraca do „Nowe”. <strong>Anulowane</strong> → przez spedytora na dowolnym etapie przed załadunkiem. AI ustawia tylko dwa statusy i&nbsp;żaden z&nbsp;nich nie jest końcowy.</p>
+  </section>
+
+  <!-- 4.4 -->
+  <section class="card" id="m-sms">
+    <span class="kicker">4.4</span>
+    <h3>SMS i potwierdzenia</h3>
+    <div class="vision"><b>Wizja:</b> po przypięciu AI generuje SMS ze szczegółami. Kierowca musi potwierdzić. AI rozpoznaje potwierdzenie, oznacza zlecenie na zielono i&nbsp;informuje spedytora. Brak odpowiedzi albo odmowa to alert.</div>
+
+    <h4>Propozycje</h4>
+    <ul>
+      <li><strong>Treść zlecenia z szablonu, nie od AI.</strong> Adresy, godziny, numery referencyjne i&nbsp;kontakty system wstawia jeden do jednego. Model językowy może się pomylić przy przepisywaniu, a&nbsp;tutaj pomyłka oznacza pusty kurs.</li>
+      <li><strong>Cztery kategorie odpowiedzi zamiast dwóch.</strong> Automatycznie na zielono przechodzi wyłącznie czyste potwierdzenie.</li>
+    </ul>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kategoria</th><th>Przykłady</th><th>Co robi system</th></tr></thead>
+        <tbody>
+          <tr><td>Potwierdzenie</td><td>„ok”, „przyjmuję”, „jadę”, „👍”</td><td>Zielone „w realizacji”, informacja dla spedytora.</td></tr>
+          <tr><td>Odmowa</td><td>„nie dam rady”, „auto w serwisie”</td><td>Alert do spedytora, zlecenie wraca do puli.</td></tr>
+          <tr><td>Warunek lub pytanie</td><td>„ok, ale będę 2&nbsp;h później”, „jaki numer rampy?”</td><td>Alert z&nbsp;podsumowaniem. Zlecenie <strong>nie</strong> robi się zielone.</td></tr>
+          <tr><td>Niejasne</td><td>odpowiedź nie na temat</td><td>Alert z&nbsp;prośbą o&nbsp;decyzję.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ul>
+      <li><strong>Drabina eskalacji.</strong> Brak odpowiedzi po X&nbsp;minutach → automatyczne przypomnienie. Po kolejnych Y&nbsp;minutach → alert do spedytora. X i&nbsp;Y są ustawiane i&nbsp;krótsze, gdy załadunek jest blisko.</li>
+      <li><strong>Opcjonalnie link w SMS-ie</strong> do prostej strony zlecenia z&nbsp;przyciskiem „Potwierdzam” i&nbsp;wgrywaniem zdjęcia CMR. Głównym kanałem zostaje swobodny tekst, bo to on pokazuje AI. Link jest wygodą dla kierowcy.</li>
+      <li><strong>W demo: panel „Telefon kierowcy”.</strong> Oglądający może sam odpisać jako kierowca i&nbsp;zobaczyć, jak AI klasyfikuje odpowiedź. Pozostali kierowcy odpisują automatycznie, czasem dwuznacznie.</li>
+    </ul>
+    <div class="why"><b>Dlaczego:</b> „ok, ale…” to w&nbsp;praktyce najczęstsza pułapka. System dwustanowy oznaczyłby ją na zielono i&nbsp;spedytor dowiedziałby się o&nbsp;problemie dopiero od klienta.</div>
+  </section>
+
+  <!-- 4.5 -->
+  <section class="card" id="m-cmr">
+    <span class="kicker">4.5</span>
+    <h3>Dokumenty CMR</h3>
+    <div class="vision"><b>Wizja:</b> po wykonaniu zlecenia kierowca przesyła MMS-em lub mailem zdjęcie CMR. AI je odczytuje, przypisuje do zlecenia i&nbsp;oznacza „do zamknięcia”. Zatwierdza spedytor.</div>
+
+    <h4>Propozycje</h4>
+    <ul>
+      <li><strong>Dopasowanie z trzech źródeł:</strong>
+        <ol>
+          <li>nadawca (numer telefonu lub e-mail wskazuje kierowcę);</li>
+          <li>zlecenie, które ten kierowca właśnie kończył;</li>
+          <li>dane odczytane z&nbsp;dokumentu: odbiorca, miejsce, data, numery.</li>
+        </ol>
+        Wysoka zgodność → „do zamknięcia”. Niska → kolejka „do weryfikacji”.</li>
+      <li><strong>Kontrola jakości od razu, póki kierowca stoi na rozładunku.</strong>
+        <ul>
+          <li>Zdjęcie nieczytelne → automatyczna prośba o&nbsp;ponowne.</li>
+          <li>Brak podpisu lub pieczątki odbiorcy w&nbsp;polu 24 albo adnotacje o&nbsp;szkodzie czy brakach → flaga dla spedytora.</li>
+        </ul>
+        Ponowne zdjęcie po tygodniu bywa już niemożliwe.</li>
+      <li><strong>MMS może być słabym kanałem w realnym wdrożeniu.</strong> Odbiór MMS-ów przez bramki bywa ograniczony i&nbsp;droższy niż SMS <span class="tag weryf">do weryfikacji</span>. W&nbsp;demo to symulujemy. W&nbsp;dokumencie wdrożeniowym trzeba opisać alternatywy: e-mail, link do wgrania zdjęcia, komunikator.</li>
+      <li><strong>W demo generujemy własne, fikcyjne skany CMR</strong> różnej jakości: ostre, krzywe, rozmazane, bez pieczątki. Żadnych prawdziwych danych firm.</li>
+      <li><strong>Ta sama technika obsłuży później faktury serwisowe</strong> w&nbsp;kartotece floty (sekcja 4.9).</li>
+    </ul>
+    <div class="why"><b>Dlaczego:</b> AI, które wyłapuje problem z&nbsp;dokumentem w&nbsp;minutę, a&nbsp;nie przy rozliczeniu, oszczędza realne pieniądze. Formalnie CMR dotyczy przewozów międzynarodowych (konwencja CMR), ale w&nbsp;praktyce wiele firm używa tych druków także w&nbsp;kraju <span class="tag interp">interpretacja</span>.</div>
+  </section>
+
+  <!-- 4.6 -->
+  <section class="card" id="m-stale">
+    <span class="kicker">4.6</span>
+    <h3>Zlecenia stałe i szablony</h3>
+    <div class="vision"><b>Wizja:</b> szablony zleceń. Dla stałych tras system po potwierdzeniu przez spedytora sam wypełnia zlecenia i&nbsp;wysyła SMS-y. AI szacuje terminowość „kółek”.</div>
+
+    <h4>Propozycje</h4>
+    <ul>
+      <li><strong>Zgoda: generowanie z szablonu bez AI.</strong> Szablon zawiera klienta, punkty, okna czasowe, ładunek, harmonogram (np. pon–pt) oraz domyślnego kierowcę i&nbsp;auto.</li>
+      <li><strong>Spedytor zatwierdza paczkę</strong> zleceń na kolejne dni jednym kliknięciem. SMS-y idą zbiorczo albo dzień przed kursem.</li>
+      <li><strong>Prognoza kółek:</strong> algorytm symuluje cały łańcuch (jazda, korki zależne od pory i&nbsp;dnia tygodnia, załadunki, rozładunki, przerwy i&nbsp;odpoczynki) i&nbsp;porównuje go z&nbsp;oknami czasowymi. AI tłumaczy ryzyko i&nbsp;proponuje reakcję: zmianę kolejności, innego kierowcę albo wcześniejsze uprzedzenie klienta.</li>
+      <li><strong>Uczciwie o korkach:</strong> w&nbsp;otwartym ekosystemie praktycznie nie ma darmowych danych o&nbsp;bieżącym ruchu. Routing na danych OSM daje czasy przejazdu bez ruchu <span class="tag interp">interpretacja</span>. W&nbsp;demo symulujemy korki i&nbsp;zdarzenia. Realne dane o&nbsp;ruchu (płatne API) trafiają do dokumentu wdrożeniowego.</li>
+    </ul>
+  </section>
+
+  <!-- 4.7 -->
+  <section class="card" id="m-klienci">
+    <span class="kicker">4.7</span>
+    <h3>Nowi klienci i podpowiedzi</h3>
+    <div class="vision"><b>Wizja:</b> nowego klienta wpisuje się ręcznie. Przy kolejnych zleceniach system podpowiada adresy i&nbsp;najbliższych kierowców.</div>
+    <h4>Propozycja</h4>
+    <ul>
+      <li><strong>Książka punktów klienta.</strong> Każdy punkt załadunku i&nbsp;rozładunku ma godziny pracy, wymagania (awizacja, rampa, typ auta) i&nbsp;notatki kierowców, np. „wjazd od ul. Polnej”. Notatka trafia z&nbsp;szablonu do SMS-a.</li>
+    </ul>
+    <div class="why"><b>Dlaczego:</b> to podpowiedź, która realnie oszczędza telefony. Kierowca dostaje wiedzę poprzedników, a&nbsp;spedytor nie musi jej pamiętać.</div>
+  </section>
+
+  <!-- 4.8 -->
+  <section class="card" id="m-ocena">
+    <span class="kicker">4.8</span>
+    <h3>Ocena kierowcy → dopasowanie do zlecenia</h3>
+    <div class="vision"><b>Wizja:</b> zdolność kierowcy do realizacji zlecenia oceniana na podstawie liczby zrealizowanych zleceń, przepracowanych godzin itp. Decyzja należy do spedytora.</div>
+
+    <h4>Propozycja: oceniać dopasowanie do konkretnego zlecenia, nie samego kierowcę</h4>
+    <ul>
+      <li><strong>„Przepracowane godziny” jako plus nagradzają przemęczenie.</strong> To kłóci się z&nbsp;przepisami o&nbsp;odpoczynku i&nbsp;z&nbsp;bezpieczeństwem na drodze.</li>
+      <li><strong>AI Act.</strong>
+        <ul>
+          <li>Załącznik III pkt 4 lit. b zalicza do systemów wysokiego ryzyka systemy AI przydzielające zadania na podstawie indywidualnego zachowania lub cech osobowych oraz monitorujące i&nbsp;oceniające wyniki i&nbsp;zachowanie pracowników <span class="tag fakt">fakt</span>.</li>
+          <li>System z&nbsp;Załącznika III, który profiluje osoby fizyczne, jest zawsze uznawany za wysokiego ryzyka (art. 6 ust. 3) <span class="tag fakt">fakt</span>.</li>
+          <li>Po zmianie wprowadzonej przez Digital Omnibus (w mocy od lipca 2026&nbsp;r.) obowiązki dla Załącznika III stosuje się od 2 grudnia 2027&nbsp;r. <span class="tag fakt">fakt</span> <span class="tag weryf">potwierdzić w Dz.U. UE</span></li>
+        </ul>
+      </li>
+      <li><strong>Jawna formuła prawdopodobnie omija ten problem.</strong> Motyw 12 AI Act wyłącza z&nbsp;definicji „systemu AI” systemy oparte na regułach zdefiniowanych wyłącznie przez ludzi <span class="tag fakt">fakt</span>. Prosta formuła (odległość, dostępny czas jazdy, zgodność pojazdu) najpewniej się w&nbsp;tym mieści <span class="tag interp">interpretacja</span> <span class="tag weryf">do weryfikacji prawnej</span>.</li>
+      <li><strong>Czynniki dopasowania, jawne i wyświetlane przy klocku:</strong>
+        <ul>
+          <li>dostępny czas jazdy w&nbsp;porównaniu z&nbsp;czasem zlecenia;</li>
+          <li>puste kilometry do załadunku;</li>
+          <li>zgodność pojazdu i&nbsp;uprawnień (np. ADR);</li>
+          <li>kolizja z&nbsp;kolejką zleceń;</li>
+          <li>znajomość klienta i&nbsp;punktu.</li>
+        </ul>
+        Historyczną punktualność proponuję pokazywać ostrożnie, jako informację, a&nbsp;nie składnik rankingu (do decyzji).</li>
+    </ul>
+    <div class="why"><b>Dlaczego:</b> demo nie jest wdrożeniem, więc AI Act go nie obejmuje. Projekt, który od początku omija ten problem, wygląda jednak dojrzale w&nbsp;rozmowie z&nbsp;każdą firmą transportową.</div>
+  </section>
+
+  <!-- 4.9 -->
+  <section class="card" id="m-flota">
+    <span class="kicker">4.9</span>
+    <h3>Kartoteka floty</h3>
+    <div class="vision"><b>Wizja:</b> terminy serwisów i&nbsp;przeglądów, przebiegi, dokumentacja po serwisach. Każde auto i&nbsp;ciągnik ma swoją kartotekę.</div>
+    <h4>Propozycje</h4>
+    <ul>
+      <li><strong>Dodać naczepy.</strong> Mają własne badania techniczne i&nbsp;serwis (hamulce, opony), a&nbsp;krążą między ciągnikami. Kartoteka zapisuje też historię przepinania: która naczepa była pod którym ciągnikiem i&nbsp;kiedy.</li>
+      <li><strong>Terminy:</strong>
+        <ul>
+          <li>badanie techniczne (dla ciężarówek powyżej 3,5&nbsp;t i&nbsp;ciężkich naczep co roku);</li>
+          <li>sprawdzenie tachografu co najmniej co 2&nbsp;lata (rozp. 165/2014) <span class="tag fakt">fakt</span>;</li>
+          <li>ubezpieczenie OC;</li>
+          <li>serwis według kilometrów <em>albo</em> daty, w&nbsp;zależności od tego, co nastąpi pierwsze.</li>
+        </ul>
+      </li>
+      <li><strong>Przebieg w demo pochodzi z symulatora,</strong> w&nbsp;realnym wdrożeniu z&nbsp;telematyki (magistrala CAN, interfejs FMS).</li>
+      <li><strong>Faktura lub protokół serwisowy</strong> ze zdjęcia albo PDF-a: AI wypełnia wpis w&nbsp;kartotece. To ta sama technika co przy CMR, więc przychodzi niemal za darmo.</li>
+      <li><strong>Opcja na później: terminarz kierowcy.</strong> Prawo jazdy, kwalifikacja okresowa („kod 95”), badania lekarskie i&nbsp;psychologiczne, karta kierowcy, ADR. Działa na tym samym mechanizmie przypomnień.</li>
+    </ul>
+  </section>
+
+  <!-- 5 -->
+  <h2 id="braki">Czego brakuje (warto dopisać)</h2>
+  <ul>
+    <li><strong>Okna czasowe załadunku i rozładunku.</strong> Bez nich nie da się mierzyć terminowości.</li>
+    <li><strong>Parametry ładunku:</strong> palety, waga, typ zabudowy, ADR. Bez nich „klocki” nie mają czego filtrować.</li>
+    <li><strong>Przepinanie naczep</strong> między ciągnikami.</li>
+    <li><strong>Dziennik AI:</strong> co AI zrobiło, kiedy i&nbsp;na jakiej podstawie, z&nbsp;możliwością cofnięcia. Buduje zaufanie i&nbsp;ułatwia audyt.</li>
+    <li><strong>Powiadomienie klienta o opóźnieniu.</strong> AI szkicuje wiadomość, spedytor zatwierdza jednym kliknięciem.</li>
+    <li><strong>Tryb demo:</strong>
+      <ul>
+        <li>przyspieszony czas;</li>
+        <li>gotowe scenariusze (wypadek na A2, kierowca nie odpisuje, nieczytelny CMR);</li>
+        <li>reset do stanu początkowego.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <!-- 6 -->
+  <h2 id="etapy">Podział na etapy</h2>
+  <p>Każdy etap przechodzi własny cykl: specyfikacja, plan, wdrożenie. Zaznaczone wiersze to proponowane MVP z&nbsp;pełną pętlą zlecenia.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Etap</th><th>Zakres</th><th>Zależy od</th><th>Co widać w demo</th></tr></thead>
+      <tbody>
+        <tr class="mvp"><td><span class="phase-id">0</span> Fundament</td><td>Model danych (pojazdy, naczepy, kierowcy, klienci, punkty, zlecenia, szablony). Symulator (zegar, GPS, zdarzenia, telefony kierowców). Dane przykładowe.</td><td>—</td><td>Sam w&nbsp;sobie nic. Stoi na nim wszystko inne.</td></tr>
+        <tr class="mvp"><td><span class="phase-id">1</span> Monitoring</td><td>Mapa, lista, czas jazdy, ETA, stany zielony/żółty/czerwony, alerty AI, centrum powiadomień.</td><td>0</td><td>Jadące auta i&nbsp;pierwszy sensowny alert.</td></tr>
+        <tr class="mvp"><td><span class="phase-id">2</span> Zlecenia i SMS</td><td>Panel kierowcy, klocki, przypisanie, SMS z&nbsp;szablonu, klasyfikacja odpowiedzi, eskalacja.</td><td>0, 1</td><td>Telefon kierowcy i&nbsp;reakcja AI.</td></tr>
+        <tr class="mvp"><td><span class="phase-id">3</span> CMR</td><td>Odbiór zdjęcia, odczyt, dopasowanie, kontrola jakości, „do zamknięcia”.</td><td>2</td><td>Zdjęcie → zlecenie gotowe do zamknięcia.</td></tr>
+        <tr><td><span class="phase-id">4</span> Zlecenia stałe</td><td>Szablony, paczki, prognoza kółek.</td><td>2</td><td>Tydzień kółek z&nbsp;prognozą ryzyka.</td></tr>
+        <tr><td><span class="phase-id">5</span> Panel klienta</td><td>Konto klienta, widok zlecenia, wygasanie dostępu.</td><td>1, 2</td><td>Druga przeglądarka z&nbsp;widokiem klienta.</td></tr>
+        <tr><td><span class="phase-id">6</span> Kartoteka floty</td><td>Terminy, przebiegi, dokumenty serwisowe.</td><td>0</td><td>Przypomnienia o&nbsp;przeglądach.</td></tr>
+        <tr><td><span class="phase-id">D</span> Dokument</td><td>Wyzwania i&nbsp;możliwości realnego wdrożenia (sekcja 7).</td><td>—</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 7 -->
+  <h2 id="wdrozenie">Dokument „Wyzwania i możliwości realnego wdrożenia”: co w nim</h2>
+  <ul>
+    <li><strong>Telematyka i GPS.</strong> Własne trackery albo istniejąca platforma floty, częstotliwość pozycji, koszty.</li>
+    <li><strong>Zdalny odczyt tachografu.</strong> Prawdziwy czas jazdy zamiast szacunku z&nbsp;demo. To najważniejsza różnica jakościowa między demo a&nbsp;produkcją.</li>
+    <li><strong>SMS i MMS.</strong> Bramka, koszty, odbiór odpowiedzi, alternatywy.</li>
+    <li><strong>Dane o ruchu i routing ciężarowy.</strong> Ograniczenia tonażu i&nbsp;wysokości, zakazy. Płatne API albo samodzielnie hostowany silnik tras.</li>
+    <li><strong>Comarch ERP Optima.</strong> Eksport zamkniętych zleceń do fakturowania.</li>
+    <li><strong>RODO i Kodeks pracy.</strong>
+      <ul>
+        <li>Lokalizacja kierowcy to dane osobowe.</li>
+        <li>Monitoring GPS jest zwykle traktowany jako „inna forma monitorowania” (art. 22² i&nbsp;22³ k.p.) <span class="tag weryf">do weryfikacji prawnej</span>.</li>
+        <li>Wynikające z&nbsp;tego obowiązki: monitoring tylko w&nbsp;czasie pracy, obowiązek informacyjny, okresy przechowywania danych, ocena skutków (DPIA).</li>
+      </ul>
+    </li>
+    <li><strong>AI Act.</strong> Klasyfikacja funkcji dopasowania kierowców i&nbsp;obowiązki przejrzystości.</li>
+    <li><strong>Awaria AI.</strong> Gdy API nie odpowiada, system działa dalej, tylko bez podpowiedzi. Wszystko, co liczy algorytm, nie zależy od AI.</li>
+    <li><strong>Bezpieczeństwo dostępu klientów.</strong> Uwierzytelnianie, wygasanie dostępu, rejestr wejść.</li>
+  </ul>
+
+  <!-- 8 -->
+  <h2 id="pytania">Pytania otwarte</h2>
+  <ol>
+    <li><strong>Cel i odbiorca demo:</strong> portfolio, pokaz dla firmy transportowej czy zalążek produktu?</li>
+    <li><strong>Własna flota czy też podwykonawcy?</strong> Wizja wygląda na własną flotę z&nbsp;zatrudnionymi kierowcami.</li>
+    <li><strong>Rodzaje pojazdów:</strong> busy i&nbsp;ciągniki z&nbsp;naczepami. A&nbsp;solówki?</li>
+    <li><strong>Transport krajowy, międzynarodowy czy oba?</strong> Od tego zależą zasady dla busów i&nbsp;rola CMR.</li>
+    <li><strong>Co klient widzi o kierowcy?</strong></li>
+    <li><strong>Język interfejsu:</strong> tylko polski czy także angielski z&nbsp;myślą o&nbsp;GitHubie?</li>
+  </ol>
+
+  <footer>
+    <h3>Skala pewności</h3>
+    <div class="legend-tags">
+      <div><span class="tag fakt">fakt</span> potwierdzone w&nbsp;przepisach lub źródłach poniżej</div>
+      <div><span class="tag interp">interpretacja</span> mój wniosek z&nbsp;faktów, rozsądny, ale nie rozstrzygnięty</div>
+      <div><span class="tag weryf">do weryfikacji</span> wymaga sprawdzenia przed realnym wdrożeniem</div>
+    </div>
+
+    <h3>Akty prawne</h3>
+    <ul>
+      <li>Rozporządzenie (WE) nr 561/2006: czas jazdy i&nbsp;odpoczynku. <a href="https://eur-lex.europa.eu/eli/reg/2006/561/oj">EUR-Lex</a></li>
+      <li>Rozporządzenie (UE) 2020/1054: pakiet mobilności, zmiany 561/2006, w&nbsp;tym busy 2,5–3,5&nbsp;t. <a href="https://eur-lex.europa.eu/eli/reg/2020/1054/oj">EUR-Lex</a></li>
+      <li>Rozporządzenie (UE) nr 165/2014: tachografy. <a href="https://eur-lex.europa.eu/eli/reg/2014/165/oj">EUR-Lex</a></li>
+      <li>Rozporządzenie (UE) 2024/1689 (AI Act): motyw 12, art. 6 ust. 3, Załącznik III pkt 4. <a href="https://eur-lex.europa.eu/eli/reg/2024/1689/oj">EUR-Lex</a></li>
+      <li>Konwencja o&nbsp;umowie międzynarodowego przewozu drogowego towarów (CMR), Genewa 1956.</li>
+    </ul>
+
+    <h3>Źródła pomocnicze (stan na 10.10.2026)</h3>
+    <ul>
+      <li><a href="https://www.gibsondunn.com/eu-ai-act-omnibus-agreement-postponed-high-risk-deadlines-and-other-key-changes/">Gibson Dunn: EU AI Act Omnibus Agreement, przesunięte terminy dla systemów wysokiego ryzyka</a></li>
+      <li><a href="https://www.lewissilkin.com/insights/2026/07/27/the-digital-omnibus-on-ai-enters-into-force-today-102nedo">Lewis Silkin: The Digital Omnibus on AI enters into force (27.07.2026)</a></li>
+      <li><a href="https://www.cuatrecasas.com/en/latam/intellectual-property/art/council-eu-approves-digital-omnibus-ai">Cuatrecasas: Council of the EU approves Digital Omnibus on AI</a></li>
+      <li><a href="https://www.autocentrum.pl/publikacje/auto-w-firmie/tachografy-w-busach-od-lipca-2026-wszystko-co-musisz-wiedziec/">Autocentrum: Obowiązkowe tachografy w&nbsp;busach od lipca 2026</a></li>
+      <li><a href="https://www.auto-swiat.pl/porady/prawo/kto-bedzie-musial-montowac-w-samochodach-tachografy-od-lipca-nowe-przepisy/5r37mkj">Auto Świat: kto musi montować tachografy od lipca</a></li>
+      <li><a href="https://www.prawo.pl/kadry/dane-z-gps-sa-danymi-osobowymi,264924.html">Prawo.pl: Dane z&nbsp;GPS są danymi osobowymi</a></li>
+      <li><a href="https://poradnikprzedsiebiorcy.pl/-monitoring-wizyjny-i-gps-w-firmie-jak-kontrolowac-zgodnie-z-rodo">Poradnik Przedsiębiorcy: monitoring wizyjny i&nbsp;GPS w&nbsp;firmie a&nbsp;RODO</a></li>
+      <li>Cennik API Anthropic dla Claude Haiku 5.5, stan na 6.10.2026.</li>
+    </ul>
+    <p style="margin-top:1.4rem">Źródła pomocnicze to artykuły kancelarii i&nbsp;portali branżowych. Przed realnym wdrożeniem kwestie prawne należy potwierdzić w&nbsp;tekstach aktów i&nbsp;u&nbsp;prawnika.</p>
+  </footer>
+
+</main>
+</body>
+</html>
