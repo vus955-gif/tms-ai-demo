@@ -37,6 +37,8 @@ export const sandboxes = pgTable("sandboxes", {
   ipHash: text("ip_hash").notNull(),
   aiWindowStart: ts("ai_window_start"),
   aiCallsInWindow: integer("ai_calls_in_window").notNull().default(0),
+  /** Driver the visitor currently plays in the "Telefon kierowcy" demo tool (that bot stays silent). */
+  phoneDriverId: text("phone_driver_id"),
 });
 
 export const points = pgTable(
@@ -404,6 +406,55 @@ export const alerts = pgTable(
     primaryKey({ columns: [t.sandboxId, t.id] }),
     index("alerts_status_idx").on(t.sandboxId, t.status),
     index("alerts_dedupe_idx").on(t.sandboxId, t.dedupeKey),
+  ],
+);
+
+export const DRIVER_MESSAGE_CATEGORIES = [
+  "potwierdzenie",
+  "odmowa",
+  "warunek_pytanie",
+  "operacyjne",
+  "dokument",
+  "luzne",
+  "niejasne",
+] as const;
+export type DriverMessageCategory = (typeof DRIVER_MESSAGE_CATEGORIES)[number];
+export type MessagePriority = "wysoki" | "normalny" | "niski";
+
+export const messages = pgTable(
+  "messages",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    channel: text("channel").$type<"sms" | "mms" | "email">().notNull(),
+    direction: text("direction").$type<"in" | "out">().notNull(),
+    party: text("party").$type<"driver" | "client">().notNull(),
+    driverId: text("driver_id"),
+    clientContactId: text("client_contact_id"),
+    threadKey: text("thread_key").notNull(),
+    subject: text("subject"),
+    body: text("body").notNull(),
+    /** Sample image ids or { notStored: true } markers. */
+    attachments: jsonb("attachments").$type<{ sampleId?: string; notStored?: boolean; name?: string }[]>().notNull().default(sql`'[]'::jsonb`),
+    state: text("state").$type<"draft" | "sent" | "received">().notNull(),
+    sentBy: text("sent_by").$type<"dispatcher" | "system" | "driver" | "client">().notNull(),
+    atSim: ts("at_sim").notNull(),
+    readAtSim: ts("read_at_sim"),
+    orderId: text("order_id"),
+    aiCategory: text("ai_category"),
+    aiSubtype: text("ai_subtype"),
+    aiPriority: text("ai_priority").$type<MessagePriority | null>(),
+    aiSummary: text("ai_summary"),
+    aiSuggestedReplies: jsonb("ai_suggested_replies").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    aiConfidence: doublePrecision("ai_confidence"),
+    aiExtracted: jsonb("ai_extracted").$type<Record<string, unknown> | null>(),
+    classifiedBy: text("classified_by").$type<"ai" | "rules" | null>(),
+    /** Free-form purpose tag for system messages (order, reminder, cancellation, cmr_resend…). */
+    kind: text("kind"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sandboxId, t.id] }),
+    index("messages_thread_idx").on(t.sandboxId, t.threadKey, t.atSim),
   ],
 );
 

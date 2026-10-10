@@ -308,3 +308,13 @@ export function predictArrival(
   }
   return null;
 }
+
+/** An idle vehicle with confirmed work sets off towards its first stop. */
+export function beginNextLeg(state: SimState, routeKeyBetween: (a: string, b: string) => string): SimState {
+  if (state.mode !== "idle" || state.stops.length === 0 || !state.pointId) return state;
+  const target = state.stops[0];
+  if (target.pointId === state.pointId) {
+    return { ...state, mode: "waiting", modeUntilMs: Math.max(state.atMs, target.windowFromMs), routeKey: null };
+  }
+  return { ...state, mode: "driving", routeKey: routeKeyBetween(state.pointId, target.pointId), progressS: 0, pointId: null };
+}
