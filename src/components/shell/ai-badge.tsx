@@ -11,6 +11,7 @@ export const FALLBACK_REASON_LABEL: Record<string, string> = {
   daily_budget: "Wyczerpany dzienny budżet AI. AI wróci po północy UTC.",
   ai_error: "AI nie odpowiedziało poprawnie — użyto reguł awaryjnych.",
   refusal: "Model odmówił odpowiedzi — użyto reguł awaryjnych.",
+  catch_up: "Zaległe zdarzenie z czasu, gdy nikt nie oglądał — użyto reguł zamiast AI.",
 };
 
 export function AiBadge({ status }: { status: AiStatus | undefined }) {

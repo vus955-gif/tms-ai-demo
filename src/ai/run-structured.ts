@@ -15,7 +15,7 @@ export type AiFunctionName =
   | "triageClientEmail"
   | "diagnostics";
 
-export type AiFallbackReason = "no_api_key" | "sandbox_limit" | "daily_budget" | "ai_error" | "refusal";
+export type AiFallbackReason = "no_api_key" | "sandbox_limit" | "daily_budget" | "ai_error" | "refusal" | "catch_up";
 
 export type AiOutcome<T> = {
   value: T;
@@ -41,6 +41,8 @@ export type RunStructuredOptions<T> = {
   inputRef?: string;
   /** Override the shared client (tests, or null to force fallback). */
   client?: AiClient | null;
+  /** Reason to log when the fallback is forced via `client: null` (default: no_api_key). */
+  fallbackReason?: AiFallbackReason;
 };
 
 export const AI_TIMEOUT_MS = 10_000;
@@ -92,7 +94,7 @@ export async function runStructured<T>(opts: RunStructuredOptions<T>): Promise<A
     return { value, source: "fallback" as const, reason, logId };
   };
 
-  if (!client) return fallBack("no_api_key");
+  if (!client) return fallBack(opts.fallbackReason ?? "no_api_key");
   const blocked = await budgetBlock(opts.db, opts.sandboxId, realNow);
   if (blocked) return fallBack(blocked);
 

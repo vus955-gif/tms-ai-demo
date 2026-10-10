@@ -8,5 +8,7 @@ import "./monitoring/timeline";
 import "./monitoring/movement";
 import "./monitoring/risk-phase";
 import "./monitoring/incidents";
+import "./messages/handlers";
+import "./orders/scenario";
 
 export const BOOTSTRAPPED = true;

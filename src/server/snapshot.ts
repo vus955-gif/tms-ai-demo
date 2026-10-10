@@ -2,6 +2,7 @@ import { and, count, eq, notInArray } from "drizzle-orm";
 import { aiStatus, type AiStatus } from "@/ai/status";
 import { orders, vehicles } from "@/db/schema";
 import type { Executor } from "@/db/types";
+import { unreadDriverMessages } from "./messages/threads";
 import { monitoringSnapshot, type AlertView, type VehicleView } from "./monitoring/views";
 import type { SandboxRow } from "./sandbox/repository";
 import type { TickResult } from "./tick/engine";
@@ -18,6 +19,8 @@ export type Snapshot = {
   tick: { processed: number; remaining: number; conflict: boolean };
   fleet: VehicleView[];
   alerts: AlertView[];
+  badges: { komunikator: number; skrzynka: number; dokumenty: number };
+  phoneDriverId: string | null;
 };
 
 const FINISHED = ["ZAMKNIETE", "ANULOWANE", "SZKIC"] as const;
@@ -48,5 +51,7 @@ export async function buildSnapshot(
     counts: { vehicles: vehicleCount, activeOrders },
     tick: { processed: tick.processed, remaining: tick.remaining, conflict: tick.conflict },
     ...(await monitoringSnapshot(db, sandbox.id)),
+    badges: { komunikator: await unreadDriverMessages(db, sandbox.id), skrzynka: 0, dokumenty: 0 },
+    phoneDriverId: sandbox.phoneDriverId,
   };
 }

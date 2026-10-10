@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { ZodType } from "zod";
 import { getDb } from "@/db/client";
 import type { Db } from "@/db/types";
+import { TransitionError } from "@/domain/order-lifecycle";
 import { hashIp, SANDBOX_COOKIE, sandboxCookieOptions } from "./sandbox/cookie";
 import { cleanupExpired, getOrCreateSandbox, type SandboxRow } from "./sandbox/repository";
 
@@ -56,6 +57,7 @@ export async function withSandbox(
     return response;
   } catch (error) {
     if (error instanceof HttpError) return NextResponse.json({ error: error.message }, { status: error.status });
+    if (error instanceof TransitionError) return NextResponse.json({ error: error.message }, { status: 409 });
     console.error("[api]", error);
     return NextResponse.json({ error: "Coś poszło nie tak po stronie serwera. Spróbuj ponownie." }, { status: 500 });
   }
