@@ -8,6 +8,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
+    env: { PGLITE_DIR: "memory://" },
     exclude: ["e2e/**", "node_modules/**"],
     testTimeout: 20000,
   },
