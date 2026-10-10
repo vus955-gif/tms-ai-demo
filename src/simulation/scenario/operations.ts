@@ -1,0 +1,286 @@
+import type { DriverActivityType } from "@/db/schema";
+import type { ScenarioActivity, ScenarioHistory, ScenarioIdleVehicle, ScenarioOrder } from "./types";
+
+/**
+ * Builds a contiguous activity history ending at simulation start (minute 0).
+ * The last block is ongoing. The daily rest before the first block is added too.
+ */
+function shift(driverId: string, blocks: [DriverActivityType, number][]): ScenarioActivity[] {
+  const total = blocks.reduce((sum, [, minutes]) => sum + minutes, 0);
+  let cursor = -total;
+  const result: ScenarioActivity[] = [{ driverId, type: "daily_rest", startMin: cursor - 11 * 60, endMin: cursor }];
+  blocks.forEach(([type, minutes], i) => {
+    const isLast = i === blocks.length - 1;
+    result.push({ driverId, type, startMin: cursor, endMin: isLast ? null : cursor + minutes });
+    cursor += minutes;
+  });
+  return result;
+}
+
+/** A driver resting at a base since `sinceMin` (still resting at start, free to start work). */
+function resting(driverId: string, sinceMin: number): ScenarioActivity[] {
+  return [{ driverId, type: "daily_rest", startMin: sinceMin, endMin: null }];
+}
+
+export const activities: ScenarioActivity[] = [
+  // Green: loaded at Swarzędz, 70 min into the Berlin leg.
+  ...shift("d-nowak", [["other_work", 15], ["driving", 20], ["other_work", 45], ["driving", 70]]),
+  // Yellow: 4 h 15 min of driving since the last break (unloading is work, not a break).
+  ...shift("d-wisniewska", [["other_work", 15], ["driving", 150], ["other_work", 60], ["driving", 105]]),
+  // Green: ADR load from Brzeg Dolny.
+  ...shift("d-zielinski", [["other_work", 30], ["driving", 40], ["other_work", 60], ["driving", 100]]),
+  // Red soon: night run, 7 h 35 min driven today and no 10-hour extensions left this week.
+  ...shift("d-wojcik", [["other_work", 15], ["driving", 255], ["break", 45], ["other_work", 45], ["driving", 200]]),
+  // Yellow: 4 h 15 min continuous driving.
+  ...shift("d-kaminska", [["other_work", 15], ["driving", 20], ["other_work", 60], ["driving", 235]]),
+  ...shift("d-lewandowski", [["other_work", 20], ["driving", 50]]),
+  // Yellow: 4 h 05 min continuous driving.
+  ...shift("d-szymanski", [["other_work", 15], ["driving", 100], ["other_work", 45], ["driving", 145]]),
+  ...resting("d-dabrowski", -900),
+  ...shift("d-wozniak", [["other_work", 15], ["other_work", 50], ["driving", 35]]),
+  ...shift("d-kowalczyk", [["other_work", 15], ["driving", 10], ["other_work", 30], ["driving", 95]]),
+  ...shift("d-mazur", [["other_work", 15], ["driving", 40], ["other_work", 30], ["driving", 35]]),
+  ...shift("d-krawczyk", [["other_work", 15], ["driving", 15]]),
+  ...resting("d-piotrowska", -800),
+  ...resting("d-grabowski", -700),
+];
+
+const order = (o: Omit<ScenarioOrder, "notes" | "adrRequired" | "bodyRequired"> & Partial<ScenarioOrder>): ScenarioOrder => ({
+  notes: "",
+  adrRequired: false,
+  bodyRequired: null,
+  ...o,
+});
+
+/** Orders already in progress at simulation start (minutes relative to 08:30). */
+export const orders: ScenarioOrder[] = [
+  order({
+    id: "zl-1031",
+    number: "ZL-1031",
+    clientId: "cl-meble",
+    pickupPointId: "pt-meble-swarzedz",
+    pickupFromMin: -150,
+    pickupToMin: -90,
+    deliveryPointId: "pt-meble-berlin",
+    deliveryFromMin: 210,
+    deliveryToMin: 330,
+    cargoPallets: 26,
+    cargoKg: 7800,
+    references: ["MW/2026/1031"],
+    status: "W_DRODZE",
+    driverId: "d-nowak",
+    vehicleId: "v-po4k21",
+    start: { stage: "to_delivery", progress: 0.38 },
+  }),
+  order({
+    id: "zl-1032",
+    number: "ZL-1032",
+    clientId: "cl-baltic",
+    pickupPointId: "pt-baltic-pruszcz",
+    pickupFromMin: 45,
+    pickupToMin: 120,
+    deliveryPointId: "pt-baltic-katowice",
+    deliveryFromMin: 480,
+    deliveryToMin: 600,
+    cargoPallets: 30,
+    cargoKg: 18000,
+    bodyRequired: "chlodnia",
+    references: ["BF-ZAM-88231"],
+    notes: "Temperatura +2…+6 °C przez cały przewóz",
+    status: "POTWIERDZONE",
+    driverId: "d-wisniewska",
+    vehicleId: "v-gd2m88",
+    start: { stage: "to_pickup", fromPointId: "pt-agropol-gdynia", progress: 0.3 },
+  }),
+  order({
+    id: "zl-1033",
+    number: "ZL-1033",
+    clientId: "cl-odra",
+    pickupPointId: "pt-odra-brzeg",
+    pickupFromMin: -240,
+    pickupToMin: -120,
+    deliveryPointId: "pt-odra-dresden",
+    deliveryFromMin: 60,
+    deliveryToMin: 240,
+    cargoPallets: 20,
+    cargoKg: 16000,
+    adrRequired: true,
+    references: ["OC-ADR-5521", "UN 1993"],
+    status: "W_DRODZE",
+    driverId: "d-zielinski",
+    vehicleId: "v-dw3h56",
+    start: { stage: "to_delivery", progress: 0.5 },
+  }),
+  order({
+    id: "zl-1034",
+    number: "ZL-1034",
+    clientId: "cl-agropol",
+    pickupPointId: "pt-agropol-lodz",
+    pickupFromMin: -180,
+    pickupToMin: -60,
+    deliveryPointId: "pt-agropol-gdynia",
+    deliveryFromMin: 300,
+    deliveryToMin: 480,
+    cargoPallets: 24,
+    cargoKg: 19500,
+    references: ["AP/EXP/7714"],
+    status: "W_DRODZE",
+    driverId: "d-wojcik",
+    vehicleId: "v-el5r30",
+    start: { stage: "to_delivery", progress: 0.25 },
+  }),
+  order({
+    id: "zl-1035",
+    number: "ZL-1035",
+    clientId: "cl-wisla",
+    pickupPointId: "pt-wisla-gadki",
+    pickupFromMin: -210,
+    pickupToMin: -120,
+    deliveryPointId: "pt-wisla-lipsk",
+    deliveryFromMin: 240,
+    deliveryToMin: 420,
+    cargoPallets: 33,
+    cargoKg: 14200,
+    references: ["LW-4410/10"],
+    status: "W_DRODZE",
+    driverId: "d-kaminska",
+    vehicleId: "v-po2c19",
+    start: { stage: "to_delivery", progress: 0.45 },
+  }),
+  order({
+    id: "zl-1036",
+    number: "ZL-1036",
+    clientId: "cl-sudety",
+    pickupPointId: "pt-sudety-jelenia",
+    pickupFromMin: 30,
+    pickupToMin: 120,
+    deliveryPointId: "pt-sudety-lipsk",
+    deliveryFromMin: 360,
+    deliveryToMin: 480,
+    cargoPallets: 22,
+    cargoKg: 21000,
+    references: ["SP/2026/0912"],
+    status: "POTWIERDZONE",
+    driverId: "d-lewandowski",
+    vehicleId: "v-dw7m02",
+    start: { stage: "to_pickup", fromPointId: "pt-baza-wroclaw", progress: 0.6 },
+  }),
+  order({
+    id: "zl-1037",
+    number: "ZL-1037",
+    clientId: "cl-mazovia",
+    pickupPointId: "pt-mazovia-blonie",
+    pickupFromMin: -240,
+    pickupToMin: -150,
+    deliveryPointId: "pt-mazovia-praha",
+    deliveryFromMin: 420,
+    deliveryToMin: 540,
+    cargoPallets: 18,
+    cargoKg: 6400,
+    references: ["ME-PO-33190"],
+    notes: "Towar wysokiej wartości — tylko parkingi strzeżone",
+    status: "W_DRODZE",
+    driverId: "d-szymanski",
+    vehicleId: "v-wb6p77",
+    start: { stage: "to_delivery", progress: 0.35 },
+  }),
+  order({
+    id: "zl-1038",
+    number: "ZL-1038",
+    clientId: "cl-hanza",
+    pickupPointId: "pt-hanza-szczecin",
+    pickupFromMin: -120,
+    pickupToMin: -30,
+    deliveryPointId: "pt-hanza-poznan",
+    deliveryFromMin: 120,
+    deliveryToMin: 300,
+    cargoPallets: 28,
+    cargoKg: 11800,
+    references: ["HR-DOST-2291"],
+    status: "W_DRODZE",
+    driverId: "d-wozniak",
+    vehicleId: "v-po8z55",
+    start: { stage: "to_delivery", progress: 0.15 },
+  }),
+  order({
+    id: "zl-1039",
+    number: "ZL-1039",
+    clientId: "cl-mazovia",
+    pickupPointId: "pt-mazovia-blonie",
+    pickupFromMin: -180,
+    pickupToMin: -120,
+    deliveryPointId: "pt-mazovia-praha",
+    deliveryFromMin: 480,
+    deliveryToMin: 600,
+    cargoPallets: 8,
+    cargoKg: 900,
+    references: ["ME-PO-33191"],
+    status: "W_DRODZE",
+    driverId: "d-kowalczyk",
+    vehicleId: "v-wx9t04",
+    start: { stage: "to_delivery", progress: 0.22 },
+  }),
+  order({
+    id: "zl-1040",
+    number: "ZL-1040",
+    clientId: "cl-agropol",
+    pickupPointId: "pt-agropol-kutno",
+    pickupFromMin: -120,
+    pickupToMin: -60,
+    deliveryPointId: "pt-agropol-lodz",
+    deliveryFromMin: 0,
+    deliveryToMin: 120,
+    cargoPallets: 6,
+    cargoKg: 850,
+    references: ["AP/WEW/0311"],
+    status: "W_DRODZE",
+    driverId: "d-mazur",
+    vehicleId: "v-el3b12",
+    start: { stage: "to_delivery", progress: 0.5 },
+  }),
+  order({
+    id: "zl-1041",
+    number: "ZL-1041",
+    clientId: "cl-hanza",
+    pickupPointId: "pt-hanza-poznan",
+    pickupFromMin: 15,
+    pickupToMin: 60,
+    deliveryPointId: "pt-hanza-wroclaw",
+    deliveryFromMin: 240,
+    deliveryToMin: 360,
+    cargoPallets: 9,
+    cargoKg: 980,
+    references: ["HR-SKL-0457"],
+    status: "POTWIERDZONE",
+    driverId: "d-krawczyk",
+    vehicleId: "v-po6n88",
+    start: { stage: "to_pickup", fromPointId: "pt-baza-poznan", progress: 0.5 },
+  }),
+];
+
+export const idleVehicles: ScenarioIdleVehicle[] = [
+  { vehicleId: "v-el9k41", pointId: "pt-baza-lodz" },
+  { vehicleId: "v-dw1t07", pointId: "pt-baza-wroclaw" },
+  { vehicleId: "v-gd4w63", pointId: "pt-baza-poznan" },
+];
+
+export const history: ScenarioHistory[] = [
+  { driverId: "d-zielinski", clientId: "cl-wisla", completedOrders: 6 },
+  { driverId: "d-zielinski", clientId: "cl-odra", completedOrders: 12 },
+  { driverId: "d-nowak", clientId: "cl-meble", completedOrders: 14 },
+  { driverId: "d-nowak", clientId: "cl-wisla", completedOrders: 3 },
+  { driverId: "d-wisniewska", clientId: "cl-baltic", completedOrders: 9 },
+  { driverId: "d-wojcik", clientId: "cl-agropol", completedOrders: 11 },
+  { driverId: "d-kaminska", clientId: "cl-wisla", completedOrders: 4 },
+  { driverId: "d-kaminska", clientId: "cl-meble", completedOrders: 2 },
+  { driverId: "d-lewandowski", clientId: "cl-sudety", completedOrders: 7 },
+  { driverId: "d-szymanski", clientId: "cl-mazovia", completedOrders: 5 },
+  { driverId: "d-dabrowski", clientId: "cl-odra", completedOrders: 8 },
+  { driverId: "d-dabrowski", clientId: "cl-wisla", completedOrders: 2 },
+  { driverId: "d-wozniak", clientId: "cl-hanza", completedOrders: 10 },
+  { driverId: "d-kowalczyk", clientId: "cl-mazovia", completedOrders: 3 },
+  { driverId: "d-mazur", clientId: "cl-agropol", completedOrders: 6 },
+  { driverId: "d-krawczyk", clientId: "cl-hanza", completedOrders: 4 },
+  { driverId: "d-piotrowska", clientId: "cl-hanza", completedOrders: 2 },
+  { driverId: "d-grabowski", clientId: "cl-hanza", completedOrders: 1 },
+];
