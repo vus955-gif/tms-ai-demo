@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createTestDb } from "@/test/db";
+import { rowsOf } from "./rows";
 import { sandboxes, vehicles } from "./schema";
 
 const EXPECTED_TABLES = [
@@ -24,10 +25,10 @@ const EXPECTED_TABLES = [
 describe("database schema", () => {
   it("creates every stage-0 table", async () => {
     const db = await createTestDb();
-    const result = await db.execute<{ table_name: string }>(
+    const result = await db.execute(
       sql`select table_name from information_schema.tables where table_schema = 'public' order by table_name`,
     );
-    const names = result.rows.map((r) => r.table_name);
+    const names = rowsOf<{ table_name: string }>(result).map((r) => r.table_name);
     expect(names).toEqual(expect.arrayContaining(EXPECTED_TABLES));
   });
 
