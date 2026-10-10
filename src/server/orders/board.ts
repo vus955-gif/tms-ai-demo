@@ -78,7 +78,12 @@ export async function ordersBoard(db: Executor, sandboxId: string): Promise<Orde
     const driver = fleet.driverByVehicle.get(vehicle.id)!;
     const trailer = fleet.trailerByVehicle.get(vehicle.id);
     const current = currentOrderOf(fleet, vehicle.id);
-    const moving = current && ["ZALADUNEK", "W_DRODZE", "ROZLADUNEK", "DO_ZAMKNIECIA"].includes(current.status) ? current : undefined;
+    const target = fleet.states.get(vehicle.id)?.orderId;
+    // A confirmed order the vehicle is already heading for is current work, not queue.
+    const moving =
+      current && (["ZALADUNEK", "W_DRODZE", "ROZLADUNEK", "DO_ZAMKNIECIA"].includes(current.status) || (current.status === "POTWIERDZONE" && current.id === target))
+        ? current
+        : undefined;
     const queue = fleet.openOrders.filter((o) => o.driverId === driver.id && QUEUE.includes(o.status) && o.id !== moving?.id).sort(byPickup);
     return {
       driverId: driver.id,

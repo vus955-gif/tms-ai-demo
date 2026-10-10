@@ -1,0 +1,1 @@
+ALTER TABLE "vehicle_states" ADD COLUMN "mode_started_at" timestamp with time zone;

@@ -22,6 +22,13 @@
       "when": 1791674051201,
       "tag": "0002_stage2_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791675141208,
+      "tag": "0003_stage2_mode_start",
+      "breakpoints": true
     }
   ]
 }

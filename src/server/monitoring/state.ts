@@ -44,6 +44,7 @@ export function toSimState(row: VehicleStateRow, stops: Stop[], atMs: number): S
     atMs,
     mode: row.mode,
     modeUntilMs: row.modeUntil?.getTime() ?? null,
+    modeStartMs: row.modeStartedAt?.getTime() ?? atMs,
     resumeMode: row.resumeMode,
     routeKey: row.routeKey,
     progressS: row.progressS,
@@ -64,6 +65,7 @@ export function fromSimState(state: SimState): Partial<VehicleStateRow> {
   return {
     mode: state.mode,
     modeUntil: state.modeUntilMs === null ? null : new Date(state.modeUntilMs),
+    modeStartedAt: state.modeStartMs === null || state.modeStartMs === undefined ? null : new Date(state.modeStartMs),
     resumeMode: state.resumeMode,
     routeKey: state.routeKey,
     progressS: state.progressS,

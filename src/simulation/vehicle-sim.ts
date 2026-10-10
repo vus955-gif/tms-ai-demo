@@ -36,6 +36,8 @@ export type SimState = {
   stops: Stop[];
   clock: DriverClock;
   pendingExtraMin: number;
+  /** When the current mode began (waiting/idle length decides break vs. daily rest). */
+  modeStartMs?: number | null;
 };
 
 export type SimEnv = {
@@ -112,9 +114,19 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
     else segments.push({ type, startMs, endMs });
   };
 
+  const enter = (mode: VehicleMode, untilMs: number | null) => {
+    s.mode = mode;
+    s.modeUntilMs = untilMs;
+    s.modeStartMs = s.atMs;
+  };
+  /** Waiting for a window: an overnight wait is a daily rest, a longer wait a break. */
+  const waitType = (): DriverActivityType => {
+    const minutes = ((s.modeUntilMs ?? s.atMs) - (s.modeStartMs ?? s.atMs)) / MIN;
+    return minutes >= DAILY_REST_MIN ? "daily_rest" : minutes >= BREAK_MIN ? "break" : "other_work";
+  };
+
   const startHandling = (stop: Stop) => {
-    s.mode = "handling";
-    s.modeUntilMs = s.atMs + (stop.handlingMin + s.pendingExtraMin) * MIN;
+    enter("handling", s.atMs + (stop.handlingMin + s.pendingExtraMin) * MIN);
     s.pendingExtraMin = 0;
     events.push({ type: "handling_started", stop, atMs: s.atMs });
   };
@@ -122,16 +134,13 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
   const arrive = () => {
     const stop = s.stops[0];
     if (!stop) {
-      s.mode = "idle";
-      s.modeUntilMs = null;
+      enter("idle", null);
       return;
     }
     s.pointId = stop.pointId;
     events.push({ type: "arrived", stop, atMs: s.atMs });
-    if (s.atMs < stop.windowFromMs) {
-      s.mode = "waiting";
-      s.modeUntilMs = stop.windowFromMs;
-    } else startHandling(stop);
+    if (s.atMs < stop.windowFromMs) enter("waiting", stop.windowFromMs);
+    else startHandling(stop);
   };
 
   const finishTimedMode = () => {
@@ -143,9 +152,14 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
         if (s.clock.dailyMin > DAILY_LIMIT_MIN) s.clock = { ...s.clock, extensionsUsed: s.clock.extensionsUsed + 1 };
         s.clock = applyPause(s.clock, "daily_rest", DAILY_REST_MIN);
         break;
-      case "waiting":
+      case "waiting": {
+        const type = waitType();
+        const minutes = (s.atMs - (s.modeStartMs ?? s.atMs)) / MIN;
+        if (type === "daily_rest" && s.clock.dailyMin > DAILY_LIMIT_MIN) s.clock = { ...s.clock, extensionsUsed: s.clock.extensionsUsed + 1 };
+        if (type !== "other_work") s.clock = applyPause(s.clock, type, minutes);
         startHandling(s.stops[0]);
         return;
+      }
       case "handling": {
         const done = s.stops.shift();
         if (done) events.push({ type: "departed", stop: done, atMs: s.atMs });
@@ -154,21 +168,19 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
           s.routeKey = env.routeKeyBetween(done.pointId, next.pointId);
           s.progressS = 0;
           s.pointId = null;
-          s.mode = "driving";
+          enter("driving", null);
         } else {
           s.routeKey = null;
           s.progressS = 0;
-          s.mode = "idle";
+          enter("idle", null);
         }
-        s.modeUntilMs = null;
         return;
       }
       case "stopped":
         break;
     }
-    s.mode = s.resumeMode ?? "driving";
+    enter(s.resumeMode ?? "driving", null);
     s.resumeMode = null;
-    s.modeUntilMs = null;
   };
 
   let guard = 0;
@@ -178,8 +190,7 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
     const forced = env.forcedStops?.find((f) => s.atMs >= f.startMs && s.atMs < f.endMs);
     if (forced && s.mode === "driving") {
       s.resumeMode = "driving";
-      s.mode = "stopped";
-      s.modeUntilMs = forced.endMs;
+      enter("stopped", forced.endMs);
       continue;
     }
     if (s.mode === "driving" && s.routeKey) {
@@ -194,8 +205,7 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
         if (allowance.remainingMin <= 1e-6) {
           const rest = allowance.untilDailyLimitMin <= allowance.untilBreakMin;
           s.resumeMode = "driving";
-          s.mode = rest ? "daily_rest" : "break";
-          s.modeUntilMs = s.atMs + (rest ? DAILY_REST_MIN : BREAK_MIN) * MIN;
+          enter(rest ? "daily_rest" : "break", s.atMs + (rest ? DAILY_REST_MIN : BREAK_MIN) * MIN);
           events.push({ type: rest ? "rest_started" : "break_started", atMs: s.atMs });
           continue;
         }
@@ -218,15 +228,19 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
       }
     } else if (s.mode === "driving") {
       // Driving without a route means nowhere to go.
-      s.mode = "idle";
+      enter("idle", null);
       continue;
     } else if (s.mode === "idle") {
       s.atMs = toMs;
       record(ACTIVITY.idle, from, s.atMs);
+      // Standing free counts as a break, and after 11 hours as the daily rest.
+      const idleMin = (s.atMs - (s.modeStartMs ?? from)) / MIN;
+      if (idleMin >= DAILY_REST_MIN) s.clock = applyPause(s.clock, "daily_rest", idleMin);
+      else if (idleMin >= BREAK_MIN) s.clock = applyPause(s.clock, "break", idleMin);
     } else {
       const until = Math.min(s.modeUntilMs ?? toMs, toMs);
       s.atMs = until;
-      record(ACTIVITY[s.mode], from, until);
+      record(s.mode === "waiting" ? waitType() : ACTIVITY[s.mode], from, until);
       if (s.modeUntilMs !== null && until >= s.modeUntilMs) finishTimedMode();
     }
 
@@ -314,7 +328,7 @@ export function beginNextLeg(state: SimState, routeKeyBetween: (a: string, b: st
   if (state.mode !== "idle" || state.stops.length === 0 || !state.pointId) return state;
   const target = state.stops[0];
   if (target.pointId === state.pointId) {
-    return { ...state, mode: "waiting", modeUntilMs: Math.max(state.atMs, target.windowFromMs), routeKey: null };
+    return { ...state, mode: "waiting", modeUntilMs: Math.max(state.atMs, target.windowFromMs), modeStartMs: state.atMs, routeKey: null };
   }
-  return { ...state, mode: "driving", routeKey: routeKeyBetween(state.pointId, target.pointId), progressS: 0, pointId: null };
+  return { ...state, mode: "driving", modeStartMs: state.atMs, routeKey: routeKeyBetween(state.pointId, target.pointId), progressS: 0, pointId: null };
 }

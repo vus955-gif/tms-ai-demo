@@ -1,17 +1,15 @@
-import { MessageSquare } from "lucide-react";
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { Suspense } from "react";
+import { ClientOnly } from "@/components/client-only";
+import { MessengerView } from "@/components/messenger/messenger-view";
+
+const Loading = () => <div className="p-6 text-sm text-muted-foreground">Wczytywanie wiadomości…</div>;
 
 export default function MessengerPage() {
   return (
-    <ComingSoon
-      icon={MessageSquare}
-      title="Komunikator z kierowcami"
-      stage="2"
-      items={[
-        "Wątki z kierowcami i odpowiedzi wysyłane z programu",
-        "Priorytety i kategorie wiadomości nadawane przez AI",
-        "Gotowe odpowiedzi do wysłania jednym kliknięciem",
-      ]}
-    />
+    <ClientOnly fallback={<Loading />}>
+      <Suspense fallback={<Loading />}>
+        <MessengerView />
+      </Suspense>
+    </ClientOnly>
   );
 }

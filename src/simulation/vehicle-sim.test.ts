@@ -92,7 +92,7 @@ describe("advance", () => {
     const start = driving({ stops: [stop("B", "pickup", 3 * H), stop("C", "delivery")] });
     const { events, segments } = advance(start, 4 * H, env());
     expect(events.find((e) => e.type === "handling_started")!.atMs).toBe(3 * H);
-    expect(segments[1]).toMatchObject({ type: "other_work", startMs: 2 * H });
+    expect(segments[1]).toMatchObject({ type: "break", startMs: 2 * H });
   });
 
   it("adds pending extra minutes to loading (ramp wait)", () => {
@@ -153,5 +153,29 @@ describe("forced stops", () => {
     expect(segments.map((s) => s.type)).toEqual(["driving", "other_work", "driving"]);
     expect(segments[1]).toMatchObject({ startMs: 30 * MIN, endMs: 90 * MIN });
     expect(state.progressS).toBeCloseTo(60 * 60, 6);
+  });
+});
+
+describe("waiting and standing count as rest", () => {
+  it("treats an overnight wait for the window as the daily rest", () => {
+    const tired = driving({
+      stops: [stop("B", "pickup", 16 * H), stop("C", "delivery")],
+      clock: { continuousMin: 100, dailyMin: 400, splitFirstPart: false, extensionsUsed: 2 },
+    });
+    const { segments, state } = advance(tired, 17 * H, env());
+    expect(segments.some((s) => s.type === "daily_rest")).toBe(true);
+    // Rested overnight: the daily counter starts again after the wait.
+    expect(state.clock.dailyMin).toBeLessThan(100);
+  });
+
+  it("counts a 1-hour wait as a break", () => {
+    const { segments, state } = advance(driving({ stops: [stop("B", "pickup", 3 * H), stop("C", "delivery")] }), 3.5 * H, env());
+    expect(segments.find((s) => s.startMs === 2 * H)?.type).toBe("break");
+    expect(state.clock.continuousMin).toBeLessThan(31);
+  });
+
+  it("resets continuous driving after standing idle for an hour", () => {
+    const idle = { ...driving(), mode: "idle" as const, routeKey: null, pointId: "B", stops: [], modeStartMs: 0, clock: { continuousMin: 260, dailyMin: 300, splitFirstPart: false, extensionsUsed: 0 } };
+    expect(advance(idle, H, env()).state.clock.continuousMin).toBe(0);
   });
 });

@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { useSnapshot } from "@/hooks/use-snapshot";
 import { cn } from "@/lib/utils";
 import { AlertsButton } from "@/components/alerts/alerts-panel";
+import { PhoneButton } from "@/components/phone/phone-panel";
 import { AiBadge } from "./ai-badge";
 import { ClockControls } from "./clock-controls";
 import { ResetDialog } from "./reset-dialog";
@@ -39,6 +40,7 @@ export function AppShell({ children, toolbar }: { children: ReactNode; toolbar?:
         <ResetDialog snapshot={snapshot} />
         <div className="flex-1" />
         {toolbar}
+        <PhoneButton />
         <AlertsButton />
         <AiBadge status={snapshot?.ai} />
       </header>
@@ -51,6 +53,7 @@ export function AppShell({ children, toolbar }: { children: ReactNode; toolbar?:
         <nav className="flex w-44 shrink-0 flex-col gap-0.5 border-r bg-background p-2" aria-label="Menu główne">
           {NAV.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`);
+            const badge = href === "/komunikator" ? snapshot?.badges.komunikator : href === "/skrzynka" ? snapshot?.badges.skrzynka : href === "/dokumenty" ? snapshot?.badges.dokumenty : 0;
             return (
               <Link
                 key={href}
@@ -63,6 +66,11 @@ export function AppShell({ children, toolbar }: { children: ReactNode; toolbar?:
               >
                 <Icon className="size-4" aria-hidden />
                 {label}
+                {badge ? (
+                  <span className="ml-auto rounded-full bg-brand px-1.5 text-[10px] font-semibold leading-4 text-brand-foreground" aria-label={`${badge} nowych`}>
+                    {badge}
+                  </span>
+                ) : null}
               </Link>
             );
           })}

@@ -318,6 +318,8 @@ export const vehicleStates = pgTable(
     mode: text("mode").$type<VehicleMode>().notNull(),
     /** End of a timed mode (break, rest, handling, waiting, stopped). */
     modeUntil: ts("mode_until"),
+    /** When the current mode began. */
+    modeStartedAt: ts("mode_started_at"),
     /** Mode to return to after a break/rest/stop. */
     resumeMode: text("resume_mode").$type<VehicleMode | null>(),
     routeKey: text("route_key"),

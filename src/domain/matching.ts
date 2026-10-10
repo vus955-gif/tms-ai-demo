@@ -120,10 +120,8 @@ export function evaluateCandidate(order: MatchOrder, c: MatchCandidate): MatchRe
     score -= 10;
     reasons.push("chłodnia na towar suchy");
   }
-  if (c.capacityPallets - order.cargoPallets >= 15) {
-    score -= 5;
-    reasons.push(`dużo wolnego miejsca (${c.capacityPallets} palet)`);
-  }
+  // A much bigger vehicle than needed ranks a little lower (no reason shown: it is rarely decisive).
+  if (c.capacityPallets - order.cargoPallets >= 15) score -= 5;
   const tier: MatchTier = score >= 85 ? "high" : score >= 60 ? "medium" : "low";
   return { vehicleId: c.vehicleId, driverId: c.driverId, tier, score: Math.round(score), reasons, pickupEtaMs: pickup.arrivalMs, emptyKm };
 }

@@ -44,6 +44,7 @@ export async function seedMonitoring(db: Executor, sandbox: SandboxRow) {
       reportPhaseS: phase,
       currentActivityId: open?.id ?? null,
       lastReportAt: origin,
+      modeStartedAt: open ? open.startSim : origin,
     };
     if (!order) {
       const point = pointById.get(idleAt.get(vehicle.id)!)!;
