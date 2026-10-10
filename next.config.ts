@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // PGlite ships a WASM build of Postgres that must not be bundled.
   serverExternalPackages: ["@electric-sql/pglite"],
+  // Precomputed routes and migrations are read from disk at runtime.
+  outputFileTracingIncludes: {
+    "/api/**": ["./data/routes/**", "./drizzle/**"],
+  },
   turbopack: {
     rules: {
       "*.css": {
