@@ -23,8 +23,8 @@ function resting(driverId: string, sinceMin: number): ScenarioActivity[] {
 }
 
 export const activities: ScenarioActivity[] = [
-  // Green: loaded at Swarzędz, 70 min into the Berlin leg.
-  ...shift("d-nowak", [["other_work", 15], ["driving", 20], ["other_work", 45], ["driving", 70]]),
+  // Green: took a break while waiting for the ramp, loaded at Swarzędz, 50 min into the Berlin leg.
+  ...shift("d-nowak", [["other_work", 15], ["driving", 20], ["break", 45], ["other_work", 30], ["driving", 50]]),
   // Yellow: 4 h 15 min of driving since the last break (unloading is work, not a break).
   ...shift("d-wisniewska", [["other_work", 15], ["driving", 150], ["other_work", 60], ["driving", 105]]),
   // Green: ADR load from Brzeg Dolny.
@@ -62,8 +62,8 @@ export const orders: ScenarioOrder[] = [
     pickupFromMin: -150,
     pickupToMin: -90,
     deliveryPointId: "pt-meble-berlin",
-    deliveryFromMin: 210,
-    deliveryToMin: 330,
+    deliveryFromMin: 120,
+    deliveryToMin: 225,
     cargoPallets: 26,
     cargoKg: 7800,
     references: ["MW/2026/1031"],
@@ -79,9 +79,9 @@ export const orders: ScenarioOrder[] = [
     pickupPointId: "pt-baltic-pruszcz",
     pickupFromMin: 45,
     pickupToMin: 120,
-    deliveryPointId: "pt-baltic-katowice",
-    deliveryFromMin: 480,
-    deliveryToMin: 600,
+    deliveryPointId: "pt-baltic-janki",
+    deliveryFromMin: 390,
+    deliveryToMin: 540,
     cargoPallets: 30,
     cargoKg: 18000,
     bodyRequired: "chlodnia",
@@ -127,7 +127,7 @@ export const orders: ScenarioOrder[] = [
     status: "W_DRODZE",
     driverId: "d-wojcik",
     vehicleId: "v-el5r30",
-    start: { stage: "to_delivery", progress: 0.25 },
+    start: { stage: "to_delivery", progress: 0.72 },
   }),
   order({
     id: "zl-1035",

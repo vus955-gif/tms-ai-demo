@@ -37,3 +37,7 @@ export function listRouteKeys(dir = ROUTES_DIR): string[] {
     .filter((f) => f.endsWith(".json"))
     .map((f) => f.slice(0, -".json".length));
 }
+
+export function hasRouteKey(key: string, dir = ROUTES_DIR): boolean {
+  return cache.has(key) || existsSync(path.join(dir, `${key}.json`));
+}

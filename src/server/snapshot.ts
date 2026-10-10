@@ -2,6 +2,7 @@ import { and, count, eq, notInArray } from "drizzle-orm";
 import { aiStatus, type AiStatus } from "@/ai/status";
 import { orders, vehicles } from "@/db/schema";
 import type { Executor } from "@/db/types";
+import { monitoringSnapshot, type AlertView, type VehicleView } from "./monitoring/views";
 import type { SandboxRow } from "./sandbox/repository";
 import type { TickResult } from "./tick/engine";
 
@@ -15,6 +16,8 @@ export type Snapshot = {
   ai: AiStatus;
   counts: { vehicles: number; activeOrders: number };
   tick: { processed: number; remaining: number; conflict: boolean };
+  fleet: VehicleView[];
+  alerts: AlertView[];
 };
 
 const FINISHED = ["ZAMKNIETE", "ANULOWANE", "SZKIC"] as const;
@@ -44,5 +47,6 @@ export async function buildSnapshot(
     ai: await aiStatus(db, sandbox.id, realNow),
     counts: { vehicles: vehicleCount, activeOrders },
     tick: { processed: tick.processed, remaining: tick.remaining, conflict: tick.conflict },
+    ...(await monitoringSnapshot(db, sandbox.id)),
   };
 }

@@ -146,3 +146,12 @@ describe("predictArrival", () => {
     expect(prediction.firstBreakAfterDrivingMin).toBeNull();
   });
 });
+
+describe("forced stops", () => {
+  it("stops the vehicle for a breakdown and resumes afterwards", () => {
+    const { segments, state } = advance(driving(), 2 * H, env({ forcedStops: [{ startMs: 30 * MIN, endMs: 90 * MIN }] }));
+    expect(segments.map((s) => s.type)).toEqual(["driving", "other_work", "driving"]);
+    expect(segments[1]).toMatchObject({ startMs: 30 * MIN, endMs: 90 * MIN });
+    expect(state.progressS).toBeCloseTo(60 * 60, 6);
+  });
+});

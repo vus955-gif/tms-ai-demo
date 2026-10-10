@@ -96,6 +96,7 @@ export async function runTick(db: Db, sandboxId: string, realNow: Date): Promise
         afterCommit: (task) => {
           afterCommit.push(task);
         },
+        cache: new Map(),
       };
 
       for (const event of batch) {

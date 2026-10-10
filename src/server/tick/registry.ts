@@ -25,6 +25,8 @@ export type TickContext = {
   schedule(event: NewScheduledEvent): Promise<void>;
   /** Work to run after the transaction commits (e.g. slow AI calls). */
   afterCommit(task: (db: Db) => Promise<void>): void;
+  /** Per-tick scratch space shared between handlers and phases. */
+  cache: Map<string, unknown>;
 };
 
 export type EventHandler = (ctx: TickContext, event: ScheduledEventRow) => Promise<void>;

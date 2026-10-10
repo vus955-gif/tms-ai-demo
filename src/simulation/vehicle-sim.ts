@@ -49,6 +49,8 @@ export type SimEnv = {
   trafficFactor(atMs: number): number;
   /** Speed multiplier from incidents at a position (1 = normal, 0.1 = ten times slower). */
   areaSpeed(lng: number, lat: number, atMs: number): number;
+  /** Forced stops of this vehicle (breakdown, road check) in absolute time. */
+  forcedStops?: { startMs: number; endMs: number }[];
 };
 
 export type SimEvent =
@@ -145,10 +147,10 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
         startHandling(s.stops[0]);
         return;
       case "handling": {
-        const done = s.stops.shift()!;
-        events.push({ type: "departed", stop: done, atMs: s.atMs });
+        const done = s.stops.shift();
+        if (done) events.push({ type: "departed", stop: done, atMs: s.atMs });
         const next = s.stops[0];
-        if (next) {
+        if (next && done) {
           s.routeKey = env.routeKeyBetween(done.pointId, next.pointId);
           s.progressS = 0;
           s.pointId = null;
@@ -173,11 +175,20 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
   while (s.atMs < toMs) {
     if (++guard > 200_000) throw new Error("vehicle simulation did not converge");
     const from = s.atMs;
+    const forced = env.forcedStops?.find((f) => s.atMs >= f.startMs && s.atMs < f.endMs);
+    if (forced && s.mode === "driving") {
+      s.resumeMode = "driving";
+      s.mode = "stopped";
+      s.modeUntilMs = forced.endMs;
+      continue;
+    }
     if (s.mode === "driving" && s.routeKey) {
       const route = env.getRoute(s.routeKey);
       const pos = positionAt(route, s.progressS);
       const slow = (env.speedFactor * env.trafficFactor(s.atMs)) / Math.max(env.areaSpeed(pos.lng, pos.lat, s.atMs), 0.01);
       let dtS = Math.min(stepS, (toMs - s.atMs) / 1000);
+      const nextForced = env.forcedStops?.filter((f) => f.startMs > s.atMs).sort((a, b) => a.startMs - b.startMs)[0];
+      if (nextForced) dtS = Math.min(dtS, (nextForced.startMs - s.atMs) / 1000);
       if (env.subjectTo561) {
         const allowance = drivingAllowance(s.clock, true);
         if (allowance.remainingMin <= 1e-6) {
