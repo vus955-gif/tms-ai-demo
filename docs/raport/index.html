@@ -70,7 +70,7 @@
         <tr><td>0 — fundament</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>1 — monitoring</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>2 — zlecenia i komunikator</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
-        <tr><td>3 — CMR</td><td><span class="tag todo">w toku</span></td><td>—</td></tr>
+        <tr><td>3 — CMR</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>3b — skrzynka klientów</td><td><span class="tag todo">czeka</span></td><td>—</td></tr>
       </tbody>
     </table></div>
@@ -166,6 +166,43 @@
     <li>„Cofnij przydział” na karcie w kolejce. <span class="expect">Zlecenie wraca do puli, kierowca dostaje SMS o odwołaniu.</span></li>
     <li>„Nowe zlecenie”: bez klienta → komunikat błędu; z klientem i punktami → zlecenie ZL-10xx w puli.</li>
     <li>Z kluczem API: <span class="expect">etykiety z ikoną ✦ (klasyfikacja AI), w Dzienniku AI wywołania „Wiadomość kierowcy”.</span></li>
+  </ol>
+
+  <h2 id="etap3">Etap 3 — dokumenty CMR <span class="tag done">gotowe</span></h2>
+  <h3>Co powstało</h3>
+  <ul>
+    <li><strong>Zdjęcia CMR od kierowców</strong> (MMS w demo): AI odczytuje pola 1–3, numer CMR, towar, wagę, referencje i pole 24 (pieczątka, podpis, adnotacje odbiorcy).</li>
+    <li><strong>Kontrola jakości od razu:</strong> nieczytelne zdjęcie → kierowca w tej samej chwili dostaje SMS z prośbą o nowe, póki jest jeszcze na rozładunku.</li>
+    <li><strong>Dopasowanie do zlecenia</strong> przez algorytm, nie przez AI: numer referencyjny, miasto dostawy, odbiorca, data. Pewne dopasowanie (≥ 85%) przenosi zlecenie do „Do zamknięcia”; reszta czeka w „Do weryfikacji”.</li>
+    <li><strong>Ekran Dokumenty:</strong> kolejki „Do zamknięcia”, „Do weryfikacji”, „Archiwum”; zdjęcie z powiększeniem, odczyt AI, kontrola jakości ✓/✗, kandydaci z procentem i powodami. Spedytor: „Zamknij zlecenie”, „Przypisz do zlecenia”, „Odrzuć”. Licznik w menu.</li>
+    <li><strong>Brak CMR:</strong> 2 h po wyjeździe z rozładunku przypomnienie SMS, po 4 h alert dla spedytora.</li>
+    <li><strong>Boty</strong> wysyłają zdjęcia 5–12 min po rozładunku: ZL-1038 najpierw rozmazane (potem ostre, po prośbie), ZL-1033 ostre, reszta losowo — czasem bez pieczątki, z adnotacją albo wcale.</li>
+    <li><strong>Telefon kierowcy → „Wyślij zdjęcie CMR (MMS)”:</strong> galeria zdjęć z zleceń tego kierowcy, „dokument obcy” i <em>własne zdjęcie</em> (JPEG/PNG/WebP do 4 MB — odczytywane i od razu wyrzucane, demo go nie zapisuje).</li>
+    <li>17 syntetycznych zdjęć CMR (ostre, rozmazane, krzywe, bez pieczątki, z adnotacją, obce), każde z zapisaną „prawdą” — to też gotowy zestaw kontrolny do oceny, jak dobrze model czyta.</li>
+  </ul>
+  <h3>Decyzje, które podjąłem sam (do Twojej oceny)</h3>
+  <ul>
+    <li><strong>Każde zdjęcie idzie do Dokumentów,</strong> niezależnie od tekstu SMS-a („CMR w załączniku”, „masz”, cokolwiek). AI klasyfikuje tekst osobno.</li>
+    <li><strong>Bez numeru referencyjnego nie ma automatu.</strong> Samo miasto i odbiorca dają najwyżej ~55% — wtedy decyduje spedytor. Kandydatami są tylko zlecenia tego kierowcy w statusie „Rozładunek”; CMR wysłany przed rozładunkiem czeka na ręczne przypisanie.</li>
+    <li><strong>Zamknięcie zawsze należy do spedytora.</strong> AI co najwyżej przenosi zlecenie do „Do zamknięcia”. Odrzucenie dopasowanego dokumentu cofa zlecenie do „Rozładunek”.</li>
+    <li><strong>Zamknięcie liczy się do historii kierowcy u klienta</strong> — klocki przy przydziale („zna klienta”) korzystają z tego licznika.</li>
+    <li><strong>Bez klucza API</strong> nie ma odczytu (reguły nie przeczytają zdjęcia): dokument trafia do „Do weryfikacji” z notką i spedytor przypisuje go ręcznie. Rozmazanego zdjęcia bez AI nie da się wykryć.</li>
+    <li><strong>Model do CMR:</strong> domyślnie Haiku 5.5. Jeśli API powie, że Haiku nie przyjmuje obrazów, odczyt sam przechodzi na Sonnet 5.5 (decyzja 13 ze specyfikacji). Zmienna <code>AI_CMR_MODEL</code> pozwala wymusić model, gdyby Haiku czytał słabo.</li>
+    <li><strong>Limit 4 MB na własne zdjęcie</strong> — Vercel przyjmuje do 4,5 MB w jednym żądaniu. Typ sprawdzam po sygnaturze pliku, nie po rozszerzeniu.</li>
+    <li><strong>Zdarzenia z ticka idą w następnym ticku.</strong> Zdjęcie bota pojawia się najpóźniej przy kolejnym odświeżeniu (co 15 s), z prawidłową godziną symulacji.</li>
+  </ul>
+  <h3>Testy do przeklikania</h3>
+  <ol class="checks">
+    <li>Reset, tempo 60×. Ok. 11:20 symulacji (≈ 3 min) licznik przy „Dokumenty” pokazuje 1. <span class="expect"><strong>Bez klucza:</strong> dokument Marka Zielińskiego w „Do weryfikacji” z notką „Odczyt automatyczny niedostępny”. <strong>Z kluczem:</strong> w „Do zamknięcia”, kontrola jakości na zielono, dopasowanie ZL-1033 ≥ 85% z powodami (numer referencyjny, Dresden, odbiorca), alert „ZL-1033: CMR gotowy do zamknięcia” z przyciskiem „Otwórz dokument”.</span></li>
+    <li>Bez klucza: wybierz „ZL-1033 (ten kierowca)” → „Przypisz”, potem „Zamknij zlecenie ZL-1033”. <span class="expect">Dokument w „Archiwum” jako „zlecenie zamknięte”, ZL-1033 znika z aktywnych zleceń, licznik spada do 0.</span></li>
+    <li>Z kluczem, ok. 12:57: zdjęcie Michała Woźniaka (ZL-1038). <span class="expect">Status „nieczytelny”, w komunikatorze i na telefonie SMS „Zdjęcie CMR jest nieczytelne…”. Ok. 13:12 drugie zdjęcie — ostre — i ZL-1038 w „Do zamknięcia”.</span></li>
+    <li>ZL-1040 (Rafał Mazur, bus) — kierowca milczy. <span class="expect">Ok. 11:46 SMS „Brakuje zdjęcia CMR…”, ok. 13:46 alert „ZL-1040: brak CMR” z „Napisz do kierowcy”.</span></li>
+    <li>Telefon kierowcy → wybierz kierowcę → „Wyślij zdjęcie CMR (MMS)”. <span class="expect">Galeria jego zleceń; zlecenia po rozładunku mają wyróżnioną ramkę. Wysłanie zdjęcia: miniatura w SMS-ie, dokument w Dokumentach.</span></li>
+    <li>Z kluczem: wyślij „dokument obcy” od kierowcy po rozładunku. <span class="expect">„Do weryfikacji”, dopasowania z niskim procentem i „nic się nie zgadza” — AI nie przypisuje cudzego CMR.</span></li>
+    <li>Z kluczem: Kamińska (ZL-1035) po rozładunku → „ZL-1035 · z adnotacją”. <span class="expect">„Do zamknięcia”, ale alert „CMR z uwagami” i ✗ przy adnotacji z treścią.</span></li>
+    <li>„Własne zdjęcie”: zrób zdjęcie dowolnego dokumentu lub wybierz plik z <code>public/cmr-samples</code>. <span class="expect">W SMS-ie „📎 nazwa (nie jest przechowywane)”, w Dokumentach ikona zamiast zdjęcia. Z kluczem AI odczytuje pola.</span></li>
+    <li>Na dokumencie „Do zamknięcia” kliknij „Odrzuć dokument”. <span class="expect">Zlecenie wraca do „Rozładunek”, dokument w Archiwum jako odrzucony.</span></li>
+    <li>Z kluczem: Dziennik AI. <span class="expect">Wpisy „Odczyt CMR” z kosztem rzędu ułamka centa za zdjęcie.</span></li>
   </ol>
 
   <footer>
