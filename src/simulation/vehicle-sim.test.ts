@@ -76,6 +76,12 @@ describe("advance", () => {
     expect(state).toMatchObject({ mode: "idle", pointId: "B", routeKey: null });
   });
 
+  it("goes idle instead of crashing when the stop it waits for disappears", () => {
+    const waiting = driving({ mode: "waiting", modeUntilMs: 30 * MIN, modeStartMs: 0, routeKey: "A__B", progressS: 120 * 60, pointId: "B", stops: [] });
+    const { state } = advance(waiting, 1 * H, env());
+    expect(state).toMatchObject({ mode: "idle", pointId: "B", routeKey: null });
+  });
+
   it("takes a 45-minute break after 4 h 30 min of driving", () => {
     const start = driving({ routeKey: "B__C", stops: [stop("C", "delivery")], clock: { continuousMin: 250, dailyMin: 250, splitFirstPart: false, extensionsUsed: 0 } });
     const { state, events, segments } = advance(start, 2 * H, env());

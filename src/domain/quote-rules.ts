@@ -50,8 +50,9 @@ export const MODE_LABEL: Record<QuoteMode, string> = { sea: "morski", air: "lotn
 export function detectMode(text: string): QuoteMode {
   const t = normalize(text);
   if (/lotnicz|\bair\b|samolot|lotnisk|awb\b/.test(t)) return "air";
-  if (/kolej|\brail\b|pociag|nowy jedwabny/.test(t)) return "rail";
-  if (/morsk|\bfcl\b|\blcl\b|kontener|\bport\b|\bsea\b|statk|fracht morski|ocean/.test(t)) return "sea";
+  // "kolejny", "kolejność" are not rail; "port" in an address is not sea freight.
+  if (/\bkolej(a|ą|e|owo|owy|owa|owe|owym|owej|owego)?\b|\brail\b|pociag|nowy jedwabny/.test(t)) return "rail";
+  if (/morsk|\bfcl\b|\blcl\b|kontener|\bsea\b|statk|ocean/.test(t)) return "sea";
   return "road";
 }
 
@@ -88,7 +89,8 @@ export function extractQuoteByRules(text: string, extraPlaces: Place[] = []): Qu
   d.pallets = pallets ? Number(pallets[1]) : null;
   const pkgs = t.match(/\b(\d{1,4})\s*(opakowa\w*|karton\w*|skrzy\w*|colli|szt\w*|paczk\w*)/);
   d.packages = pkgs ? Number(pkgs[1]) : d.pallets;
-  const ready = t.match(/\b(\d{1,2}\.\d{1,2}(?:\.\d{4})?)\b/);
+  // A date, not a decimal weight or volume ("4.5 t", "1.6 cbm").
+  const ready = t.match(/\b((?:0?[1-9]|[12]\d|3[01])\.(?:0?[1-9]|1[0-2])(?:\.\d{4})?)\b(?!\s*(?:t\b|ton|kg|cbm|m3))/);
   d.readyDate = ready ? ready[1] : /\bod zaraz|\bgotowe\b|elastyczn/.test(t) ? "elastyczny" : null;
   d.dangerous = /\badr\b|\bimo\b|\bdgr\b|niebezpieczn|un ?\d{4}/.test(t);
   d.reefer = /chlodni|temperatur|reefer|\+\s?\d+\s?°?\s?c\b/.test(t);
@@ -98,6 +100,25 @@ export function extractQuoteByRules(text: string, extraPlaces: Place[] = []): Qu
   else if (/solow|solo\b/.test(t)) d.vehicleKind = "solo";
   else if (/naczep|ciagnik|\bftl\b|full truck|tir\b/.test(t)) d.vehicleKind = "tractor";
   return d;
+}
+
+/**
+ * Free-text fields read by AI go into messages to agents, so they are narrowed
+ * to safe values: places must be known (built-in list or the client's points),
+ * the date must look like a date, the goods description is short plain text.
+ */
+export function normalizeDetails(d: QuoteDetails, knownPlaces: Place[]): QuoteDetails {
+  const place = (v: string | null) => (v ? (placesIn(v, knownPlaces)[0]?.name ?? null) : null);
+  const date = (v: string | null) =>
+    v && /^(\d{1,2}\.\d{1,2}(\.\d{2,4})?|\d{4}-\d{2}-\d{2}|elastyczny|od zaraz|jak najszybciej)$/i.test(v.trim()) ? v.trim() : null;
+  const commodity = d.commodity
+    ? d.commodity
+        .replace(/[^\p{L}\p{N} ,.-]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 40) || null
+    : null;
+  return { ...d, origin: place(d.origin), destination: place(d.destination), readyDate: date(d.readyDate), commodity };
 }
 
 /** Vehicle for a road quote: explicit request, otherwise the smallest one the pallets fit in. */

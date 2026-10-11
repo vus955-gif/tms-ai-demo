@@ -1,8 +1,9 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { agentQuotes, agents, clientContacts, messages, quoteRequests, salesSettings } from "@/db/schema";
+import { agentQuotes, agents, clientContacts, clients, messages, quoteRequests, salesSettings } from "@/db/schema";
 import type { Db, Executor } from "@/db/types";
-import { draftSalesMessage, type SalesDraftFacts } from "@/ai/functions/sales";
+import { draftSalesMessage, salesTemplate, type SalesDraftFacts } from "@/ai/functions/sales";
+import { leaksClientData } from "@/domain/client-leak";
 import { EMPTY_DETAILS, MODE_LABEL, type QuoteDetails } from "@/domain/quote-rules";
 import { offerPrice, type RoadCalculation } from "@/domain/sales-pricing";
 import { createRng, seedFromString } from "@/simulation/random";
@@ -10,9 +11,15 @@ import { HttpError } from "../http";
 import { saveDraft } from "../inbox/gateway";
 import { scheduleEvent } from "../tick/engine";
 import { rfqThread, storeAgentMessage } from "./gateway";
-import { calculateRoad, loadQuote, loadSettings, progress, routeText, sendAckAndRfqs } from "./quotes";
+import { calculateRoad, CLOSED, loadQuote, loadSettings, progress, routeText, sendAckAndRfqs } from "./quotes";
 
 const MIN = 60_000;
+
+async function clientLeakCheck(db: Executor, sandboxId: string, clientId: string) {
+  const [client] = await db.select().from(clients).where(and(eq(clients.sandboxId, sandboxId), eq(clients.id, clientId)));
+  const people = await db.select().from(clientContacts).where(and(eq(clientContacts.sandboxId, sandboxId), eq(clientContacts.clientId, clientId)));
+  return (text: string) => (client ? leaksClientData(text, client, people) : false);
+}
 
 async function quoteOr404(db: Executor, sandboxId: string, id: string) {
   const q = await loadQuote(db, sandboxId, id);
@@ -48,8 +55,10 @@ export async function updateDetails(db: Db, sandboxId: string, quoteId: string, 
     throw new HttpError(409, "Zapytania zostały już wysłane — danych nie można zmienić.");
   }
   const clean = Object.fromEntries(Object.entries(patch).map(([k, v]) => [k, v === "" ? null : v]));
-  await setQuote(db, sandboxId, quoteId, { details: { ...(q.details as object), ...clean } });
-  await progress(db, sandboxId, quoteId, simNow);
+  const before = q.details as Partial<QuoteDetails>;
+  const after = { ...before, ...clean } as Partial<QuoteDetails>;
+  await setQuote(db, sandboxId, quoteId, { details: after });
+  await progress(db, sandboxId, quoteId, simNow, { routeChanged: before.origin !== after.origin || before.destination !== after.destination });
 }
 
 export async function approveSending(db: Executor, sandboxId: string, quoteId: string, simNow: Date) {
@@ -58,8 +67,13 @@ export async function approveSending(db: Executor, sandboxId: string, quoteId: s
   await sendAckAndRfqs(db, sandboxId, quoteId, simNow);
 }
 
+/** Offer work (rates, margins, drafts) is possible while collecting, when ready and to re-offer. */
+function assertOfferable(q: { status: string }) {
+  if (!["zbieranie", "gotowe", "oferta_wyslana"].includes(q.status)) throw new HttpError(409, "Na tym etapie wyceny nie można przygotować oferty.");
+}
+
 export async function selectRate(db: Executor, sandboxId: string, quoteId: string, agentQuoteId: string, marginPct: number) {
-  await quoteOr404(db, sandboxId, quoteId);
+  assertOfferable(await quoteOr404(db, sandboxId, quoteId));
   const [aq] = await db.select().from(agentQuotes).where(and(eq(agentQuotes.sandboxId, sandboxId), eq(agentQuotes.id, agentQuoteId), eq(agentQuotes.requestId, quoteId)));
   if (!aq || aq.status !== "odpowiedz" || !aq.price) throw new HttpError(409, "Ten agent nie podał stawki.");
   await setQuote(db, sandboxId, quoteId, { selectedQuoteId: agentQuoteId, marginPct });
@@ -73,6 +87,7 @@ export async function recalcRoad(
 ) {
   const q = await quoteOr404(db, sandboxId, quoteId);
   if (q.mode !== "road") throw new HttpError(409, "Kalkulator dotyczy tylko wycen drogowych.");
+  if (CLOSED.includes(q.status)) throw new HttpError(409, "Ta wycena jest już zamknięta.");
   const calc = await calculateRoad(db, sandboxId, quoteId, opts);
   if (!calc) throw new HttpError(409, "Brakuje kilometrów — wpisz je ręcznie.");
   return calc;
@@ -113,6 +128,7 @@ async function offerFacts(db: Executor, sandboxId: string, quoteId: string): Pro
 /** AI writes the offer around the computed price; it lands as a draft in the client's e-mail thread. */
 export async function draftOffer(db: Db, sandboxId: string, quoteId: string, simNow: Date) {
   const q = await quoteOr404(db, sandboxId, quoteId);
+  assertOfferable(q);
   if (!q.sourceMessageId) throw new HttpError(409, "Wycena nie ma maila klienta.");
   const facts = await offerFacts(db, sandboxId, quoteId);
   const [src] = await db.select().from(messages).where(and(eq(messages.sandboxId, sandboxId), eq(messages.id, q.sourceMessageId)));
@@ -133,24 +149,29 @@ export async function draftOffer(db: Db, sandboxId: string, quoteId: string, sim
 /** AI drafts a request to an agent for a target rate; the agent's thread holds it until sent. */
 export async function draftNegotiation(db: Db, sandboxId: string, quoteId: string, agentQuoteId: string, target: number, simNow: Date) {
   const q = await quoteOr404(db, sandboxId, quoteId);
+  assertOfferable(q);
   const [aq] = await db.select().from(agentQuotes).where(and(eq(agentQuotes.sandboxId, sandboxId), eq(agentQuotes.id, agentQuoteId), eq(agentQuotes.requestId, quoteId)));
   if (!aq?.price || !aq.currency) throw new HttpError(409, "Negocjować można tylko podaną stawkę.");
   if (!(target > 0 && target < aq.price)) throw new HttpError(400, "Cena docelowa musi być niższa od stawki agenta.");
   const [agent] = await db.select().from(agents).where(and(eq(agents.sandboxId, sandboxId), eq(agents.id, aq.agentId)));
   const d = { ...EMPTY_DETAILS, ...(q.details as Partial<QuoteDetails>) };
+  const facts: SalesDraftFacts = { number: q.number, route: routeText(d), modeLabel: MODE_LABEL[q.mode], cargo: "", amount: Math.round(target), currency: aq.currency, transitDays: null, validUntil: null, conditions: null, recipientName: agent.contactName };
   const outcome = await draftSalesMessage({
     db,
     sandboxId,
     simNow,
     goal: "negocjacja",
-    facts: { number: q.number, route: routeText(d), modeLabel: MODE_LABEL[q.mode], cargo: "", amount: Math.round(target), currency: aq.currency, transitDays: null, validUntil: null, conditions: null, recipientName: agent.contactName },
+    facts,
   });
+  // An AI draft that names the client falls back to the template (it has no client data by construction).
+  const leaks = await clientLeakCheck(db, sandboxId, q.clientId);
+  const draft = leaks(`${outcome.value.subject}\n${outcome.value.body}`) ? salesTemplate("negocjacja", facts) : outcome.value;
   const id = await storeAgentMessage(db, sandboxId, {
     agentId: agent.id,
     threadKey: rfqThread(quoteId, agent.id),
     direction: "out",
-    subject: outcome.value.subject,
-    body: outcome.value.body,
+    subject: draft.subject,
+    body: draft.body,
     atSim: simNow,
     state: "draft",
     sentBy: "system",
@@ -165,6 +186,10 @@ export async function draftNegotiation(db: Db, sandboxId: string, quoteId: strin
 export async function sendAgentDraft(db: Executor, sandboxId: string, messageId: string, edit: { subject: string; body: string }, simNow: Date) {
   const [m] = await db.select().from(messages).where(and(eq(messages.sandboxId, sandboxId), eq(messages.id, messageId), eq(messages.party, "agent")));
   if (!m || m.state !== "draft") throw new HttpError(409, "Ta wiadomość została już wysłana.");
+  const quote = await loadQuote(db, sandboxId, m.threadKey.split(":")[1]);
+  if (quote && (await clientLeakCheck(db, sandboxId, quote.clientId))(`${edit.subject}\n${edit.body}`)) {
+    throw new HttpError(409, "Wiadomość do agenta zawiera dane klienta (nazwę, osobę, e-mail lub telefon) — usuń je przed wysłaniem.");
+  }
   await db.update(messages).set({ state: "sent", sentBy: "dispatcher", subject: edit.subject.slice(0, 200), body: edit.body.slice(0, 4000), atSim: simNow }).where(and(eq(messages.sandboxId, sandboxId), eq(messages.id, messageId)));
   const meta = m.aiExtracted as { target?: number; agentQuoteId?: string } | null;
   if (meta?.target && meta.agentQuoteId) {
@@ -181,7 +206,9 @@ export async function discardAgentDraft(db: Executor, sandboxId: string, message
 }
 
 export async function setOutcome(db: Executor, sandboxId: string, quoteId: string, outcome: "wygrana" | "przegrana" | "anulowana", simNow: Date) {
-  await quoteOr404(db, sandboxId, quoteId);
+  const q = await quoteOr404(db, sandboxId, quoteId);
+  if (CLOSED.includes(q.status)) throw new HttpError(409, "Ta wycena jest już zamknięta.");
+  if (outcome === "wygrana" && q.status !== "oferta_wyslana") throw new HttpError(409, "Wygrać można wycenę, na którą wysłano ofertę.");
   await setQuote(db, sandboxId, quoteId, { status: outcome, closedSim: simNow });
 }
 
@@ -207,6 +234,7 @@ export const SettingsSchema = z.object({
 
 export async function updateSettings(db: Executor, sandboxId: string, patch: z.infer<typeof SettingsSchema>) {
   await loadSettings(db, sandboxId);
+  if (Object.keys(patch).length === 0) return;
   await db.update(salesSettings).set(patch).where(eq(salesSettings.sandboxId, sandboxId));
 }
 

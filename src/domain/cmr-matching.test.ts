@@ -32,6 +32,12 @@ describe("CMR matching", () => {
     expect(scoreCmr({ references: ["lw 4410 10"] }, leipzig).reasons[0]).toContain("LW-4410/10");
   });
 
+  it("does not treat a shorter reference as a match", () => {
+    const short = { ...leipzig, references: ["PO-12"] };
+    expect(scoreCmr({ references: ["PO-1234"] }, short).reasons).toEqual([]);
+    expect(scoreCmr({ references: ["-"] }, leipzig).reasons).toEqual([]);
+  });
+
   it("stays below the threshold without a reference number", () => {
     const m = scoreCmr({ consignee: "Logistyka Wisła odbiorca Leipzig", place_of_delivery: "Leipzig" }, leipzig);
     expect(m.score).toBeLessThan(CMR_AUTO_THRESHOLD);

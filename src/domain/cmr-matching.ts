@@ -53,8 +53,10 @@ function tokenOverlap(a: string, b: string): number {
 export function scoreCmr(fields: CmrFields, candidate: CmrCandidate): CmrMatch {
   const reasons: string[] = [];
   let score = 0;
-  const refs = (fields.references ?? []).map(compact).filter(Boolean);
-  const refHit = candidate.references.find((r) => refs.some((x) => x.includes(compact(r)) || compact(r).includes(x)));
+  const refs = (fields.references ?? []).map(compact).filter((x) => x.length >= 4);
+  // Exact, or one contains the other with at most two characters of OCR noise ("PO-12" must not match "PO-1234").
+  const close = (a: string, b: string) => a === b || (Math.min(a.length, b.length) >= 6 && Math.abs(a.length - b.length) <= 2 && (a.includes(b) || b.includes(a)));
+  const refHit = candidate.references.find((r) => compact(r).length >= 4 && refs.some((x) => close(x, compact(r))));
   if (refHit) {
     score += WEIGHTS.references;
     reasons.push(`numer referencyjny ${refHit}`);
