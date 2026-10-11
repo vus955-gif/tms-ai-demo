@@ -113,6 +113,8 @@ describe("Sales: quotes via agents and road quotes", () => {
     await updateDetails(db, sandbox.id, q.id, { incoterms: "EXW", volumeCbm: 1.6 }, at(625));
     view = await quoteDetail(db, sandbox.id, q.id);
     expect(view.status).toBe("zbieranie");
+    expect(view.clientThread.some((m) => m.kind === "draft_quote_missing")).toBe(false);
+    expect(view.clientThread.some((m) => m.kind === "quote_ack")).toBe(true);
     expect(view.agents.map((a) => a.agentId).sort()).toEqual(["ag-aerocargo", "ag-multi", "ag-skyline"]);
     expect(view.agents[0].thread[0].body).toContain("Waga płatna: 267 kg");
   });

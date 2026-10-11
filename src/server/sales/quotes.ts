@@ -97,6 +97,15 @@ export async function progress(db: Db, sandboxId: string, quoteId: string, simNo
     }
     return;
   }
+  // The data is complete now: an unsent request for the missing data is obsolete.
+  if (quote.sourceMessageId) {
+    const [src] = await db.select({ threadKey: messages.threadKey }).from(messages).where(and(eq(messages.sandboxId, sandboxId), eq(messages.id, quote.sourceMessageId)));
+    if (src) {
+      await db
+        .delete(messages)
+        .where(and(eq(messages.sandboxId, sandboxId), eq(messages.threadKey, src.threadKey), eq(messages.state, "draft"), eq(messages.kind, "draft_quote_missing")));
+    }
+  }
   if (quote.mode === "road") {
     await calculateRoad(db, sandboxId, quoteId, {});
     return;

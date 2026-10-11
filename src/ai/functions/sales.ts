@@ -137,7 +137,7 @@ export function salesTemplate(goal: SalesDraftGoal, f: SalesDraftFacts) {
   if (goal === "negocjacja") {
     return {
       subject: `${f.number}: prośba o weryfikację stawki`,
-      body: `Dzień dobry,\n\ndziękujemy za ofertę do zapytania ${f.number} (${f.route}). Czy byłaby możliwość zejścia do ${money(f.amount, f.currency)}? Przy tej stawce jesteśmy gotowi potwierdzić rezerwację.${sign}`,
+      body: `Dzień dobry,\n\nDziękujemy za ofertę do zapytania ${f.number} (${f.route}). Czy byłaby możliwość zejścia do ${money(f.amount, f.currency)}? Przy tej stawce jesteśmy gotowi potwierdzić rezerwację.${sign}`,
     };
   }
   const lines = [
@@ -150,7 +150,7 @@ export function salesTemplate(goal: SalesDraftGoal, f: SalesDraftFacts) {
   ].filter(Boolean);
   return {
     subject: `Oferta ${f.number}: ${f.route}`,
-    body: `Dzień dobry,\n\ndziękujemy za zapytanie. Przedstawiamy ofertę:\n\n${lines.join("\n")}\n\nW razie akceptacji prosimy o potwierdzenie mailowe.${sign}`,
+    body: `Dzień dobry,\n\nDziękujemy za zapytanie. Przedstawiamy ofertę:\n\n${lines.join("\n")}\n\nW razie akceptacji prosimy o potwierdzenie mailowe.${sign}`,
   };
 }
 
