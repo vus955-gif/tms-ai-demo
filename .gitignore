@@ -57,3 +57,6 @@ next-env.d.ts
 
 # copied at predev/prebuild
 /public/maplibre/
+
+# AI eval results (local)
+/evals/results/
