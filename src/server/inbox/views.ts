@@ -6,7 +6,13 @@ import type { ExtractedOrder } from "@/domain/email-rules";
 import { STATUS_LABEL } from "@/domain/order-lifecycle";
 import { HttpError } from "../http";
 import { buildClientView } from "./client-facts";
+import { quoteRequests } from "@/db/schema";
 import { routeLabelFor } from "./labels";
+
+async function quoteLink(db: Executor, sandboxId: string, rootId: string) {
+  const [q] = await db.select().from(quoteRequests).where(and(eq(quoteRequests.sandboxId, sandboxId), eq(quoteRequests.sourceMessageId, rootId)));
+  return q ? { id: q.id, number: q.number, status: q.status } : null;
+}
 
 type Extracted = (ExtractedOrder & { problems?: string[] }) | null;
 
@@ -79,6 +85,7 @@ export type InboxThread = {
   } | null;
   order: DraftOrderView | null;
   clientView: ClientView | null;
+  quote: { id: string; number: string; status: string } | null;
 };
 
 type MessageRow = typeof messages.$inferSelect;
@@ -181,5 +188,6 @@ export async function inboxThread(db: Executor, sandboxId: string, rootId: strin
         }
       : null,
     clientView: order ? await buildClientView(db, sandboxId, order.id) : null,
+    quote: await quoteLink(db, sandboxId, rootId),
   };
 }

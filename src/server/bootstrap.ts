@@ -12,5 +12,7 @@ import "./messages/handlers";
 import "./orders/scenario";
 import "./documents/cmr";
 import "./inbox/handlers";
+import "./sales/seed";
+import "./sales/handlers";
 
 export const BOOTSTRAPPED = true;

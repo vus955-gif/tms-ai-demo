@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, ClipboardList, FileText, Mail, Map, MessageSquare, Truck } from "lucide-react";
+import { Bot, BriefcaseBusiness, ClipboardList, FileText, Mail, Map, MessageSquare, Truck } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -12,20 +12,23 @@ import { PhoneButton } from "@/components/phone/phone-panel";
 import { AiBadge } from "./ai-badge";
 import { ClockControls } from "./clock-controls";
 import { ResetDialog } from "./reset-dialog";
+import { useRole } from "./role";
 import { SimClock } from "./sim-clock";
 
 export const NAV = [
-  { href: "/monitoring", label: "Monitoring", icon: Map },
-  { href: "/zlecenia", label: "Zlecenia", icon: ClipboardList },
-  { href: "/komunikator", label: "Komunikator", icon: MessageSquare },
-  { href: "/skrzynka", label: "Skrzynka", icon: Mail },
-  { href: "/dokumenty", label: "Dokumenty", icon: FileText },
-  { href: "/dziennik-ai", label: "Dziennik AI", icon: Bot },
+  { href: "/sprzedaz", label: "Sprzedaż", icon: BriefcaseBusiness, roles: ["handlowiec"] },
+  { href: "/monitoring", label: "Monitoring", icon: Map, roles: ["spedytor"] },
+  { href: "/zlecenia", label: "Zlecenia", icon: ClipboardList, roles: ["spedytor", "handlowiec"] },
+  { href: "/komunikator", label: "Komunikator", icon: MessageSquare, roles: ["spedytor"] },
+  { href: "/skrzynka", label: "Skrzynka", icon: Mail, roles: ["spedytor", "handlowiec"] },
+  { href: "/dokumenty", label: "Dokumenty", icon: FileText, roles: ["spedytor"] },
+  { href: "/dziennik-ai", label: "Dziennik AI", icon: Bot, roles: ["spedytor", "handlowiec"] },
 ] as const;
 
 export function AppShell({ children, toolbar }: { children: ReactNode; toolbar?: ReactNode }) {
   const pathname = usePathname();
   const { data: snapshot, isError, error } = useSnapshot();
+  const [role, setRole] = useRole();
 
   return (
     <div className="flex h-dvh min-h-0 flex-col bg-muted/30">
@@ -53,9 +56,29 @@ export function AppShell({ children, toolbar }: { children: ReactNode; toolbar?:
       )}
       <div className="flex min-h-0 flex-1">
         <nav className="flex w-44 shrink-0 flex-col gap-0.5 border-r bg-background p-2" aria-label="Menu główne">
-          {NAV.map(({ href, label, icon: Icon }) => {
+          <div className="mb-1.5 grid grid-cols-2 rounded-md bg-muted p-0.5 text-[11px]" role="group" aria-label="Rola">
+            {(["spedytor", "handlowiec"] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRole(r)}
+                aria-pressed={role === r}
+                data-testid={`role-${r}`}
+                className={cn("rounded px-1.5 py-1 capitalize", role === r ? "bg-background font-medium shadow-xs" : "text-muted-foreground")}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+          {NAV.filter((item) => (item.roles as readonly string[]).includes(role)).map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(`${href}/`);
-            const badge = href === "/komunikator" ? snapshot?.badges.komunikator : href === "/skrzynka" ? snapshot?.badges.skrzynka : href === "/dokumenty" ? snapshot?.badges.dokumenty : 0;
+            const badges: Record<string, number | undefined> = {
+              "/komunikator": snapshot?.badges.komunikator,
+              "/skrzynka": snapshot?.badges.skrzynka,
+              "/dokumenty": snapshot?.badges.dokumenty,
+              "/sprzedaz": snapshot?.badges.sprzedaz,
+            };
+            const badge = badges[href] ?? 0;
             return (
               <Link
                 key={href}

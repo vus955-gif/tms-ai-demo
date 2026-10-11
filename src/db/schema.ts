@@ -432,16 +432,18 @@ export const messages = pgTable(
     id: text("id").notNull(),
     channel: text("channel").$type<"sms" | "mms" | "email">().notNull(),
     direction: text("direction").$type<"in" | "out">().notNull(),
-    party: text("party").$type<"driver" | "client">().notNull(),
+    party: text("party").$type<"driver" | "client" | "agent">().notNull(),
     driverId: text("driver_id"),
     clientContactId: text("client_contact_id"),
+    /** Freight agent (Sales module): RFQs, rate replies, negotiations. */
+    agentId: text("agent_id"),
     threadKey: text("thread_key").notNull(),
     subject: text("subject"),
     body: text("body").notNull(),
     /** Sample image ids or { notStored: true } markers. */
     attachments: jsonb("attachments").$type<{ sampleId?: string; notStored?: boolean; name?: string }[]>().notNull().default(sql`'[]'::jsonb`),
     state: text("state").$type<"draft" | "sent" | "received">().notNull(),
-    sentBy: text("sent_by").$type<"dispatcher" | "system" | "driver" | "client">().notNull(),
+    sentBy: text("sent_by").$type<"dispatcher" | "system" | "driver" | "client" | "agent">().notNull(),
     atSim: ts("at_sim").notNull(),
     readAtSim: ts("read_at_sim"),
     orderId: text("order_id"),
@@ -491,6 +493,91 @@ export const documents = pgTable(
     index("documents_status_idx").on(t.sandboxId, t.status),
   ],
 );
+
+// ——— Sales (quotes via freight agents, road quotes for the own fleet) ———
+
+export const QUOTE_MODES = ["sea", "air", "rail", "road"] as const;
+export type QuoteMode = (typeof QUOTE_MODES)[number];
+export type QuoteStatus = "niekompletne" | "do_zatwierdzenia" | "zbieranie" | "gotowe" | "oferta_wyslana" | "wygrana" | "przegrana" | "anulowana";
+
+/** Trusted freight agents (people at partner forwarders, not AI agents). */
+export const agents = pgTable(
+  "agents",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    company: text("company").notNull(),
+    contactName: text("contact_name").notNull(),
+    email: text("email").notNull(),
+    modes: jsonb("modes").$type<QuoteMode[]>().notNull(),
+    regions: text("regions").notNull().default(""),
+    active: boolean("active").notNull().default(true),
+    /** Bot behaviour in the demo: how often and how fast this agent answers. */
+    replyRate: doublePrecision("reply_rate").notNull().default(0.75),
+    priceFactor: doublePrecision("price_factor").notNull().default(1),
+  },
+  (t) => [primaryKey({ columns: [t.sandboxId, t.id] })],
+);
+
+export const quoteRequests = pgTable(
+  "quote_requests",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    number: text("number").notNull(),
+    mode: text("mode").$type<QuoteMode>().notNull(),
+    status: text("status").$type<QuoteStatus>().notNull(),
+    clientId: text("client_id").notNull(),
+    contactId: text("contact_id").notNull(),
+    sourceMessageId: text("source_message_id"),
+    /** What was read from the client's e-mail (origin, destination, incoterms, cargo…). */
+    details: jsonb("details").$type<Record<string, unknown>>().notNull(),
+    missingFields: jsonb("missing_fields").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    extractedBy: text("extracted_by").$type<"ai" | "rules">().notNull(),
+    selectedQuoteId: text("selected_quote_id"),
+    marginPct: doublePrecision("margin_pct"),
+    /** Road quotes: the calculation shown to the salesperson. */
+    calculation: jsonb("calculation").$type<Record<string, unknown> | null>(),
+    deadlineSim: ts("deadline_sim"),
+    createdSim: ts("created_sim").notNull(),
+    closedSim: ts("closed_sim"),
+  },
+  (t) => [primaryKey({ columns: [t.sandboxId, t.id] }), index("quote_requests_status_idx").on(t.sandboxId, t.status)],
+);
+
+export type AgentQuoteStatus = "wyslane" | "przypomniane" | "odpowiedz" | "brak_miejsca" | "brak_odpowiedzi";
+
+export const agentQuotes = pgTable(
+  "agent_quotes",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    requestId: text("request_id").notNull(),
+    agentId: text("agent_id").notNull(),
+    status: text("status").$type<AgentQuoteStatus>().notNull(),
+    price: doublePrecision("price"),
+    currency: text("currency"),
+    validUntil: text("valid_until"),
+    transitDays: integer("transit_days"),
+    conditions: text("conditions"),
+    readBy: text("read_by").$type<"ai" | "rules" | null>(),
+    sentSim: ts("sent_sim").notNull(),
+    repliedSim: ts("replied_sim"),
+  },
+  (t) => [primaryKey({ columns: [t.sandboxId, t.id] }), index("agent_quotes_request_idx").on(t.sandboxId, t.requestId)],
+);
+
+export type RoadRate = { kind: "bus" | "solo" | "tractor"; label: string; perKmPln: number; perKmEur: number; minPln: number; minEur: number };
+
+/** One row per world: automation switch, default margin and road rates. */
+export const salesSettings = pgTable("sales_settings", {
+  sandboxId: sandboxRef().primaryKey(),
+  autoSend: boolean("auto_send").notNull().default(true),
+  defaultMarginPct: doublePrecision("default_margin_pct").notNull().default(12),
+  adrSurchargePct: doublePrecision("adr_surcharge_pct").notNull().default(15),
+  reeferSurchargePct: doublePrecision("reefer_surcharge_pct").notNull().default(20),
+  roadRates: jsonb("road_rates").$type<RoadRate[]>().notNull(),
+});
 
 /** Global (not per world) daily AI spend, used for the daily budget cap. */
 export const aiBudgetDaily = pgTable("ai_budget_daily", {

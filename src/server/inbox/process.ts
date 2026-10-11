@@ -13,6 +13,13 @@ import { saveDraft } from "./gateway";
 
 const FINISHED = ["ZAMKNIETE", "ANULOWANE"] as const;
 
+type InquiryListener = (db: Db, info: { sandboxId: string; messageId: string; simNow: Date; skipAi?: boolean }) => Promise<void>;
+const inquiryListeners: InquiryListener[] = [];
+/** The Sales module turns quote requests ("zapytanie ofertowe") into quotes. */
+export function onQuoteInquiry(listener: InquiryListener) {
+  inquiryListeners.push(listener);
+}
+
 export async function movingOrdersOf(db: Executor, sandboxId: string, clientId: string): Promise<string[]> {
   const rows = await db
     .select({ id: orders.id })
@@ -178,6 +185,9 @@ export async function processClientEmail(db: Db, sandboxId: string, messageId: s
       skipAi: opts.skipAi,
       kind: "draft_missing",
     });
+  }
+  if (t.category === "zapytanie_ofertowe") {
+    for (const listener of inquiryListeners) await listener(db, { sandboxId, messageId, simNow: msg.atSim, skipAi: opts.skipAi });
   }
   if (t.category === "reklamacja") {
     await openAlert(

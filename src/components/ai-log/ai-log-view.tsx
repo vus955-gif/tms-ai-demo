@@ -20,6 +20,8 @@ export const AI_FUNCTION_LABEL: Record<string, string> = {
   explainAlert: "Wyjaśnienie alertu",
   draftMessage: "Szkic wiadomości",
   triageClientEmail: "Mail klienta",
+  extractQuoteRequest: "Zapytanie ofertowe",
+  readAgentQuote: "Stawka agenta",
   diagnostics: "Diagnostyka",
 };
 

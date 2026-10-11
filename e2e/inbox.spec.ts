@@ -35,7 +35,7 @@ test.describe("etap 3b — skrzynka klientów", () => {
     await expect(page.getByTestId("pick-ZL-1043")).toBeVisible({ timeout: 20_000 });
   });
 
-  test("Poczta klienta: zapytanie ofertowe trafia do skrzynki z oznaczeniem Sprzedaż – wkrótce", async ({ page }) => {
+  test("Poczta klienta: zapytanie ofertowe trafia do skrzynki i do Sprzedaży", async ({ page }) => {
     test.setTimeout(90_000);
     await page.goto("/skrzynka");
     await page.getByTestId("client-mail-toggle").click();
@@ -47,6 +47,6 @@ test.describe("etap 3b — skrzynka klientów", () => {
     await expect(page.getByText(/Mail w Skrzynce — kategoria: zapytanie ofertowe/)).toBeVisible({ timeout: 20_000 });
     await page.getByTestId("client-mail-toggle").click();
     await page.getByTestId("inbox-list").getByRole("button", { name: /Prośba o wycenę kontenera/ }).click();
-    await expect(page.getByTestId("sales-soon")).toContainText("Sprzedaż – wkrótce");
+    await expect(page.getByTestId("sales-link")).toContainText("Wycena WY-");
   });
 });

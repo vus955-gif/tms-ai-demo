@@ -13,6 +13,13 @@ async function loadMessage(db: Executor, sandboxId: string, id: string) {
   return m;
 }
 
+type SentListener = (db: Executor, info: { sandboxId: string; message: typeof messages.$inferSelect; simNow: Date }) => Promise<void>;
+const sentListeners: SentListener[] = [];
+/** The Sales module marks a quote "offer sent" when its offer draft goes out. */
+export function onDraftSent(listener: SentListener) {
+  sentListeners.push(listener);
+}
+
 /** "Sends" a draft: in the demo it is only marked as sent — no e-mail leaves the app. */
 export async function sendDraft(db: Executor, sandboxId: string, draftId: string, edit: { subject: string; body: string }, simNow: Date) {
   const m = await loadMessage(db, sandboxId, draftId);
@@ -21,6 +28,7 @@ export async function sendDraft(db: Executor, sandboxId: string, draftId: string
     .update(messages)
     .set({ state: "sent", sentBy: "dispatcher", subject: edit.subject.slice(0, 200), body: edit.body.slice(0, 4000), atSim: simNow })
     .where(and(eq(messages.sandboxId, sandboxId), eq(messages.id, draftId)));
+  for (const listener of sentListeners) await listener(db, { sandboxId, message: m, simNow });
 }
 
 export async function discardDraft(db: Executor, sandboxId: string, draftId: string) {

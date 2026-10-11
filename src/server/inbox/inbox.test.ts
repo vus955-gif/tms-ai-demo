@@ -127,8 +127,12 @@ describe("stage 3b: client inbox", () => {
     const id = await storeClientInbound(db, sandbox.id, { contactId: "ct-sudety-1", subject: "Wycena kontenera", body: "Prosimy o ofertę na fracht morski FCL 40' Gdańsk – Szanghaj, FOB.", atSim: at });
     const t = await processClientEmail(db, sandbox.id, id, { simNow: at });
     expect(t.category).toBe("zapytanie_ofertowe");
+    // The Sales module takes over: the inquiry lacks weight, goods and date, so the client is asked for them.
     const thread = await inboxThread(db, sandbox.id, id);
-    expect(thread.messages.some((m) => m.state === "draft")).toBe(false);
+    expect(thread.quote).toMatchObject({ status: "niekompletne" });
+    const draft = thread.messages.find((m) => m.state === "draft")!;
+    expect(draft.kind).toBe("draft_quote_missing");
+    expect(draft.body).toContain("waga");
   });
 
   it("asks the client for missing data when an order e-mail is incomplete", async () => {

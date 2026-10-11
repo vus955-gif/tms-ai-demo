@@ -63,6 +63,32 @@ export async function saveDraft(
   return id;
 }
 
+/** An automatic e-mail to a client (e.g. "thank you for your inquiry"); demo: stored only. */
+export async function storeClientOutbound(
+  db: Executor,
+  sandboxId: string,
+  mail: { threadKey: string; contactId: string; subject: string; body: string; atSim: Date; kind: string },
+): Promise<string> {
+  const id = randomUUID();
+  await db.insert(messages).values({
+    sandboxId,
+    id,
+    channel: "email",
+    direction: "out",
+    party: "client",
+    clientContactId: mail.contactId,
+    threadKey: mail.threadKey,
+    subject: mail.subject.slice(0, 200),
+    body: mail.body.slice(0, 4000),
+    state: "sent",
+    sentBy: "system",
+    atSim: mail.atSim,
+    readAtSim: mail.atSim,
+    kind: mail.kind,
+  });
+  return id;
+}
+
 export async function markEmailThreadRead(db: Executor, sandboxId: string, threadKey: string, atSim: Date) {
   await db
     .update(messages)

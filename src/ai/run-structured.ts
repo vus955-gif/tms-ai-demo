@@ -13,6 +13,8 @@ export type AiFunctionName =
   | "explainAlert"
   | "draftMessage"
   | "triageClientEmail"
+  | "extractQuoteRequest"
+  | "readAgentQuote"
   | "diagnostics";
 
 export type AiFallbackReason = "no_api_key" | "sandbox_limit" | "daily_budget" | "ai_error" | "refusal" | "catch_up";

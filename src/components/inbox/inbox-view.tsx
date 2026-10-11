@@ -272,7 +272,16 @@ function AiPanel({ thread }: { thread: InboxThread }) {
         </section>
       )}
 
-      {t?.category === "zapytanie_ofertowe" && (
+      {t?.category === "zapytanie_ofertowe" && thread.quote && (
+        <section className="rounded-lg border border-ai/40 bg-ai-soft/40 p-2.5 text-xs" data-testid="sales-link">
+          <div className="mb-1 font-medium text-ai">Wycena {thread.quote.number}</div>
+          Zapytanie trafiło do Sprzedaży: kompletność, potwierdzenie dla klienta, zapytania do agentów albo kalkulacja drogowa.
+          <Link href={`/sprzedaz?q=${thread.quote.id}`} className="mt-1 block text-brand underline">
+            Otwórz wycenę
+          </Link>
+        </section>
+      )}
+      {t?.category === "zapytanie_ofertowe" && !thread.quote && (
         <section className="rounded-lg border border-ai/40 bg-ai-soft/40 p-2.5 text-xs" data-testid="sales-soon">
           <div className="mb-1 font-medium text-ai">Sprzedaż – wkrótce</div>
           Wyceny przez zaufanych agentów (Sea / Rail / Air) i wyceny drogowe ze stawek za km to pierwszy etap po testach MVP. Na razie odpowiedz ręcznie albo poproś o szkic.
