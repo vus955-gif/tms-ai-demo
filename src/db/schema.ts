@@ -378,6 +378,7 @@ export const ALERT_ACTIONS = [
   "powiadom_klienta",
   "napisz_do_kierowcy",
   "przydziel_innego",
+  "otworz_dokument",
   "brak",
 ] as const;
 export type AlertAction = (typeof ALERT_ACTIONS)[number];
@@ -457,6 +458,36 @@ export const messages = pgTable(
   (t) => [
     primaryKey({ columns: [t.sandboxId, t.id] }),
     index("messages_thread_idx").on(t.sandboxId, t.threadKey, t.atSim),
+  ],
+);
+
+export type DocumentStatus = "do_zamkniecia" | "do_weryfikacji" | "nieczytelny" | "zatwierdzony" | "odrzucony";
+
+export const documents = pgTable(
+  "documents",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    messageId: text("message_id"),
+    driverId: text("driver_id"),
+    kind: text("kind").$type<"cmr">().notNull().default("cmr"),
+    /** Sample id from public/cmr-samples, or null when the visitor's own photo was not stored. */
+    imageRef: text("image_ref"),
+    extracted: jsonb("extracted").$type<Record<string, unknown> | null>(),
+    quality: jsonb("quality").$type<{ legible: boolean; stamp: boolean | null; signature: boolean | null; remarks: string | null } | null>(),
+    matchCandidates: jsonb("match_candidates").$type<{ orderId: string; number: string; score: number; reasons: string[] }[]>().notNull().default(sql`'[]'::jsonb`),
+    matchedOrderId: text("matched_order_id"),
+    matchScore: doublePrecision("match_score"),
+    status: text("status").$type<DocumentStatus>().notNull(),
+    readBy: text("read_by").$type<"ai" | "fallback">(),
+    note: text("note"),
+    decidedBy: text("decided_by").$type<"dispatcher" | "ai" | null>(),
+    decidedAtSim: ts("decided_at_sim"),
+    createdSim: ts("created_sim").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sandboxId, t.id] }),
+    index("documents_status_idx").on(t.sandboxId, t.status),
   ],
 );
 

@@ -29,6 +29,13 @@
       "when": 1791675141208,
       "tag": "0003_stage2_mode_start",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791676012167,
+      "tag": "0004_stage3_documents",
+      "breakpoints": true
     }
   ]
 }

@@ -9,7 +9,11 @@ import { transitionOrder } from "../orders/transition";
 
 const CONFIDENT = 0.8;
 
-export type DocumentListener = (db: Db, info: { sandboxId: string; messageId: string; driverId: string; simNow: Date; skipAi: boolean }) => Promise<void>;
+export type UploadedImage = { data: string; mediaType: "image/jpeg" | "image/png" | "image/webp" };
+export type DocumentListener = (
+  db: Db,
+  info: { sandboxId: string; messageId: string; driverId: string; simNow: Date; skipAi: boolean; uploaded?: UploadedImage },
+) => Promise<void>;
 const documentListeners: DocumentListener[] = [];
 /** Stage 3 (CMR) hooks into documents sent by drivers. */
 export function onDriverDocument(listener: DocumentListener) {
@@ -31,7 +35,7 @@ export async function processDriverInbound(
   db: Db,
   sandboxId: string,
   messageId: string,
-  opts: { simNow: Date; skipAi?: boolean },
+  opts: { simNow: Date; skipAi?: boolean; uploaded?: UploadedImage },
 ): Promise<DriverMessageClassification> {
   const [msg] = await db.select().from(messages).where(and(eq(messages.sandboxId, sandboxId), eq(messages.id, messageId)));
   if (!msg || !msg.driverId) throw new Error(`Message ${messageId} not found`);
@@ -180,10 +184,14 @@ export async function processDriverInbound(
       break;
     }
     case "dokument":
-      for (const listener of documentListeners) await listener(db, { sandboxId, messageId, driverId, simNow: opts.simNow, skipAi: Boolean(opts.skipAi) });
-      break;
     case "luzne":
       break;
+  }
+  // An attached photo is always handed to the document flow, whatever the text says.
+  if (msg.attachments.length > 0 || opts.uploaded) {
+    for (const listener of documentListeners) {
+      await listener(db, { sandboxId, messageId, driverId, simNow: opts.simNow, skipAi: Boolean(opts.skipAi), uploaded: opts.uploaded });
+    }
   }
   return c;
 }

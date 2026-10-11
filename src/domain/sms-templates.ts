@@ -57,3 +57,11 @@ export function reminderSms(order: Pick<OrderInfo, "number" | "pickupFrom">): st
 export function cancellationSms(order: Pick<OrderInfo, "number">): string {
   return `Zlecenie ${order.number} zostało odwołane. Nie jedź na załadunek. W razie pytań zadzwoń do spedycji.`;
 }
+
+export function cmrResendSms(): string {
+  return "Zdjęcie CMR jest nieczytelne. Zrób wyraźne zdjęcie całego dokumentu (ostre, bez cienia, z polem 24) i wyślij jeszcze raz.";
+}
+
+export function cmrMissingSms(order: Pick<OrderInfo, "number">): string {
+  return `Brakuje zdjęcia CMR dla zlecenia ${order.number}. Wyślij je MMS-em albo mailem, póki dokument masz pod ręką.`;
+}

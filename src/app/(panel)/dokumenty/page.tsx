@@ -1,17 +1,15 @@
-import { FileText } from "lucide-react";
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { Suspense } from "react";
+import { ClientOnly } from "@/components/client-only";
+import { DocumentsView } from "@/components/documents/documents-view";
+
+const Loading = () => <div className="p-6 text-sm text-muted-foreground">Wczytywanie dokumentów…</div>;
 
 export default function DocumentsPage() {
   return (
-    <ComingSoon
-      icon={FileText}
-      title="Dokumenty CMR"
-      stage="3"
-      items={[
-        "Odczyt zdjęć CMR przesłanych MMS-em lub mailem",
-        "Kontrola jakości: czytelność, pieczątka, podpis, adnotacje",
-        "Kolejki „Do zamknięcia” i „Do weryfikacji”",
-      ]}
-    />
+    <ClientOnly fallback={<Loading />}>
+      <Suspense fallback={<Loading />}>
+        <DocumentsView />
+      </Suspense>
+    </ClientOnly>
   );
 }

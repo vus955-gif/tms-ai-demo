@@ -5,7 +5,7 @@
  * Usage: npx tsx scripts/dry-run.ts [untilMin=360] [everyMin=20]
  */
 import { and, eq } from "drizzle-orm";
-import { alerts, orders, vehicles, vehicleStates } from "../src/db/schema";
+import { alerts, documents, messages, orders, vehicles, vehicleStates } from "../src/db/schema";
 import "../src/server/bootstrap";
 import { createSandbox } from "../src/server/sandbox/repository";
 import { runTick } from "../src/server/tick/engine";
@@ -19,6 +19,8 @@ async function main() {
   const realStart = new Date("2026-10-14T06:00:00Z");
   const sandbox = await createSandbox(db, { ipHash: "dry-run", realNow: realStart });
   const seenAlerts = new Set<string>();
+  const seenDocs = new Set<string>();
+  const seenSms = new Set<string>();
   for (let m = 0; m <= untilMin; m += everyMin) {
     const realNow = new Date(realStart.getTime() + (m * 60_000) / 10);
     const tick = await runTick(db, sandbox.id, realNow);
@@ -43,6 +45,16 @@ async function main() {
       if (seenAlerts.has(a.id)) continue;
       seenAlerts.add(a.id);
       console.log(`  ALERT [${a.severity}] ${a.title} — ${a.body}`);
+    }
+    for (const d of await db.select().from(documents).where(eq(documents.sandboxId, sandbox.id))) {
+      if (seenDocs.has(d.id)) continue;
+      seenDocs.add(d.id);
+      console.log(`  DOKUMENT ${d.imageRef ?? "upload"} od ${d.driverId} → ${d.status} ${formatTime(d.createdSim)}`);
+    }
+    for (const msg of await db.select().from(messages).where(eq(messages.sandboxId, sandbox.id))) {
+      if (seenSms.has(msg.id) || !msg.kind?.startsWith("cmr")) continue;
+      seenSms.add(msg.id);
+      console.log(`  SMS ${msg.kind} → ${msg.driverId} ${formatTime(msg.atSim)}`);
     }
   }
 }

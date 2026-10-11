@@ -20,6 +20,7 @@ const ACTION_LABEL: Record<AlertAction, string> = {
   powiadom_klienta: "Powiadom klienta",
   napisz_do_kierowcy: "Napisz do kierowcy",
   przydziel_innego: "Przydziel innego",
+  otworz_dokument: "Otwórz dokument",
   brak: "",
 };
 
@@ -117,6 +118,10 @@ export function AlertCard({ alert, onNavigate }: { alert: AlertView; onNavigate?
         router.push("/zlecenia");
         onNavigate?.();
         break;
+      case "otworz_dokument":
+        router.push(`/dokumenty?doc=${alert.documentId}`);
+        onNavigate?.();
+        break;
       case "powiadom_klienta":
         router.push(`/skrzynka${alert.orderId ? `?order=${alert.orderId}` : ""}`);
         onNavigate?.();
@@ -126,7 +131,9 @@ export function AlertCard({ alert, onNavigate }: { alert: AlertView; onNavigate?
     }
   };
 
-  const actions = alert.actions.filter((a) => a !== "brak" && (a !== "zastosuj_objazd" || alert.alternativeRouteKey));
+  const actions = alert.actions.filter(
+    (a) => a !== "brak" && (a !== "zastosuj_objazd" || alert.alternativeRouteKey) && (a !== "otworz_dokument" || alert.documentId),
+  );
   return (
     <article className={cn("rounded-md border border-l-4 bg-background p-3", SEVERITY_STYLE[alert.severity])} data-testid="alert-card">
       <div className="flex items-start justify-between gap-2">

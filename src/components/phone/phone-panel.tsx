@@ -2,19 +2,20 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Send, Smartphone, X } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SNAPSHOT_KEY, useSnapshot } from "@/hooks/use-snapshot";
 import { getJson, postJson } from "@/lib/api";
 import { formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { ThreadDetail } from "@/server/messages/threads";
+import type { ThreadDetail, ThreadMessage } from "@/server/messages/threads";
+import { CmrTray } from "./cmr-tray";
 
 const MAX = 500;
 
 /** Demo tool: the visitor plays a driver; that driver's bot stays silent meanwhile. */
-export function PhoneButton({ extra }: { extra?: (driverId: string, onSent: () => void) => ReactNode }) {
+export function PhoneButton() {
   const [open, setOpen] = useState(false);
   const { data: snapshot } = useSnapshot();
   const queryClient = useQueryClient();
@@ -38,22 +39,12 @@ export function PhoneButton({ extra }: { extra?: (driverId: string, onSent: () =
       >
         <Smartphone /> Telefon kierowcy
       </Button>
-      {open && <PhonePanel driverId={snapshot?.phoneDriverId ?? null} onSelect={(id) => select.mutate(id)} onClose={close} extra={extra} />}
+      {open && <PhonePanel driverId={snapshot?.phoneDriverId ?? null} onSelect={(id) => select.mutate(id)} onClose={close} />}
     </>
   );
 }
 
-function PhonePanel({
-  driverId,
-  onSelect,
-  onClose,
-  extra,
-}: {
-  driverId: string | null;
-  onSelect: (id: string) => void;
-  onClose: () => void;
-  extra?: (driverId: string, onSent: () => void) => ReactNode;
-}) {
+function PhonePanel({ driverId, onSelect, onClose }: { driverId: string | null; onSelect: (id: string) => void; onClose: () => void }) {
   const { data: snapshot } = useSnapshot();
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
@@ -117,7 +108,8 @@ function PhonePanel({
             {thread.data?.messages.map((m) => (
               <div key={m.id} className={cn("flex", m.direction === "in" ? "justify-end" : "justify-start")}>
                 <div className={cn("max-w-[85%] rounded-2xl px-3 py-1.5 text-[13px]", m.direction === "in" ? "rounded-br-sm bg-ok text-white" : "rounded-bl-sm border bg-background")}>
-                  <p className="whitespace-pre-wrap">{m.body || (m.attachments.length ? "📎 zdjęcie" : "")}</p>
+                  <Attachments message={m} />
+                  {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
                   <p className={cn("text-right text-[10px]", m.direction === "in" ? "text-white/80" : "text-muted-foreground")}>{formatTime(m.atSim)}</p>
                 </div>
               </div>
@@ -125,7 +117,7 @@ function PhonePanel({
             {thread.data?.messages.length === 0 && <p className="text-center text-xs text-muted-foreground">Brak SMS-ów.</p>}
             <div ref={bottom} />
           </div>
-          {extra?.(driverId, refresh)}
+          <CmrTray driverId={driverId} onSent={refresh} />
           <form
             className="flex items-end gap-2 border-t p-2"
             onSubmit={(e) => {
@@ -153,6 +145,24 @@ function PhonePanel({
             </Button>
           </form>
         </>
+      )}
+    </div>
+  );
+}
+
+export function Attachments({ message }: { message: Pick<ThreadMessage, "attachments"> }) {
+  if (message.attachments.length === 0) return null;
+  return (
+    <div className="mb-1 space-y-1">
+      {message.attachments.map((a, i) =>
+        a.sampleId ? (
+          // eslint-disable-next-line @next/next/no-img-element -- static demo photo
+          <img key={i} src={`/cmr-samples/${a.sampleId}.jpg`} alt="Zdjęcie CMR" className="max-h-32 rounded-md border bg-white object-cover" />
+        ) : (
+          <p key={i} className="text-xs italic opacity-90">
+            📎 {a.name ?? "zdjęcie"} (nie jest przechowywane)
+          </p>
+        ),
       )}
     </div>
   );

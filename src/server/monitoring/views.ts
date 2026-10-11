@@ -77,6 +77,7 @@ export type AlertView = {
   orderId: string | null;
   createdSim: string;
   alternativeRouteKey: string | null;
+  documentId: string | null;
 };
 
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
@@ -167,6 +168,7 @@ export async function alertViews(db: Executor, sandboxId: string): Promise<Alert
       orderId: a.orderId,
       createdSim: a.createdSim.toISOString(),
       alternativeRouteKey: alternativeRouteKey ?? null,
+      documentId: a.dedupeKey.startsWith("cmr:") ? a.dedupeKey.slice(4) : null,
     }))
     .sort((a, b) => rank[a.severity] - rank[b.severity] || b.createdSim.localeCompare(a.createdSim));
 }

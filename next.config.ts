@@ -5,9 +5,9 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // PGlite ships a WASM build of Postgres that must not be bundled.
   serverExternalPackages: ["@electric-sql/pglite"],
-  // Precomputed routes and migrations are read from disk at runtime.
+  // Precomputed routes, migrations and CMR samples (sent to AI) are read from disk at runtime.
   outputFileTracingIncludes: {
-    "/api/**": ["./data/routes/**", "./drizzle/**"],
+    "/api/**": ["./data/routes/**", "./drizzle/**", "./public/cmr-samples/**"],
   },
   async redirects() {
     return [{ source: "/", destination: "/monitoring", permanent: false }];

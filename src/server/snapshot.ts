@@ -2,6 +2,7 @@ import { and, count, eq, notInArray } from "drizzle-orm";
 import { aiStatus, type AiStatus } from "@/ai/status";
 import { orders, vehicles } from "@/db/schema";
 import type { Executor } from "@/db/types";
+import { openDocumentsCount } from "./documents/cmr";
 import { unreadDriverMessages } from "./messages/threads";
 import { monitoringSnapshot, type AlertView, type VehicleView } from "./monitoring/views";
 import type { SandboxRow } from "./sandbox/repository";
@@ -51,7 +52,7 @@ export async function buildSnapshot(
     counts: { vehicles: vehicleCount, activeOrders },
     tick: { processed: tick.processed, remaining: tick.remaining, conflict: tick.conflict },
     ...(await monitoringSnapshot(db, sandbox.id)),
-    badges: { komunikator: await unreadDriverMessages(db, sandbox.id), skrzynka: 0, dokumenty: 0 },
+    badges: { komunikator: await unreadDriverMessages(db, sandbox.id), skrzynka: 0, dokumenty: await openDocumentsCount(db, sandbox.id) },
     phoneDriverId: sandbox.phoneDriverId,
   };
 }

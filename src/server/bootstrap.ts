@@ -10,5 +10,6 @@ import "./monitoring/risk-phase";
 import "./monitoring/incidents";
 import "./messages/handlers";
 import "./orders/scenario";
+import "./documents/cmr";
 
 export const BOOTSTRAPPED = true;

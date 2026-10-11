@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Attachments } from "@/components/phone/phone-panel";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { SNAPSHOT_KEY, useSnapshot } from "@/hooks/use-snapshot";
@@ -163,7 +164,13 @@ function Conversation({ detail }: { detail: ThreadDetail }) {
               )}
               data-testid={m.direction === "in" ? "msg-in" : "msg-out"}
             >
-              <p className="whitespace-pre-wrap">{m.body || (m.attachments.length ? "📎 zdjęcie" : "")}</p>
+              <Attachments message={m} />
+              {m.attachments.length > 0 && (
+                <Link href="/dokumenty" className="mb-1 block text-xs underline">
+                  Otwórz w Dokumentach
+                </Link>
+              )}
+              {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
               <div className={cn("mt-1 flex flex-wrap items-center gap-1.5 text-[11px]", m.direction === "out" ? "text-brand-foreground/80" : "text-muted-foreground")}>
                 <span>{formatSimClock(m.atSim)}</span>
                 {m.direction === "out" && m.sentBy === "system" && <span>· automatycznie ({m.kind === "order" ? "zlecenie" : m.kind === "reminder" ? "przypomnienie" : m.kind === "cancellation" ? "odwołanie" : m.kind})</span>}
