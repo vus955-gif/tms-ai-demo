@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zlecenia stałe</title>
+<style>
+  :root { --bg: #faf9f6; --surface: #fff; --surface-2: #f3f1ec; --ink: #1c1f24; --muted: #5d6471; --line: #e3e0d8; --accent: #0f5c8c; --good: #1f7a4d; --radius: 12px; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139; --accent: #6db4e3; --good: #6fcf9a; } }
+  :root[data-theme="dark"] { --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139; --accent: #6db4e3; --good: #6fcf9a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16.5px; line-height: 1.65; }
+  .page { max-width: 52rem; margin: 0 auto; padding: 56px 24px 96px; }
+  @media (max-width: 600px) { .page { padding: 32px 16px 64px; } }
+  h1 { font-size: 2.1rem; margin: .2em 0 .3em; line-height: 1.2; }
+  h2 { font-size: 1.45rem; margin: 3rem 0 1rem; padding-top: 1.3rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.1rem; margin: 1.6rem 0 .5rem; }
+  p { margin: 0 0 1em; } ul, ol { margin: 0 0 1em; padding-left: 1.3em; } li { margin: .3em 0; }
+  code { font-family: "Cascadia Code", Consolas, Menlo, monospace; font-size: .86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .eyebrow { font-size: .82rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 650; }
+  .lead { font-size: 1.12rem; color: var(--muted); }
+  .decision { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 20px; margin: 1rem 0; }
+  .decision h3 { margin-top: .2rem; }
+  .rec { color: var(--good); font-weight: 600; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  footer { margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: .86rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="eyebrow">Specyfikacja etapu 4a · szkic do akceptacji · 11 października 2026</div>
+  <h1>Szablony i zlecenia stałe z prognozą terminowości</h1>
+  <p class="lead">Z Twojej wizji etapu 4: „szablony, zlecenia stałe, nowi klienci i punkty”. Ta część obejmuje szablony i zlecenia stałe. Nowi klienci i punkty wymagają decyzji o liczeniu tras w locie, więc czekają (punkt 4).</p>
+
+  <h2>1. Zakres</h2>
+  <ul>
+    <li><strong>Szablon zlecenia stałego:</strong> klient, punkt załadunku i rozładunku z książki punktów tego klienta, okna godzinowe, dzień rozładunku (tego dnia / następnego / po 2 dniach), dni tygodnia, palety, waga, chłodnia, referencje.</li>
+    <li><strong>Paczka na najbliższy tydzień:</strong> wszystkie wystąpienia aktywnych szablonów na 7 dni od jutra, każde z prognozą: zdąży / ryzyko / brak kierowcy, z najlepszym kierowcą i powodem.</li>
+    <li><strong>Jedno kliknięcie:</strong> „Utwórz zaznaczone” zamienia wybrane dni w zlecenia, które czekają w Zleceniach na przydział. Drugi raz tego samego dnia się nie utworzy.</li>
+    <li><strong>Obsługa szablonów:</strong> dodawanie, edycja, wstrzymanie (aktywny / nieaktywny), usunięcie. Usunięcie szablonu nie rusza już utworzonych zleceń.</li>
+  </ul>
+
+  <h2>2. Decyzje (z alternatywami)</h2>
+  <div class="decision">
+    <h3>2.1 Jak zlecenia stałe trafiają do systemu</h3>
+    <ul>
+      <li><strong>A. Paczka na tydzień zatwierdzana jednym kliknięciem.</strong> Plusy: spedytor widzi prognozę, zanim zlecenia powstaną, i odznacza dni, których klient nie potrzebuje. Minusy: trzeba raz w tygodniu (albo codziennie) kliknąć.</li>
+      <li><strong>B. Automatyczne tworzenie N dni wcześniej.</strong> Plusy: zero klikania. Minusy: zlecenia na dni bez kierowcy pojawiają się po cichu; odwołania klienta trzeba anulować ręcznie.</li>
+      <li><strong>C. „Utwórz z szablonu” pojedynczo.</strong> Plusy: pełna kontrola. Minusy: przy kilkunastu stałych trasach to żmudne.</li>
+    </ul>
+    <p class="rec">Rekomendacja: A, zgodnie z zasadą „system proponuje, człowiek zatwierdza”. B można dodać później jako opcję per szablon.</p>
+  </div>
+  <div class="decision">
+    <h3>2.2 Skąd prognoza</h3>
+    <ul>
+      <li><strong>A. Te same reguły co „klocki”, każde zlecenie osobno.</strong> Czas jazdy z przerwami 561/2006, okna, pojemność, chłodnia, ADR, kartoteka floty, terminarz. Plusy: spójność z ekranem przydziału, każdy wynik ma powód. Minusy: nie widzi konfliktów w paczce (ten sam kierowca może być najlepszy dla dwóch zleceń jednego dnia).</li>
+      <li><strong>B. Plan całego tygodnia (optymalizacja przydziałów).</strong> Plusy: uwzględnia konflikty. Minusy: to osobny produkt (optymalizator tras), wynik trudniej wytłumaczyć.</li>
+      <li><strong>C. Ocena przez AI.</strong> Minusy: łamie zasadę „algorytm liczy, AI rozmawia” — liczby muszą być powtarzalne.</li>
+    </ul>
+    <p class="rec">Rekomendacja: A. Zastrzeżenie „każde zlecenie liczone osobno” jest napisane na ekranie.</p>
+  </div>
+  <div class="decision">
+    <h3>2.3 Stany prognozy</h3>
+    <ul>
+      <li><strong>A. Według zapasu czasu:</strong> brak kandydata → „brak kierowcy”; zapas na załadunku poniżej 30 minut → „ryzyko”; w pozostałych przypadkach → „zdąży”.</li>
+      <li><strong>B. Według oceny z klocków</strong> (wysoka / średnia / niska). Minusy: ocena miesza puste kilometry i koszt z terminowością, przez co „niska” myliła się z „nie zdąży”.</li>
+    </ul>
+    <p class="rec">Rekomendacja: A. Próg 30 minut jest jedną stałą (<code>RISK_SLACK_MIN</code>), łatwo go zmienić.</p>
+  </div>
+  <div class="decision">
+    <h3>2.4 Horyzont</h3>
+    <ul>
+      <li><strong>A. 7 dni od jutra.</strong> Plusy: rytm tygodniowy, rozsądny czas liczenia.</li>
+      <li><strong>B. 14 dni.</strong> Minusy: dwa razy więcej liczenia, a położenie floty za dwa tygodnie to zgadywanie.</li>
+    </ul>
+    <p class="rec">Rekomendacja: A. Dla dni 5–7 prognoza mówi raczej „czy mamy czym jechać” (terminy, nieobecności, chłodnia) niż dokładne ETA — patrz punkt 3.</p>
+  </div>
+  <div class="decision">
+    <h3>2.5 Co pokazać, gdy nie ma kierowcy</h3>
+    <ul>
+      <li><strong>A. Pojazdy, które pasują ładunkiem, z powodem do naprawienia</strong> („GD 2M88: świadectwo ATP ważne tylko do 20.10”, „urlop …”, „nie zdąży na załadunek …”). Ogólny powód („brak pojazdu: wymagana chłodnia”) tylko wtedy, gdy nic nie pasuje.</li>
+      <li><strong>B. Najczęstszy powód we flocie.</strong> Minusy: przy chłodni pokazywało „za mała pojemność”, czyli coś bezużytecznego.</li>
+    </ul>
+    <p class="rec">Rekomendacja: A — spedytor od razu wie, co odnowić albo komu przesunąć urlop.</p>
+  </div>
+  <div class="decision">
+    <h3>2.6 Status zlecenia z szablonu</h3>
+    <p>Zlecenie powstaje jako NOWE i czeka na przydział, tak jak zlecenie z formularza; dostaje znacznik pochodzenia i datę w referencjach. Automatyczny przydział najlepszemu kierowcy byłby możliwy, ale omija moment zatwierdzenia przez spedytora. <span class="rec">Rekomendacja: NOWE.</span></p>
+  </div>
+
+  <h2>3. Ograniczenia prognozy (świadomie przyjęte)</h2>
+  <ul>
+    <li><strong>Położenie floty za kilka dni</strong> to koniec bieżących zleceń — system nie zna przyszłych zleceń jednorazowych. Im dalej, tym prognoza mniej pewna.</li>
+    <li><strong>Każde zlecenie liczone osobno</strong> (punkt 2.2) — po utworzeniu i przydzieleniu jednego zlecenia prognoza dla kolejnych się zmienia.</li>
+    <li><strong>Prognoza nie rezerwuje kierowcy.</strong> Rezerwacja zaczyna się dopiero przy przydziale w Zleceniach.</li>
+  </ul>
+
+  <h2>4. Czego nie ma: nowi klienci i punkty (etap 4b)</h2>
+  <p>Demo liczy czasy jazdy z tras policzonych wcześniej dla wszystkich par punktów scenariusza. Nowy punkt oznacza nowe trasy do wszystkich pozostałych punktów, więc potrzebne jest liczenie tras w locie. Możliwości:</p>
+  <ul>
+    <li><strong>A. Przybliżenie:</strong> odległość w linii prostej razy współczynnik krętości dróg, z wyraźnym oznaczeniem „trasa przybliżona”. Plusy: zero zależności. Minusy: ETA i kilometry orientacyjne.</li>
+    <li><strong>B. Własny serwer tras</strong> (OSRM albo Valhalla na danych OpenStreetMap). Plusy: dokładne trasy, brak opłat za zapytanie. Minusy: serwer do utrzymania.</li>
+    <li><strong>C. Komercyjne API z profilem ciężarowym</strong> (np. HERE, TomTom). Plusy: ograniczenia dla ciężarówek, ruch drogowy. Minusy: koszt za zapytanie, umowa.</li>
+    <li>Publiczny serwer demonstracyjny OSRM odpada — jego zasady dopuszczają tylko lekkie użycie (z niego, z limitem jednego zapytania na sekundę, policzono trasy scenariusza).</li>
+  </ul>
+  <p class="rec">Rekomendacja do decyzji: w demo A, w produkcji B albo C — szczegóły w <a href="../../wdrozenie/2026-10-11-wyzwania-wdrozeniowe.html">dokumencie wdrożeniowym</a>.</p>
+
+  <h2>5. Scenariusz demo</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Szablon</th><th>Dni</th><th>Okna</th><th>Ładunek</th></tr></thead>
+    <tbody>
+      <tr><td>Agro-Pol: pasza Kutno → Gdynia</td><td>pn, śr, pt</td><td>06:00–08:00 → 13:00–16:00</td><td>20 palet, 9,6 t</td></tr>
+      <tr><td>Baltic Foods: chłodnia Pruszcz → Janki</td><td>pn–pt</td><td>05:00–06:30 → 12:00–14:00</td><td>18 palet, chłodnia</td></tr>
+      <tr><td>Hanza: dostawy Szczecin → Poznań</td><td>wt, cz</td><td>08:00–10:00 → 15:00–18:00</td><td>26 palet, 11 t</td></tr>
+    </tbody>
+  </table></div>
+  <p>Jedyna chłodnia (GD 2M88 z naczepą GD 15PL) ma w kartotece ATP ważne jeszcze 6 dni, więc paczka zawsze kończy się co najmniej jednym dniem „brak kierowcy” z tym powodem. W dni robocze od poniedziałku do czwartku dochodzą skutki szkolenia Wiśniewskiej i bieżących zleceń (np. „nie zdąży na załadunek”). Światy w weekend startują w piątek, więc wtedy szkolenie wypada w niedzielę i paczki nie dotyka.</p>
+
+  <h2>6. Kryteria akceptacji</h2>
+  <ul>
+    <li>Paczka pokazuje wszystkie dni aktywnych szablonów na 7 dni od jutra, z prognozą i powodem.</li>
+    <li>„Utwórz zaznaczone” tworzy zlecenia NOWE tylko dla wybranych dni; ponowne kliknięcie nie tworzy duplikatów; utworzony dzień pokazuje numer zlecenia.</li>
+    <li>Wstrzymany szablon znika z paczki; szablon z punktem innego klienta albo z odwróconym oknem nie zapisze się (komunikat po polsku).</li>
+    <li>Prognoza respektuje kartotekę floty i terminarz (etap 6).</li>
+  </ul>
+  <footer>Specyfikacja etapu 4a · szkic do Twojej akceptacji. Kod: gałąź <code>etap-4-szablony</code>.</footer>
+</main>
+</body>
+</html>
