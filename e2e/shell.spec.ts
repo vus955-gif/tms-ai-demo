@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { resetWorld } from "./helpers";
 
 test.describe("etap 0 — powłoka", () => {
   test("otwiera demo, pokazuje zegar symulacji i status AI", async ({ page }) => {
@@ -36,9 +37,7 @@ test.describe("etap 0 — powłoka", () => {
     await page.goto("/monitoring");
     await page.getByRole("button", { name: "60×" }).click();
     await page.waitForTimeout(3_000);
-    await page.getByTestId("reset-open").click();
-    await page.getByTestId("reset-confirm").click();
-    await expect(page.getByTestId("sim-clock")).toContainText(/08:3\d/);
+    await resetWorld(page);
     await expect(page.getByRole("button", { name: "10×" })).toHaveAttribute("aria-pressed", "true");
   });
 
