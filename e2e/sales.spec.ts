@@ -1,12 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { resetWorld } from "./helpers";
 
 test.describe("sprzedaż — wyceny", () => {
   test("handlowiec: wycena drogowa z Poczty klienta, kalkulacja, szkic oferty i wysyłka", async ({ page }) => {
     test.setTimeout(120_000);
     await page.goto("/skrzynka");
-    await page.getByTestId("reset-open").click();
-    await page.getByTestId("reset-confirm").click();
-    await expect(page.getByTestId("sim-clock")).toContainText(/08:3\d/);
+    await resetWorld(page);
 
     await page.getByTestId("client-mail-toggle").click();
     const panel = page.getByTestId("client-mail-panel");
