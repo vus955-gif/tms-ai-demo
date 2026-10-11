@@ -6,7 +6,7 @@ test.describe("etap 0 — powłoka", () => {
     await expect(page).toHaveURL(/\/monitoring$/);
     await expect(page.getByTestId("sim-clock")).toContainText(/\d{1,2}\.\d{2} · \d{2}:\d{2}/);
     await expect(page.getByTestId("ai-badge")).toContainText("AI");
-    await expect(page.getByRole("navigation", { name: "Menu główne" }).getByRole("link")).toHaveCount(6);
+    await expect(page.getByRole("navigation", { name: "Menu główne" }).getByRole("link")).toHaveCount(8);
   });
 
   test("pauza zatrzymuje zegar, wznowienie go puszcza", async ({ page }) => {

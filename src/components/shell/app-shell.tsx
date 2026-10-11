@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, BriefcaseBusiness, ClipboardList, FileText, Mail, Map, MessageSquare, Truck } from "lucide-react";
+import { Bot, BriefcaseBusiness, CalendarDays, ClipboardList, FileText, Mail, Map, MessageSquare, Truck, Wrench } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -23,6 +23,8 @@ export const NAV = [
   { href: "/komunikator", label: "Komunikator", icon: MessageSquare, roles: ["spedytor"] },
   { href: "/skrzynka", label: "Skrzynka", icon: Mail, roles: ["spedytor", "handlowiec"] },
   { href: "/dokumenty", label: "Dokumenty", icon: FileText, roles: ["spedytor"] },
+  { href: "/flota", label: "Flota", icon: Wrench, roles: ["spedytor"] },
+  { href: "/terminarz", label: "Terminarz", icon: CalendarDays, roles: ["spedytor"] },
   { href: "/dziennik-ai", label: "Dziennik AI", icon: Bot, roles: ["spedytor", "handlowiec"] },
 ] as const;
 
@@ -79,6 +81,7 @@ export function AppShell({ children, toolbar }: { children: ReactNode; toolbar?:
               "/skrzynka": snapshot?.badges.skrzynka,
               "/dokumenty": snapshot?.badges.dokumenty,
               "/sprzedaz": snapshot?.badges.sprzedaz,
+              "/flota": snapshot?.badges.flota,
             };
             const badge = badges[href] ?? 0;
             return (

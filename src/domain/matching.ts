@@ -41,6 +41,8 @@ export type MatchCandidate = {
   historyWithClient: number;
   /** Road distance between two points in metres. */
   distanceM: (from: string, to: string) => number;
+  /** Fleet file and calendar (stage 6): lapsed blocking deadlines, absences during the order. */
+  blockers?: string[];
 };
 
 export type MatchTier = "high" | "medium" | "low" | "excluded";
@@ -66,6 +68,7 @@ export function evaluateCandidate(order: MatchOrder, c: MatchCandidate): MatchRe
   if (order.bodyRequired === "chlodnia" && c.body !== "chlodnia") return excluded(c, "wymagana chłodnia");
   if (order.adrRequired && !c.adr) return excluded(c, "pojazd bez wyposażenia ADR");
   if (order.adrRequired && !c.driverAdr) return excluded(c, "kierowca bez zaświadczenia ADR");
+  if (c.blockers && c.blockers.length > 0) return excluded(c, c.blockers[0]);
 
   const stops: Stop[] = [
     ...c.sim.stops,

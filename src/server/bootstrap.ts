@@ -14,5 +14,6 @@ import "./documents/cmr";
 import "./inbox/handlers";
 import "./sales/seed";
 import "./sales/handlers";
+import "./fleet/seed";
 
 export const BOOTSTRAPPED = true;

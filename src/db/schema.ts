@@ -597,6 +597,47 @@ export const trackingLinks = pgTable(
   (t) => [index("tracking_links_order_idx").on(t.sandboxId, t.orderId)],
 );
 
+// ——— Fleet file and driver calendar (stage 6) ———
+
+export const TERM_KINDS = ["przeglad", "oc", "tachograf", "serwis", "atp", "prawo_jazdy", "kwalifikacja", "karta_kierowcy", "badania", "adr"] as const;
+export type TermKind = (typeof TERM_KINDS)[number];
+
+/** Deadlines of vehicles, trailers and drivers: by date or by odometer. */
+export const fleetTerms = pgTable(
+  "fleet_terms",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    subjectType: text("subject_type").$type<"vehicle" | "trailer" | "driver">().notNull(),
+    subjectId: text("subject_id").notNull(),
+    kind: text("kind").$type<TermKind>().notNull(),
+    dueSim: ts("due_sim"),
+    dueKm: integer("due_km"),
+    docNumber: text("doc_number").notNull().default(""),
+    /** An overdue blocking term excludes the vehicle/driver from new orders. */
+    blocking: boolean("blocking").notNull().default(false),
+    doneSim: ts("done_sim"),
+  },
+  (t) => [primaryKey({ columns: [t.sandboxId, t.id] }), index("fleet_terms_subject_idx").on(t.sandboxId, t.subjectId)],
+);
+
+export const ABSENCE_KINDS = ["urlop", "l4", "szkolenie", "badania", "wolne"] as const;
+export type AbsenceKind = (typeof ABSENCE_KINDS)[number];
+
+export const driverAbsences = pgTable(
+  "driver_absences",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    driverId: text("driver_id").notNull(),
+    kind: text("kind").$type<AbsenceKind>().notNull(),
+    fromSim: ts("from_sim").notNull(),
+    toSim: ts("to_sim").notNull(),
+    note: text("note").notNull().default(""),
+  },
+  (t) => [primaryKey({ columns: [t.sandboxId, t.id] }), index("driver_absences_driver_idx").on(t.sandboxId, t.driverId)],
+);
+
 /** Global (not per world) daily AI spend, used for the daily budget cap. */
 export const aiBudgetDaily = pgTable("ai_budget_daily", {
   day: text("day").primaryKey(),
