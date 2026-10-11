@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel klienta</title>
+<style>
+  :root {
+    --bg: #faf9f6; --surface: #fff; --surface-2: #f3f1ec; --ink: #1c1f24; --muted: #5d6471; --line: #e3e0d8;
+    --accent: #0f5c8c; --good: #1f7a4d; --warn-soft: #fbf0dc; --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139; --accent: #6db4e3; --good: #6fcf9a; --warn-soft: #2c2314; }
+  }
+  :root[data-theme="dark"] { --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139; --accent: #6db4e3; --good: #6fcf9a; --warn-soft: #2c2314; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16.5px; line-height: 1.65; }
+  .page { max-width: 52rem; margin: 0 auto; padding: 56px 24px 96px; }
+  @media (max-width: 600px) { .page { padding: 32px 16px 64px; } }
+  h1 { font-size: 2.1rem; margin: .2em 0 .3em; line-height: 1.2; }
+  h2 { font-size: 1.45rem; margin: 3rem 0 1rem; padding-top: 1.3rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.1rem; margin: 1.6rem 0 .5rem; }
+  p { margin: 0 0 1em; }
+  ul, ol { margin: 0 0 1em; padding-left: 1.3em; }
+  li { margin: .3em 0; }
+  code { font-family: "Cascadia Code", Consolas, Menlo, monospace; font-size: .86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .eyebrow { font-size: .82rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 650; }
+  .lead { font-size: 1.12rem; color: var(--muted); }
+  .box { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; padding: 16px 22px; margin: 1.2rem 0; }
+  .decision { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 20px; margin: 1rem 0; }
+  .decision h3 { margin-top: .2rem; }
+  .rec { color: var(--good); font-weight: 600; }
+  footer { margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: .86rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="eyebrow">Specyfikacja etapu 5 · szkic do akceptacji · 11 października 2026</div>
+  <h1>Panel klienta: śledzenie jednego transportu</h1>
+  <p class="lead">Klient widzi swój transport — i tylko go — od ETD do umówionego ETA. Bez danych kierowcy, bez reszty floty.</p>
+
+  <div class="box">
+    <strong>Twoje decyzje (4.2)</strong>
+    <ul>
+      <li>Śledzenie zaczyna się w momencie ETD i kończy w umówionym momencie ETA; przy opóźnieniu spedytor może ręcznie wydłużyć obserwację.</li>
+      <li>Klient widzi rejestracje auta, status, ETA i postęp trasy — bez danych kontaktowych.</li>
+      <li>Z wizji TMS: konta klientów do oglądania konkretnego transportu, nigdy całej floty.</li>
+    </ul>
+  </div>
+
+  <h2>1. Przepływ</h2>
+  <ol>
+    <li>Spedytor przy zleceniu klika <strong>„Link dla klienta”</strong>. System tworzy unikalny link (losowy token) do strony śledzenia tego jednego zlecenia.</li>
+    <li>Link można dołączyć do maila — szkic odpowiedzi na „gdzie jest auto?” sam go wstawia, jeśli link istnieje.</li>
+    <li>Strona śledzenia (bez logowania, bez menu TMS): numer zlecenia i referencja klienta, status w wersji dla klienta, rejestracje ciągnika i naczepy, ETA z oknem rozładunku, pasek postępu i mapa z ostatnią pozycją oraz trasą do odbiorcy.</li>
+    <li><strong>Okno widoczności:</strong> od ETD (koniec okna załadunku) do umówionego ETA (koniec okna rozładunku) plus ręczne przedłużenie. Przed oknem: „Śledzenie ruszy …”, po oknie: „Śledzenie zakończone”, bez pozycji.</li>
+    <li>Spedytor widzi przy zleceniu stan linku: aktywny / jeszcze nieaktywny / zakończony, z przyciskami <strong>„Przedłuż o 2 h”</strong> i <strong>„Wyłącz link”</strong>. Gdy ETA przekracza umówione ETA, system podpowiada przedłużenie.</li>
+    <li><strong>„Widok klienta”</strong> (narzędzie demo w górnym pasku): lista transportów udostępnionych wybranemu klientowi — tak wyglądałoby konto klienta.</li>
+  </ol>
+
+  <h2>2. Decyzje (z alternatywami)</h2>
+  <div class="decision">
+    <h3>2.1 Link czy konto klienta</h3>
+    <ul>
+      <li><strong>A. Link z tokenem na jeden transport</strong> (bez logowania). Plusy: zero haseł, działa od razu w mailu, nie da się zobaczyć innych transportów. Minusy: link przekazany dalej działa do końca okna (dlatego okno i „Wyłącz link”).</li>
+      <li><strong>B. Konta klientów z logowaniem</strong>. Plusy: pełna kontrola dostępu, historia. Minusy: hasła, reset, role — w demo bez wartości, w produkcji potrzebne.</li>
+      <li><strong>C. A teraz + B w produkcji</strong>: link do pojedynczych transportów, a „Widok klienta” w demo pokazuje, jak wyglądałoby konto (lista udostępnionych transportów).</li>
+    </ul>
+    <p class="rec">Rekomendacja: C.</p>
+  </div>
+  <div class="decision">
+    <h3>2.2 Co dokładnie widzi klient</h3>
+    <ul>
+      <li>Tylko dane z <code>clientView</code> (to samo źródło co szkice maili): numer, referencje, status dla klienta, rejestracje, ETA, okno, postęp — plus mapa z ostatnią pozycją GPS.</li>
+      <li>Nigdy: imienia, nazwiska ani telefonu kierowcy, innych pojazdów, alertów, uwag wewnętrznych. Pilnuje test na odpowiedzi API.</li>
+      <li>Pozycja z dokładnością raportu GPS (co 2–3 min), bez historii przejazdu sprzed ETD.</li>
+    </ul>
+    <p class="rec">Rekomendacja: jak wyżej. Alternatywa „bez mapy, sam pasek postępu” jest prostsza, ale mapa jest główną wartością dla klienta.</p>
+  </div>
+  <div class="decision">
+    <h3>2.3 Kiedy liczyć ETD i ETA</h3>
+    <ul>
+      <li><strong>A. ETD = koniec okna załadunku, umówione ETA = koniec okna rozładunku</strong> (pola już są w zleceniu). Plusy: proste, zgodne z umową z klientem.</li>
+      <li><strong>B. ETD = faktyczny wyjazd z załadunku</strong>. Plusy: dokładniejsze. Minusy: przy wcześniejszym wyjeździe klient nie widzi pierwszych godzin.</li>
+    </ul>
+    <p class="rec">Rekomendacja: start = wcześniejsze z (ETD, faktyczny wyjazd z załadunku); koniec = umówione ETA + przedłużenie.</p>
+  </div>
+
+  <h2>3. Testy i kryteria akceptacji</h2>
+  <ul>
+    <li>Link pokazuje tylko jedno zlecenie; odpowiedź API nie zawiera danych kierowcy ani innych pojazdów.</li>
+    <li>Przed oknem i po oknie brak pozycji; „Przedłuż o 2 h” wydłuża widoczność; „Wyłącz link” odcina dostęp.</li>
+    <li>Szkic odpowiedzi „gdzie jest auto?” zawiera link, gdy istnieje.</li>
+    <li>„Widok klienta” pokazuje tylko transporty udostępnione temu klientowi.</li>
+  </ul>
+  <footer>Specyfikacja etapu 5 · szkic do Twojej akceptacji.</footer>
+</main>
+</body>
+</html>
