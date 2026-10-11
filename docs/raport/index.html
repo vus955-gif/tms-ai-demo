@@ -58,7 +58,7 @@
 </head>
 <body>
 <main class="page">
-  <div class="eyebrow">Raport z nocnej pracy · 10/11 października 2026 · aktualizacja ok. 04:45</div>
+  <div class="eyebrow">Raport z nocnej pracy · 10/11 października 2026 · aktualizacja ok. 05:20</div>
   <h1>Co zrobiłem w nocy i jak to przetestować</h1>
   <p class="lead">Każdy etap ma opis, decyzje podjęte bez Ciebie oraz listę testów do przeklikania. Wszystko działa lokalnie, nic nie zostało opublikowane.</p>
 
@@ -68,10 +68,10 @@
       <li><code>npm install</code> (doszedł jeden pakiet narzędziowy), potem klucz w <code>.env.local</code>: <code>ANTHROPIC_API_KEY=…</code>.</li>
       <li><code>npm run eval:ai</code> — ok. 2 minuty, koszt rzędu centów: jak model radzi sobie z SMS-ami kierowców, zdjęciami CMR i mailami klientów (opis niżej).</li>
       <li><code>npm run dev</code> na gałęzi <code>main</code> i testy MVP — etapy 0, 1, 2, 3, 3b i dodatki (listy „Testy do przeklikania” przy każdym etapie).</li>
-      <li>Twoje decyzje: szkice specyfikacji <a href="../superpowers/specs/2026-10-11-sprzedaz-design.html">Sprzedaży</a>, <a href="../superpowers/specs/2026-10-11-panel-klienta-design.html">panelu klienta</a> i <a href="../superpowers/specs/2026-10-11-flota-terminarz-design.html">floty z terminarzem</a> — kod jest gotowy na osobnych gałęziach, do obejrzenia albo odrzucenia.</li>
+      <li>Twoje decyzje: szkice specyfikacji <a href="../superpowers/specs/2026-10-11-sprzedaz-design.html">Sprzedaży</a>, <a href="../superpowers/specs/2026-10-11-panel-klienta-design.html">panelu klienta</a>, <a href="../superpowers/specs/2026-10-11-flota-terminarz-design.html">floty z terminarzem</a> i <a href="../superpowers/specs/2026-10-11-szablony-design.html">zleceń stałych</a> — kod jest gotowy na osobnych gałęziach, do obejrzenia albo odrzucenia.</li>
       <li>Przy kawie: <a href="../wdrozenie/2026-10-11-wyzwania-wdrozeniowe.html">dokument wdrożeniowy</a> (GPS, MMS, poczta, Optima, hosting, RODO — ze źródłami).</li>
     </ol>
-    <p><strong>Czego nie ruszałem:</strong> nic nie zostało wypchnięte na GitHub ani wdrożone na Vercel, żadne wiadomości nie wyszły na zewnątrz. Etap 4 (szablony, zlecenia stałe, nowi klienci i punkty) czeka — dodawanie nowych punktów wymaga liczenia tras w locie, czyli decyzji o routingu (opisane w dokumencie wdrożeniowym).</p>
+    <p><strong>Czego nie ruszałem:</strong> nic nie zostało wypchnięte na GitHub ani wdrożone na Vercel, żadne wiadomości nie wyszły na zewnątrz. Z etapu 4 zrobiłem część niewymagającą Twojej decyzji: szablony i zlecenia stałe z prognozą (gałąź <code>etap-4-szablony</code>). „Nowi klienci i punkty” czekają — nowy punkt wymaga liczenia tras w locie, czyli decyzji o routingu (opcje w specyfikacji zleceń stałych, punkt 4).</p>
   </div>
 
   <div class="box key" id="status">
@@ -85,9 +85,11 @@
         <tr><td>3 — CMR</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>3b — skrzynka klientów</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>Dodatki: „Cofnij” w Dzienniku AI, poprawki</td><td><span class="tag done">gotowe</span></td><td>integracyjne — zielone; build produkcyjny OK</td></tr>
-        <tr><td>Sprzedaż (gałąź <code>etap-sprzedaz</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (227 + 17)</td></tr>
-        <tr><td>5 — panel klienta (gałąź <code>etap-5-panel-klienta</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (232 + 18)</td></tr>
-        <tr><td>6 — flota i terminarz (gałąź <code>etap-6-flota-terminarz</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (240 + 20)</td></tr>
+        <tr><td>Sprzedaż (gałąź <code>etap-sprzedaz</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (228 + 17)</td></tr>
+        <tr><td>5 — panel klienta (gałąź <code>etap-5-panel-klienta</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (233 + 18)</td></tr>
+        <tr><td>6 — flota i terminarz (gałąź <code>etap-6-flota-terminarz</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (241 + 20)</td></tr>
+        <tr><td>4a — zlecenia stałe (gałąź <code>etap-4-szablony</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (250 + 22)</td></tr>
+        <tr><td>4b — nowi klienci i punkty</td><td><span class="tag todo">czeka na decyzję</span></td><td>—</td></tr>
         <tr><td>Przegląd kodu i poprawki</td><td><span class="tag done">gotowe</span></td><td>testy do każdej poprawki</td></tr>
         <tr><td>Dokument wdrożeniowy</td><td><span class="tag done">gotowe</span></td><td>—</td></tr>
       </tbody>
@@ -271,6 +273,7 @@
   <ul>
     <li><strong>„Cofnij” w Dzienniku AI</strong> (było w specyfikacji MVP): przy wpisach, w których AI zmieniło status zlecenia, widać np. „ZL-1043: Wysłane do kierowcy → W realizacji” albo „Rozładunek → Do zamknięcia” i przycisk „Cofnij”. Cofnięcie potwierdzenia wraca do „Wysłane do kierowcy”, cofnięcie dopasowania CMR — do „Rozładunek”, a dokument do weryfikacji. Działa raz i tylko wtedy, gdy status się w międzyczasie nie zmienił.</li>
     <li><strong>Poprawka symulacji:</strong> auto, któremu w trakcie jazdy zniknęło zlecenie (anulowanie zlecenia „W realizacji”, cofnięte potwierdzenie), po dojechaniu stawało „wolne” bez punktu i nie dało się mu dać kolejnego kursu. Teraz parkuje na końcu trasy i jest gotowe do następnego zlecenia.</li>
+    <li><strong>Poprawka symulacji (nad ranem):</strong> gdy auto kończyło rozładunek w punkcie, w którym zaczynało następne zadanie (np. rozładunek w Gdyni i załadunek w Gdyni), symulacja szukała nieistniejącej trasy „Gdynia → Gdynia” i się wywracała. Teraz przyjazd jest natychmiastowy. Wyszło przy prognozie zleceń stałych, ale mogło trafić też zwykły przydział; poprawka jest na <code>main</code> i we wszystkich gałęziach.</li>
     <li><strong>Dokumenty:</strong> osobna kolejka „Nieczytelne”, jak w specyfikacji.</li>
     <li><strong>Build produkcyjny</strong> (<code>npm run build</code>) przechodzi — przygotowanie pod Vercel.</li>
   </ul>
@@ -349,14 +352,14 @@
   </ol>
 
   <h2 id="etap6">Etap 6 — kartoteka floty i terminarz (gałąź <code>etap-6-flota-terminarz</code>) <span class="tag part">do akceptacji</span></h2>
-  <p>Ostatnia gałąź w łańcuchu — zawiera Sprzedaż, panel klienta i ten etap, czyli całość. Specyfikacja z decyzjami: <a href="../superpowers/specs/2026-10-11-flota-terminarz-design.html">2026-10-11-flota-terminarz-design.html</a>. Przełączanie: <code>git switch etap-6-flota-terminarz</code> i <code>npm run dev</code>.</p>
+  <p>Zawiera Sprzedaż, panel klienta i ten etap (zlecenia stałe są na gałęzi <code>etap-4-szablony</code>, zbudowanej na tej). Specyfikacja z decyzjami: <a href="../superpowers/specs/2026-10-11-flota-terminarz-design.html">2026-10-11-flota-terminarz-design.html</a>. Przełączanie: <code>git switch etap-6-flota-terminarz</code> i <code>npm run dev</code>.</p>
   <h3>Co powstało</h3>
   <ul>
     <li><strong>Flota</strong> (menu spedytora, z licznikiem): karty pojazdów, naczep i kierowców z terminami — badanie techniczne, OC, legalizacja tachografu, serwis według przebiegu, ATP chłodni, prawo jazdy, kod 95, karta kierowcy, badania, ADR. Kolory: w porządku / wkrótce (30 dni lub 5 000 km) / po terminie; kłódka = termin blokujący; filtr „tylko wymagające uwagi”.</li>
     <li><strong>„Odnotuj wykonanie”</strong> (ikona przy terminie) wylicza następny termin (uproszczone okresy, opisane w specyfikacji).</li>
     <li><strong>Terminarz</strong>: tydzień kierowców z nieobecnościami (urlop, zwolnienie, szkolenie, badania, dzień wolny) i zleceniami; dodawanie formularzem, usuwanie kliknięciem; przewijanie tygodni.</li>
     <li><strong>Wpięcie w „klocki”</strong>: pojazd z wygasłym terminem blokującym i kierowca nieobecny w czasie zlecenia są wykluczeni z powodem („legalizacja tachografu ważne tylko do 8.10”, „urlop 10.10–11.10”) — także przy próbie przydziału.</li>
-    <li><strong>Scenariusz</strong>: EL 9K41 ma przeterminowaną legalizację tachografu (wypada z klocków), PO 2C19 — OC za 9 dni, WB 6P77 — serwis za 1 800 km, EL 5R30 — serwis 1 200 km po terminie (tylko ostrzeżenie), chłodnia GD 15PL — ATP za 25 dni, Krawczyk — karta kierowcy za 20 dni, Mazur — badania za 12 dni; Kamińska ma urlop jutro i pojutrze, Wiśniewska szkolenie pojutrze.</li>
+    <li><strong>Scenariusz</strong>: EL 9K41 ma przeterminowaną legalizację tachografu (wypada z klocków), PO 2C19 — OC za 9 dni, WB 6P77 — serwis za 1 800 km, EL 5R30 — serwis 1 200 km po terminie (tylko ostrzeżenie), chłodnia GD 15PL — ATP za 25 dni (na gałęzi <code>etap-4-szablony</code> za 6 dni, patrz etap 4a), Krawczyk — karta kierowcy za 20 dni, Mazur — badania za 12 dni; Kamińska ma urlop jutro i pojutrze, Wiśniewska szkolenie pojutrze.</li>
   </ul>
   <h3>Testy do przeklikania (na gałęzi <code>etap-6-flota-terminarz</code>)</h3>
   <ol class="checks">
@@ -367,6 +370,32 @@
     <li>Terminarz. <span class="expect">Zlecenia dzisiaj przy kierowcach, urlop Kamińskiej, szkolenie Wiśniewskiej.</span></li>
     <li>Dodaj Adamowi Dąbrowskiemu „zwolnienie lekarskie” na jutro. <span class="expect">Pojawia się w siatce; w klockach ZL-1043 EL 9K41 odpada z powodem „zwolnienie lekarskie …”. Kliknięcie w nieobecność ją usuwa.</span></li>
   </ol>
+
+  <h2 id="etap4a">Etap 4a — zlecenia stałe (gałąź <code>etap-4-szablony</code>) <span class="tag part">do akceptacji</span></h2>
+  <p>Teraz ostatnia gałąź w łańcuchu: zawiera Sprzedaż, panel klienta, flotę z terminarzem i ten etap, czyli całość. Specyfikacja z decyzjami i alternatywami: <a href="../superpowers/specs/2026-10-11-szablony-design.html">2026-10-11-szablony-design.html</a>. Przełączanie: <code>git switch etap-4-szablony</code> i <code>npm run dev</code> (baza sama doda tabelę szablonów).</p>
+  <h3>Co powstało</h3>
+  <ul>
+    <li><strong>„Zlecenia stałe”</strong> w menu spedytora. Po lewej szablony: klient, trasa z książki punktów klienta, dni tygodnia, okna, ładunek, przełącznik „aktywny”, edycja po kliknięciu nazwy, usuwanie.</li>
+    <li><strong>„Paczka na najbliższy tydzień”</strong>: każdy dzień każdego aktywnego szablonu na 7 dni od jutra, z prognozą <em>zdąży / ryzyko / brak kierowcy</em>, najlepszym kierowcą i powodem. Prognozę liczą te same reguły co „klocki” (czas jazdy z przerwami, okna, pojemność, chłodnia, kartoteka floty, terminarz) — bez AI.</li>
+    <li><strong>„Utwórz zaznaczone (N)”</strong>: domyślnie zaznaczone wszystko, co jeszcze nie istnieje; wybrane dni stają się zleceniami „Nowe” w puli Zleceń, z datą w referencjach. Drugi raz tego samego dnia się nie utworzy — wiersz pokazuje numer zlecenia.</li>
+    <li><strong>Brak kierowcy z konkretem:</strong> zamiast ogólnika pokazuje pojazdy, które pasują ładunkiem, i co je blokuje, np. „GD 2M88: świadectwo ATP (chłodnia) ważne tylko do …”.</li>
+    <li><strong>Scenariusz:</strong> trzy szablony (Agro-Pol pn/śr/pt, Baltic Foods chłodnia pn–pt, Hanza wt/cz). ATP jedynej chłodni ważne jeszcze 6 dni, więc paczka kończy się co najmniej jednym czerwonym dniem Baltic.</li>
+  </ul>
+  <div class="note"><strong>Dzień demo w weekend:</strong> świat uruchomiony w sobotę lub niedzielę startuje w piątek, więc paczka obejmuje sobotę–piątek, a szkolenie Wiśniewskiej (dzień +2) wypada w niedzielę i paczki nie dotyka. W dni robocze od poniedziałku do czwartku zobaczysz więcej czerwonych dni (szkolenie, „nie zdąży na załadunek” dla chłodni jadącej z daleka).</div>
+  <h3>Testy do przeklikania (na gałęzi <code>etap-4-szablony</code>)</h3>
+  <ol class="checks">
+    <li>Menu → „Zlecenia stałe”. <span class="expect">Po lewej 3 szablony; po prawej paczka od jutra, przy każdym dniu prognoza, kierowca z rejestracją i powód (np. „410 km od załadunku · po bieżącym zleceniu”).</span></li>
+    <li>Znajdź ostatni dzień „Baltic Foods: chłodnia” w paczce. <span class="expect">„brak kierowcy” i „GD 2M88: świadectwo ATP (chłodnia) ważne tylko do …”.</span></li>
+    <li>Flota → Naczepy → GD 15PL → „Odnotuj wykonanie” przy ATP. Wróć do „Zlecenia stałe”. <span class="expect">Ten dzień Baltic zmienia się na „zdąży” z Anną Wiśniewską.</span></li>
+    <li>Odznacz wszystkie dni poza jednym → „Utwórz zaznaczone (1)”. <span class="expect">Komunikat „Utworzono 1: ZL-…”, wiersz pokazuje „ZL-… utworzone” i nie ma już pola wyboru.</span></li>
+    <li>Zlecenia. <span class="expect">Nowe zlecenie na liście „Nowe zlecenia” z klientem, trasą i oknami z szablonu (w referencjach znacznik szablonu i data, np. „AP-STAŁE, 1016”); „Przydziel…” pokazuje klocki jak dla każdego zlecenia.</span></li>
+    <li>Wróć, kliknij „Utwórz zaznaczone” dla pozostałych dni. <span class="expect">Tworzą się tylko brakujące dni, bez duplikatu wcześniejszego.</span></li>
+    <li>Przy „Hanza” odznacz „aktywny”. <span class="expect">Dni Hanzy znikają z paczki; szablon jest wyszarzony.</span></li>
+    <li>„Nowy” → klient Agro-Pol, załadunek i rozładunek w tym samym punkcie → „Zapisz”. <span class="expect">Komunikat „Załadunek i rozładunek muszą być w różnych punktach”. Po zmianie rozładunku zapisuje się i pojawia w paczce.</span></li>
+    <li>Kliknij nazwę szablonu, zmień dni tygodnia i zapisz. <span class="expect">Paczka przelicza się z nowymi dniami.</span></li>
+    <li>Terminarz → dodaj Annie Wiśniewskiej urlop na dzień, w którym jedzie Baltic. <span class="expect">W paczce ten dzień: „brak kierowcy”, „GD 2M88: urlop …”.</span></li>
+  </ol>
+  <p class="expect">Uwagi: usuwanie szablonu działa od razu, bez pytania (utworzone zlecenia zostają) — jeśli wolisz potwierdzenie, dodam je. Prognoza liczy każde zlecenie osobno, więc ten sam kierowca może być „najlepszy” dla dwóch zleceń jednego dnia; to zapisane na ekranie i w specyfikacji.</p>
 
   <h2 id="przeglad">Niezależny przegląd kodu i poprawki <span class="tag done">gotowe</span></h2>
   <p>W nocy osobny agent-recenzent przejrzał kod etapów 3, 3b i Sprzedaży pod kątem błędów, bezpieczeństwa i zasad projektu. Naprawiłem wszystkie uwagi o wysokiej pewności i większość pozostałych, każdą z testem:</p>
@@ -382,10 +411,11 @@
   <div class="table-wrap"><table>
     <thead><tr><th>Gałąź</th><th>Zawartość</th><th>Testy</th></tr></thead>
     <tbody>
-      <tr><td><code>main</code></td><td>MVP: etapy 0–3b, dodatki, poprawki z przeglądu, dokumenty</td><td>204 jednostkowe/integracyjne + 15 e2e</td></tr>
-      <tr><td><code>etap-sprzedaz</code></td><td>main + Sprzedaż</td><td>227 + 17</td></tr>
-      <tr><td><code>etap-5-panel-klienta</code></td><td>etap-sprzedaz + panel klienta</td><td>232 + 18</td></tr>
-      <tr><td><code>etap-6-flota-terminarz</code></td><td>etap-5 + kartoteka floty i terminarz (całość)</td><td>240 + 20</td></tr>
+      <tr><td><code>main</code></td><td>MVP: etapy 0–3b, dodatki, poprawki z przeglądu, dokumenty</td><td>205 jednostkowe/integracyjne + 15 e2e</td></tr>
+      <tr><td><code>etap-sprzedaz</code></td><td>main + Sprzedaż</td><td>228 + 17</td></tr>
+      <tr><td><code>etap-5-panel-klienta</code></td><td>etap-sprzedaz + panel klienta</td><td>233 + 18</td></tr>
+      <tr><td><code>etap-6-flota-terminarz</code></td><td>etap-5 + kartoteka floty i terminarz</td><td>241 + 20</td></tr>
+      <tr><td><code>etap-4-szablony</code></td><td>etap-6 + zlecenia stałe (całość)</td><td>250 + 22</td></tr>
     </tbody>
   </table></div>
   <div class="note"><strong>Przy przełączaniu gałęzi:</strong> zatrzymaj <code>npm run dev</code>, przełącz, uruchom ponownie (baza sama doda brakujące tabele). Wracając do starszej gałęzi, w razie dziwnych błędów usuń <code>.pglite</code>; gdy <code>npm run typecheck</code> zgłasza nieistniejące trasy — usuń katalog <code>.next</code>. Jeśli karta przeglądarki po restartach zacznie się przeładowywać w kółko, otwórz nową kartę (to stan starej karty, nie aplikacji).</div>
