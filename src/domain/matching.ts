@@ -54,20 +54,22 @@ export type MatchResult = {
   reasons: string[];
   pickupEtaMs: number | null;
   emptyKm: number | null;
+  /** Excluded for good (capacity, body, ADR) — not something a dispatcher can fix for this order. */
+  hard?: true;
 };
 
 const TIER_RANK: Record<MatchTier, number> = { high: 0, medium: 1, low: 2, excluded: 3 };
 
-function excluded(c: MatchCandidate, reason: string): MatchResult {
-  return { vehicleId: c.vehicleId, driverId: c.driverId, tier: "excluded", score: 0, reasons: [reason], pickupEtaMs: null, emptyKm: null };
+function excluded(c: MatchCandidate, reason: string, hard = false): MatchResult {
+  return { vehicleId: c.vehicleId, driverId: c.driverId, tier: "excluded", score: 0, reasons: [reason], pickupEtaMs: null, emptyKm: null, ...(hard && { hard: true as const }) };
 }
 
 export function evaluateCandidate(order: MatchOrder, c: MatchCandidate): MatchResult {
-  if (order.cargoPallets > c.capacityPallets) return excluded(c, `za mała pojemność: ${order.cargoPallets} palet (mieści ${c.capacityPallets})`);
-  if (order.cargoKg > c.capacityKg) return excluded(c, `za mała ładowność: ${(order.cargoKg / 1000).toFixed(1).replace(".", ",")} t`);
-  if (order.bodyRequired === "chlodnia" && c.body !== "chlodnia") return excluded(c, "wymagana chłodnia");
-  if (order.adrRequired && !c.adr) return excluded(c, "pojazd bez wyposażenia ADR");
-  if (order.adrRequired && !c.driverAdr) return excluded(c, "kierowca bez zaświadczenia ADR");
+  if (order.cargoPallets > c.capacityPallets) return excluded(c, `za mała pojemność: ${order.cargoPallets} palet (mieści ${c.capacityPallets})`, true);
+  if (order.cargoKg > c.capacityKg) return excluded(c, `za mała ładowność: ${(order.cargoKg / 1000).toFixed(1).replace(".", ",")} t`, true);
+  if (order.bodyRequired === "chlodnia" && c.body !== "chlodnia") return excluded(c, "wymagana chłodnia", true);
+  if (order.adrRequired && !c.adr) return excluded(c, "pojazd bez wyposażenia ADR", true);
+  if (order.adrRequired && !c.driverAdr) return excluded(c, "kierowca bez zaświadczenia ADR", true);
   if (c.blockers && c.blockers.length > 0) return excluded(c, c.blockers[0]);
 
   const stops: Stop[] = [
@@ -90,11 +92,13 @@ export function evaluateCandidate(order: MatchOrder, c: MatchCandidate): MatchRe
     },
   ];
   const sim = beginNextLeg({ ...c.sim, stops }, c.env.routeKeyBetween);
-  const pickup = predictArrival(sim, c.env, (s) => s.orderId === order.id && s.purpose === "pickup");
+  // Look far enough ahead for orders days away (recurring orders), but never more than 10 days.
+  const horizonMs = Math.min(Math.max(48 * 3_600_000, order.deliveryToMs - sim.atMs + 12 * 3_600_000), 10 * 24 * 3_600_000);
+  const pickup = predictArrival(sim, c.env, (s) => s.orderId === order.id && s.purpose === "pickup", horizonMs);
   if (!pickup || pickup.arrivalMs > order.pickupToMs) {
     return excluded(c, pickup ? `nie zdąży na załadunek (ETA ${formatTime(pickup.arrivalMs)}, okno do ${formatTime(order.pickupToMs)})` : "nie zdąży na załadunek");
   }
-  const delivery = predictArrival(sim, c.env, (s) => s.orderId === order.id && s.purpose === "delivery");
+  const delivery = predictArrival(sim, c.env, (s) => s.orderId === order.id && s.purpose === "delivery", horizonMs);
   if (!delivery || delivery.arrivalMs > order.deliveryToMs) {
     return excluded(c, delivery ? `nie zdąży na rozładunek (ETA ${formatTime(delivery.arrivalMs)}, okno do ${formatTime(order.deliveryToMs)})` : "nie zdąży na rozładunek");
   }

@@ -1,0 +1,16 @@
+import type { NextRequest } from "next/server";
+import { z } from "zod";
+import "@/server/bootstrap";
+import { atCurrentTime } from "@/server/actions";
+import { readJson, withSandbox } from "@/server/http";
+import { createPlanned } from "@/server/templates/templates";
+
+const Body = z.object({ keys: z.array(z.string().max(120)).min(1).max(100) });
+
+/** "Utwórz zaznaczone": the selected recurring orders become new orders in one click. */
+export async function POST(request: NextRequest) {
+  return withSandbox(request, async (c) => {
+    const { keys } = await readJson(c.request, Body);
+    return atCurrentTime(c, async (simNow) => ({ created: await createPlanned(c.db, c.sandbox, keys, simNow) }));
+  });
+}

@@ -193,6 +193,23 @@ export async function matchOrder(db: Executor, sandboxId: string, orderId: strin
   });
 }
 
+export type VirtualOrder = Pick<
+  OrderRow,
+  "id" | "clientId" | "pickupPointId" | "deliveryPointId" | "pickupFrom" | "pickupTo" | "deliveryFrom" | "deliveryTo" | "cargoPallets" | "cargoKg" | "bodyRequired" | "adrRequired"
+>;
+
+/** "Klocki" for an order that does not exist yet (recurring orders forecast). */
+export async function matchVirtual(db: Executor, sandboxId: string, order: VirtualOrder, simNow: Date, fleet?: FleetData): Promise<MatchView[]> {
+  const f = fleet ?? (await loadFleet(db, sandboxId));
+  const row = order as OrderRow;
+  const results = matchCandidates(toMatchOrder(f, row), await candidatesFor(db, f, sandboxId, row, simNow));
+  return results.map((r) => {
+    const driver = f.drivers.get(r.driverId)!;
+    const vehicle = f.vehicles.find((v) => v.id === r.vehicleId)!;
+    return { ...r, plates: vehicle.plates, trailerPlates: f.trailerByVehicle.get(vehicle.id)?.plates ?? null, driverName: `${driver.firstName} ${driver.lastName}`, kind: vehicle.kind };
+  });
+}
+
 /** Rejects an assignment the matching rules exclude (capacity, ADR, windows…). */
 export async function assertAssignable(db: Executor, sandboxId: string, orderId: string, driverId: string, simNow: Date) {
   const { fleet, order } = await loadAssignable(db, sandboxId, orderId);

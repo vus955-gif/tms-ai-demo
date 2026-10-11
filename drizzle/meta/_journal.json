@@ -57,6 +57,13 @@
       "when": 1791684079530,
       "tag": "0007_stage6_fleet_calendar",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791686075605,
+      "tag": "0008_stage4_templates",
+      "breakpoints": true
     }
   ]
 }

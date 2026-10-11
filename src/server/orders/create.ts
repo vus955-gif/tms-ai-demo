@@ -34,7 +34,7 @@ export async function createOrder(
   db: Executor,
   sandboxId: string,
   input: NewOrder,
-  opts: { simNow: Date; source: "manual" | "scenario" | "email"; status?: Extract<OrderStatus, "NOWE" | "SZKIC">; sourceMessageId?: string | null; actor?: "dispatcher" | "system" | "ai"; id?: string; reason?: string },
+  opts: { simNow: Date; source: "manual" | "scenario" | "email" | "template"; status?: Extract<OrderStatus, "NOWE" | "SZKIC">; sourceMessageId?: string | null; actor?: "dispatcher" | "system" | "ai"; id?: string; reason?: string },
 ) {
   const [client] = await db.select().from(clients).where(and(eq(clients.sandboxId, sandboxId), eq(clients.id, input.clientId)));
   if (!client) throw new HttpError(400, "Nie ma takiego klienta.");

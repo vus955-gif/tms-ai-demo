@@ -15,5 +15,6 @@ import "./inbox/handlers";
 import "./sales/seed";
 import "./sales/handlers";
 import "./fleet/seed";
+import "./templates/templates";
 
 export const BOOTSTRAPPED = true;

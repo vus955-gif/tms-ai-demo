@@ -213,7 +213,9 @@ export const orders = pgTable(
     trailerId: text("trailer_id"),
     etd: ts("etd"),
     etaAgreed: ts("eta_agreed"),
-    source: text("source").$type<"scenario" | "manual" | "email">().notNull(),
+    source: text("source").$type<"scenario" | "manual" | "email" | "template">().notNull(),
+    /** Recurring orders (stage 4): `<templateId>:<yyyy-mm-dd>`, one order per template and day. */
+    templateKey: text("template_key"),
     sourceMessageId: text("source_message_id"),
     createdSim: ts("created_sim").notNull(),
     arrivedPickupAt: ts("arrived_pickup_at"),
@@ -636,6 +638,37 @@ export const driverAbsences = pgTable(
     note: text("note").notNull().default(""),
   },
   (t) => [primaryKey({ columns: [t.sandboxId, t.id] }), index("driver_absences_driver_idx").on(t.sandboxId, t.driverId)],
+);
+
+// ——— Order templates and recurring orders (stage 4) ———
+
+export const orderTemplates = pgTable(
+  "order_templates",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    name: text("name").notNull(),
+    clientId: text("client_id").notNull(),
+    pickupPointId: text("pickup_point_id").notNull(),
+    deliveryPointId: text("delivery_point_id").notNull(),
+    /** Windows as minutes after local midnight; delivery may be on a later day. */
+    pickupFromMin: integer("pickup_from_min").notNull(),
+    pickupToMin: integer("pickup_to_min").notNull(),
+    deliveryDayOffset: integer("delivery_day_offset").notNull().default(0),
+    deliveryFromMin: integer("delivery_from_min").notNull(),
+    deliveryToMin: integer("delivery_to_min").notNull(),
+    cargoPallets: integer("cargo_pallets").notNull(),
+    cargoKg: integer("cargo_kg").notNull(),
+    bodyRequired: text("body_required").$type<"plandeka" | "chlodnia" | "skrzynia" | null>(),
+    adrRequired: boolean("adr_required").notNull().default(false),
+    references: jsonb("references").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    notes: text("notes").notNull().default(""),
+    /** ISO weekdays 1 (Mon) … 7 (Sun). */
+    weekdays: jsonb("weekdays").$type<number[]>().notNull(),
+    active: boolean("active").notNull().default(true),
+    createdSim: ts("created_sim").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.sandboxId, t.id] })],
 );
 
 /** Global (not per world) daily AI spend, used for the daily budget cap. */
