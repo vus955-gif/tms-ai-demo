@@ -76,6 +76,15 @@ describe("advance", () => {
     expect(state).toMatchObject({ mode: "idle", pointId: "B", routeKey: null });
   });
 
+  it("moves straight to the next stop at the same point (unload, then load there)", () => {
+    const sameSpot = driving({ stops: [stop("B", "delivery"), { ...stop("B", "pickup", 3 * H), orderId: "o2" }, stop("C", "delivery")] });
+    const { state, events } = advance(sameSpot, 3 * H + 45 * MIN, env());
+    expect(events.map((e) => e.type)).toEqual(["arrived", "handling_started", "departed", "arrived", "handling_started", "departed"]);
+    expect(events[3]).toMatchObject({ atMs: 2 * H + 30 * MIN, stop: { orderId: "o2", pointId: "B" } });
+    expect(events[4].atMs).toBe(3 * H);
+    expect(state).toMatchObject({ mode: "driving", routeKey: "B__C" });
+  });
+
   it("goes idle instead of crashing when the stop it waits for disappears", () => {
     const waiting = driving({ mode: "waiting", modeUntilMs: 30 * MIN, modeStartMs: 0, routeKey: "A__B", progressS: 120 * 60, pointId: "B", stops: [] });
     const { state } = advance(waiting, 1 * H, env());
