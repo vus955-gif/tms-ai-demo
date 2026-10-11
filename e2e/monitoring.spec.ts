@@ -1,11 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { resetWorld } from "./helpers";
 
 test.describe("etap 1 — monitoring", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/monitoring");
-    await page.getByTestId("reset-open").click();
-    await page.getByTestId("reset-confirm").click();
-    await expect(page.getByTestId("sim-clock")).toContainText(/08:3\d/);
+    await resetWorld(page);
   });
 
   test("lista pokazuje 14 pojazdów z kolorami i czasem jazdy", async ({ page }) => {

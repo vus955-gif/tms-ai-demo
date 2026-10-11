@@ -1,12 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { resetWorld } from "./helpers";
 
 test.describe("etap 2 — zlecenia, SMS i komunikator", () => {
   test("przydział z klockami, odpowiedź z warunkiem, potwierdzenie i odpowiedź spedytora", async ({ page }) => {
     test.setTimeout(180_000);
     await page.goto("/zlecenia");
-    await page.getByTestId("reset-open").click();
-    await page.getByTestId("reset-confirm").click();
-    await expect(page.getByTestId("sim-clock")).toContainText(/08:3\d/);
+    await resetWorld(page);
     await page.getByRole("button", { name: "60×" }).click();
 
     // ZL-1043 appears at 09:10 simulated (~40 s at 60x); the board refreshes with the 15 s poll.

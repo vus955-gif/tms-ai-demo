@@ -1,13 +1,12 @@
 import path from "node:path";
 import { expect, test } from "@playwright/test";
+import { resetWorld } from "./helpers";
 
 test.describe("etap 3 — dokumenty CMR", () => {
   test("zdjęcie CMR z telefonu trafia do Dokumentów, spedytor je odrzuca", async ({ page }) => {
     test.setTimeout(120_000);
     await page.goto("/dokumenty");
-    await page.getByTestId("reset-open").click();
-    await page.getByTestId("reset-confirm").click();
-    await expect(page.getByTestId("sim-clock")).toContainText(/08:3\d/);
+    await resetWorld(page);
 
     await page.getByTestId("phone-toggle").click();
     await page.getByTestId("phone-driver").selectOption("d-zielinski");
