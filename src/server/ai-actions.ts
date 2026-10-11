@@ -44,6 +44,12 @@ export async function revertAiAction(db: Executor, sandboxId: string, logId: str
   if (!action || !back) throw new HttpError(409, "Tej decyzji AI nie da się cofnąć.");
   const [order] = await db.select().from(orders).where(and(eq(orders.sandboxId, sandboxId), eq(orders.id, action.orderId)));
   if (!order || order.status !== action.to) throw new HttpError(409, `Zlecenie ${action.number} zmieniło już status — cofnięcie nie jest możliwe.`);
+  if (action.documentId) {
+    const [doc] = await db.select().from(documents).where(and(eq(documents.sandboxId, sandboxId), eq(documents.id, action.documentId)));
+    if (!doc || doc.status !== "do_zamkniecia" || doc.matchedOrderId !== order.id) {
+      throw new HttpError(409, "Ten dokument nie jest już dopasowany do zlecenia — cofnięcie nie jest możliwe.");
+    }
+  }
   await transitionOrder(db, sandboxId, order, back, "dispatcher", "Cofnięta decyzja AI (Dziennik AI)", simNow);
   if (action.documentId) {
     await db

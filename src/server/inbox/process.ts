@@ -39,7 +39,18 @@ async function triageContext(db: Executor, sandboxId: string, clientId: string):
 
 /** Turns a complete extraction into a SZKIC order; returns problems when it cannot. */
 async function createDraftOrder(db: Executor, sandboxId: string, clientId: string, e: ExtractedOrder, messageId: string, simNow: Date, source: "ai" | "fallback") {
-  if (e.missing_fields.length > 0) return { orderId: null, problems: e.missing_fields };
+  const fromNulls = [
+    [e.pickup_point_id, "punkt załadunku"],
+    [e.delivery_point_id, "punkt rozładunku"],
+    [e.pickup_from && e.pickup_to, "okno załadunku"],
+    [e.delivery_from && e.delivery_to, "okno rozładunku"],
+    [e.pallets, "liczba palet"],
+    [e.kg, "waga"],
+  ]
+    .filter(([v]) => v === null || v === undefined || v === "")
+    .map(([, label]) => label as string);
+  const missing = [...new Set([...e.missing_fields, ...fromNulls])];
+  if (missing.length > 0) return { orderId: null, problems: missing };
   const parsed = NewOrderSchema.safeParse({
     clientId,
     pickupPointId: e.pickup_point_id,
@@ -55,7 +66,8 @@ async function createDraftOrder(db: Executor, sandboxId: string, clientId: strin
     references: e.references,
     notes: e.notes ?? "",
   });
-  if (!parsed.success) return { orderId: null, problems: parsed.error.issues.map((i) => i.message) };
+  // Our schema messages are Polish; anything else (library defaults) becomes a neutral label.
+  if (!parsed.success) return { orderId: null, problems: parsed.error.issues.map((i) => (/[ąćęłńóśźż]|okno|punkt|palet|wag/i.test(i.message) ? i.message : "niespójne dane zlecenia")) };
   const created = await createOrder(db, sandboxId, parsed.data, {
     simNow,
     source: "email",

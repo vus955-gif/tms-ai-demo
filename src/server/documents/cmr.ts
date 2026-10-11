@@ -202,11 +202,12 @@ async function hasDocument(db: Executor, sandboxId: string, order: typeof orders
       .from(messages)
       .where(and(eq(messages.sandboxId, sandboxId), eq(messages.driverId, order.driverId), eq(messages.direction, "in"))),
   ]);
-  if (docs.some((d) => d.matchedOrderId === order.id && d.status !== "odrzucony")) return true;
+  const usable = (status: string) => status !== "odrzucony" && status !== "nieczytelny";
+  if (docs.some((d) => d.matchedOrderId === order.id && usable(d.status))) return true;
   return photos.some((m) => {
     if (m.attachments.length === 0 || m.atSim.getTime() < since) return false;
     const doc = docs.find((d) => d.messageId === m.id);
-    return !doc || (doc.status !== "odrzucony" && (doc.matchedOrderId === null || doc.matchedOrderId === order.id));
+    return !doc || (usable(doc.status) && (doc.matchedOrderId === null || doc.matchedOrderId === order.id));
   });
 }
 

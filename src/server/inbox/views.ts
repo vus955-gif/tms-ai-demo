@@ -85,7 +85,8 @@ type MessageRow = typeof messages.$inferSelect;
 
 export async function listInbox(db: Executor, sandboxId: string): Promise<InboxItem[]> {
   const [rows, contacts, clientRows, orderRows] = await Promise.all([
-    db.select().from(messages).where(and(eq(messages.sandboxId, sandboxId), eq(messages.party, "client"))).orderBy(asc(messages.atSim)),
+    // Ties on time: the client's e-mail ("in") before the reply drafted at the same moment.
+    db.select().from(messages).where(and(eq(messages.sandboxId, sandboxId), eq(messages.party, "client"))).orderBy(asc(messages.atSim), asc(messages.direction), asc(messages.id)),
     db.select().from(clientContacts).where(eq(clientContacts.sandboxId, sandboxId)),
     db.select().from(clients).where(eq(clients.sandboxId, sandboxId)),
     db.select().from(orders).where(eq(orders.sandboxId, sandboxId)),
@@ -94,7 +95,8 @@ export async function listInbox(db: Executor, sandboxId: string): Promise<InboxI
   for (const m of rows) threads.set(m.threadKey, [...(threads.get(m.threadKey) ?? []), m]);
   const items: InboxItem[] = [];
   for (const list of threads.values()) {
-    const root = list[0];
+    // The thread is keyed by its first message: the inbound e-mail, or the first composed one.
+    const root = list.find((m) => m.threadKey === `email:${m.id}`) ?? list[0];
     const last = list[list.length - 1];
     const contact = contacts.find((c) => c.id === root.clientContactId);
     const client = clientRows.find((c) => c.id === contact?.clientId);
@@ -126,7 +128,11 @@ export async function listInbox(db: Executor, sandboxId: string): Promise<InboxI
 export async function inboxThread(db: Executor, sandboxId: string, rootId: string): Promise<InboxThread> {
   const [root] = await db.select().from(messages).where(and(eq(messages.sandboxId, sandboxId), eq(messages.id, rootId), eq(messages.party, "client")));
   if (!root || !root.clientContactId) throw new HttpError(404, "Nie ma takiej wiadomości.");
-  const list = await db.select().from(messages).where(and(eq(messages.sandboxId, sandboxId), eq(messages.threadKey, root.threadKey))).orderBy(asc(messages.atSim));
+  const list = await db
+    .select()
+    .from(messages)
+    .where(and(eq(messages.sandboxId, sandboxId), eq(messages.threadKey, root.threadKey)))
+    .orderBy(asc(messages.atSim), asc(messages.direction), asc(messages.id));
   const [contact] = await db.select().from(clientContacts).where(and(eq(clientContacts.sandboxId, sandboxId), eq(clientContacts.id, root.clientContactId)));
   const [client] = await db.select().from(clients).where(and(eq(clients.sandboxId, sandboxId), eq(clients.id, contact.clientId)));
   const orderId = root.orderId ?? list.find((m) => m.orderId)?.orderId ?? null;

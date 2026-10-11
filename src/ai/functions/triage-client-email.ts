@@ -1,3 +1,4 @@
+import { TZDate } from "@date-fns/tz";
 import { z } from "zod";
 import type { Executor } from "@/db/types";
 import {
@@ -71,7 +72,13 @@ const MAX_KG = 24000;
 function sanitize(t: ClientEmailTriage, ctx: TriageContext): ClientEmailTriage {
   const pointIds = new Set(ctx.points.map((p) => p.id));
   const orderIds = new Set(ctx.orders.map((o) => o.id));
-  const iso = (v: string | null) => (v && !Number.isNaN(Date.parse(v)) ? new Date(v).toISOString() : null);
+  const iso = (v: string | null) => {
+    if (!v || Number.isNaN(Date.parse(v))) return null;
+    // "2026-10-15T07:00" without an offset means Warsaw time, not the server's UTC.
+    const local = v.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/);
+    if (local) return new Date(new TZDate(+local[1], +local[2] - 1, +local[3], +local[4], +local[5], "Europe/Warsaw").getTime()).toISOString();
+    return new Date(v).toISOString();
+  };
   let extracted = t.extracted_order;
   if (extracted) {
     const e = { ...extracted };
