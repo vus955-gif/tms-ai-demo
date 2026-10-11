@@ -58,7 +58,7 @@
 </head>
 <body>
 <main class="page">
-  <div class="eyebrow">Raport z nocnej pracy · 10/11 października 2026</div>
+  <div class="eyebrow">Raport z nocnej pracy · 10/11 października 2026 · aktualizacja ok. 04:00</div>
   <h1>Co zrobiłem w nocy i jak to przetestować</h1>
   <p class="lead">Każdy etap ma opis, decyzje podjęte bez Ciebie oraz listę testów do przeklikania. Wszystko działa lokalnie, nic nie zostało opublikowane.</p>
 
@@ -73,7 +73,9 @@
         <tr><td>3 — CMR</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>3b — skrzynka klientów</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>Dodatki: „Cofnij” w Dzienniku AI, poprawki</td><td><span class="tag done">gotowe</span></td><td>integracyjne — zielone; build produkcyjny OK</td></tr>
-        <tr><td>Sprzedaż (gałąź <code>etap-sprzedaz</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (218 + 17)</td></tr>
+        <tr><td>Sprzedaż (gałąź <code>etap-sprzedaz</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (227 + 17)</td></tr>
+        <tr><td>5 — panel klienta (gałąź <code>etap-5-panel-klienta</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (232 + 18)</td></tr>
+        <tr><td>Przegląd kodu i poprawki</td><td><span class="tag done">gotowe</span></td><td>testy do każdej poprawki</td></tr>
         <tr><td>Dokument wdrożeniowy</td><td><span class="tag done">gotowe</span></td><td>—</td></tr>
       </tbody>
     </table></div>
@@ -309,6 +311,50 @@
     <li>Ustawienia → wyłącz automat → nowe kompletne zapytanie morskie. <span class="expect">„Do zatwierdzenia” i przycisk „Wyślij potwierdzenie i zapytania”. Wyłączony agent nie dostaje zapytań.</span></li>
     <li>Z kluczem API: <span class="expect">„✦ odczyt AI” przy danych i stawkach, w Dzienniku AI „Zapytanie ofertowe”, „Stawka agenta”, „Szkic wiadomości”.</span></li>
   </ol>
+
+  <h2 id="etap5">Etap 5 — panel klienta (gałąź <code>etap-5-panel-klienta</code>) <span class="tag part">do akceptacji</span></h2>
+  <p>Zbudowany na gałęzi Sprzedaży (kolejność etapów: Sprzedaż → 4–6), więc zawiera też Sprzedaż. Specyfikacja z decyzjami: <a href="../superpowers/specs/2026-10-11-panel-klienta-design.html">2026-10-11-panel-klienta-design.html</a>. Przełączanie: <code>git switch etap-5-panel-klienta</code> i <code>npm run dev</code>.</p>
+  <h3>Co powstało</h3>
+  <ul>
+    <li><strong>„Link dla klienta”</strong> w szczegółach pojazdu (Monitoring): jeden losowy link do jednego zlecenia, ze stanem (jeszcze nieaktywny / aktywny / zakończony), przyciskami „Kopiuj”, „Podgląd”, „Przedłuż o 2 h”, „Wyłącz” i podpowiedzią, gdy prognoza ETA wypada po końcu widoczności.</li>
+    <li><strong>Strona śledzenia</strong> <code>/sledzenie/…</code> bez logowania i bez menu TMS: numer i referencja, status dla klienta, rejestracje ciągnika i naczepy, ETA z oknem rozładunku, pasek postępu i mapa z pozycją auta oraz trasą do odbiorcy. Odświeża się co 30 s.</li>
+    <li><strong>Okno widoczności</strong> zgodnie z Twoją decyzją: od ETD (albo wcześniejszego faktycznego wyjazdu z załadunku) do umówionego ETA plus przedłużenia. Poza oknem — bez pozycji.</li>
+    <li><strong>Tylko dane dla klienta</strong> (to samo źródło co szkice maili): żadnego imienia, nazwiska ani telefonu kierowcy, żadnych innych pojazdów — pilnuje test na odpowiedzi API i test e2e.</li>
+    <li><strong>Link w szkicu odpowiedzi</strong> na „gdzie jest auto?”, jeśli spedytor go utworzył (adres bazowy z <code>APP_URL</code>, lokalnie <code>http://localhost:3000</code>).</li>
+    <li><strong>„Widok klienta”</strong> (górny pasek): tak wyglądałoby konto klienta — lista transportów udostępnionych wybranemu klientowi, nigdy cała flota.</li>
+    <li>Link działa także przy włączonym haśle do demo (klient nie zna hasła).</li>
+  </ul>
+  <h3>Testy do przeklikania (na gałęzi <code>etap-5-panel-klienta</code>)</h3>
+  <ol class="checks">
+    <li>Monitoring → kliknij WB 6P77 → „Link dla klienta” → „Utwórz link”. <span class="expect">Stan „aktywny”, okno widoczności, adres linku.</span></li>
+    <li>„Podgląd” (albo wklej link w oknie prywatnym). <span class="expect">ZL-1037, ref. ME-PO-33190, Błonie → Říčany, „w drodze do odbiorcy”, WB 6P77 / naczepa, ETA, pasek postępu, mapa z kropką auta i trasą. Nigdzie nazwiska kierowcy.</span></li>
+    <li>„Przedłuż o 2 h”. <span class="expect">„przedłużony o 2 h”, koniec widoczności +2 h (na stronie klienta też).</span></li>
+    <li>„Wyłącz”, odśwież stronę klienta. <span class="expect">„Link wyłączony przez przewoźnika”, bez danych transportu.</span></li>
+    <li>Utwórz link dla pojazdu, którego zlecenie ma załadunek w przyszłości. <span class="expect">Strona klienta: „Śledzenie ruszy …”, bez mapy.</span></li>
+    <li>„Widok klienta” → Mazovia Electronics. <span class="expect">ZL-1037 na liście z „Otwórz”. Inny klient — „Brak udostępnionych transportów”.</span></li>
+    <li>Z linkiem dla ZL-1037: poczekaj na mail Mazovii „Gdzie jest auto?” (ok. 10:30) albo napisz go w „Poczcie klienta”. <span class="expect">Szkic odpowiedzi zawiera „Śledzenie na żywo: http://localhost:3000/sledzenie/…”.</span></li>
+  </ol>
+
+  <h2 id="przeglad">Niezależny przegląd kodu i poprawki <span class="tag done">gotowe</span></h2>
+  <p>W nocy osobny agent-recenzent przejrzał kod etapów 3, 3b i Sprzedaży pod kątem błędów, bezpieczeństwa i zasad projektu. Naprawiłem wszystkie uwagi o wysokiej pewności i większość pozostałych, każdą z testem:</p>
+  <ul>
+    <li><strong>Symulacja:</strong> auto czekające na okno, któremu zniknęło zlecenie (np. CMR zamknięty wcześniej), wywracało cały tick — świat przestawał odpowiadać do resetu. Teraz staje jako wolne.</li>
+    <li><strong>Skrzynka:</strong> po przeczytaniu maila wątek mógł „zamienić się” w wysłaną odpowiedź (ten sam czas) i tracić szkic zlecenia oraz kategorię. Korzeń wątku jest teraz stały.</li>
+    <li><strong>Szkice zleceń z maili:</strong> braki zawsze po polsku (zamiast technicznych komunikatów walidacji); godziny bez strefy czasowej z odczytu AI liczone jako czas polski.</li>
+    <li><strong>CMR:</strong> nieczytelne zdjęcie nie wycisza już przypomnienia „brak CMR”; ostrzejsze dopasowanie numerów referencyjnych (krótki numer nie pasuje do dłuższego); „Cofnij” w Dzienniku AI nie cofnie dopasowania dokumentu, który już nie jest dopasowany.</li>
+    <li><strong>Sprzedaż:</strong> twarda blokada danych klienta w zapytaniach i negocjacjach z agentami (nazwa, osoba, e-mail, telefon — wtedy wycena czeka na człowieka); pola odczytane przez AI zawężane do bezpiecznych wartości (miejsca tylko z listy lub punktów klienta, data tylko jako data); „kolejny tydzień” nie jest już transportem kolejowym, „4.5 t” nie jest datą; kalkulacja drogowa przelicza pojazd po zmianie palet/wagi i zeruje ręczne km po zmianie trasy; statusy wyceny (wygrana tylko po ofercie, zamkniętej nie da się otworzyć); podwójne kliknięcie nie wysyła zapytań dwa razy; starsze światy dostają ustawienia Sprzedaży automatycznie.</li>
+  </ul>
+
+  <h2 id="galezie">Mapa gałęzi</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Gałąź</th><th>Zawartość</th><th>Testy</th></tr></thead>
+    <tbody>
+      <tr><td><code>main</code></td><td>MVP: etapy 0–3b, dodatki, poprawki z przeglądu, dokumenty</td><td>204 jednostkowe/integracyjne + 15 e2e</td></tr>
+      <tr><td><code>etap-sprzedaz</code></td><td>main + Sprzedaż</td><td>227 + 17</td></tr>
+      <tr><td><code>etap-5-panel-klienta</code></td><td>etap-sprzedaz + panel klienta</td><td>232 + 18</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><strong>Przy przełączaniu gałęzi:</strong> zatrzymaj <code>npm run dev</code>, przełącz, uruchom ponownie (baza sama doda brakujące tabele). Wracając do starszej gałęzi, w razie dziwnych błędów usuń <code>.pglite</code>; gdy <code>npm run typecheck</code> zgłasza nieistniejące trasy — usuń katalog <code>.next</code>. Jeśli karta przeglądarki po restartach zacznie się przeładowywać w kółko, otwórz nową kartę (to stan starej karty, nie aplikacji).</div>
 
   <h2 id="wdrozenie">Dokument wdrożeniowy <span class="tag done">gotowe</span></h2>
   <p><a href="../wdrozenie/2026-10-11-wyzwania-wdrozeniowe.html">Od demo do produkcji: integracje i wyzwania</a> — telematyka i GPS (rFMS, aftermarket, tachograf, e-TOLL/SENT), SMS/MMS (odbiór zdjęć CMR), poczta (Graph, Gmail), Comarch ERP Optima (XML, KSeF), hosting (Vercel, Neon), RODO i monitoring kierowców, AI w produkcji, kolejność wdrożenia. Każde twierdzenie ma źródło i oznaczenie pewności (potwierdzone / prawdopodobne / niepotwierdzone / wniosek).</p>
