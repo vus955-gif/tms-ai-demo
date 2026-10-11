@@ -73,7 +73,7 @@
         <tr><td>3 — CMR</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>3b — skrzynka klientów</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>Dodatki: „Cofnij” w Dzienniku AI, poprawki</td><td><span class="tag done">gotowe</span></td><td>integracyjne — zielone; build produkcyjny OK</td></tr>
-        <tr><td>Sprzedaż (gałąź <code>etap-sprzedaz</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (217 + 17)</td></tr>
+        <tr><td>Sprzedaż (gałąź <code>etap-sprzedaz</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (218 + 17)</td></tr>
         <tr><td>Dokument wdrożeniowy</td><td><span class="tag done">gotowe</span></td><td>—</td></tr>
       </tbody>
     </table></div>
@@ -86,6 +86,12 @@
     <li><code>npm run dev</code> i otwórz <a href="http://localhost:3000">http://localhost:3000</a>.</li>
   </ol>
   <p>Baza danych to wbudowany Postgres (PGlite) w katalogu <code>.pglite/</code>. Żeby zacząć od zera, zatrzymaj serwer i usuń ten katalog. W samej aplikacji wystarczy przycisk ↺ w górnym pasku.</p>
+  <div class="box">
+    <strong>Najpierw — szybki test AI po dodaniu klucza (ok. 2 minuty, koszt rzędu centów)</strong>
+    <p>Po wpisaniu <code>ANTHROPIC_API_KEY</code> do <code>.env.local</code> uruchom:</p>
+    <pre>npm run eval:ai</pre>
+    <p>Skrypt sprawdza model na zestawach z „prawdą”: 22 SMS-y kierowców (w tym próba wstrzyknięcia polecenia), 17 zdjęć CMR (czytelność, pieczątka, podpis, adnotacje, referencje, dopasowanie do zlecenia, obcy dokument) i 8 maili klientów (kategoria, punkty z książki klienta, palety, wstrzyknięcie). Pokazuje wynik AI obok reguł awaryjnych i łączny koszt; szczegóły zapisuje w <code>evals/results/</code>. Jeśli odczyt CMR wypadnie słabo, można spróbować mocniejszego modelu: <code>AI_CMR_MODEL=claude-sonnet-5-5</code> w <code>.env.local</code>.</p>
+  </div>
   <div class="note"><strong>Ważne przy teście:</strong> symulacja płynie 10× szybciej (minuta realna = 10 minut). Przycisk 60× przyspiesza, a ▌▌ zatrzymuje czas, gdy chcesz coś spokojnie obejrzeć.</div>
 
   <h2 id="etap0">Etap 0 — fundament <span class="tag done">gotowe</span></h2>
