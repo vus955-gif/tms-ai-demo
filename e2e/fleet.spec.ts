@@ -1,12 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { resetWorld } from "./helpers";
 
 test.describe("etap 6 — kartoteka floty i terminarz", () => {
   test("przeterminowany tachograf i urlop wykluczają z klocków; odnotowanie przywraca pojazd", async ({ page }) => {
     test.setTimeout(150_000);
     await page.goto("/flota");
-    await page.getByTestId("reset-open").click();
-    await page.getByTestId("reset-confirm").click();
-    await expect(page.getByTestId("sim-clock")).toContainText(/08:3\d/);
+    await resetWorld(page);
 
     const card = page.getByTestId("fleet-EL 9K41");
     await expect(card).toContainText("legalizacja tachografu");
