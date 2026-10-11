@@ -10,7 +10,7 @@ import { createSandbox, type SandboxRow } from "../sandbox/repository";
 import { runTick } from "../tick/engine";
 import { approveDraftOrder, rejectDraftOrder } from "../orders/drafts";
 import { composeDelayNotice, discardDraft, requestReplyDraft, sendDraft } from "./actions";
-import { storeClientInbound, unreadClientEmails } from "./gateway";
+import { markEmailThreadRead, storeClientInbound, unreadClientEmails } from "./gateway";
 import { prepareReplyDraft, processClientEmail } from "./process";
 import { inboxThread, listInbox } from "./views";
 
@@ -76,6 +76,13 @@ describe("stage 3b: client inbox", () => {
     expect(draft.body).toMatch(/w drodze do odbiorcy/);
     expect(draft.body).not.toMatch(/Szymański|Paweł|999 100/);
     expect(thread.clientView).toMatchObject({ number: "ZL-1037", plates: "WB 6P77" });
+  });
+
+  it("keeps the client's e-mail as the thread root after it is read (draft has the same time)", async () => {
+    const mail = (await clientMail()).find((m) => m.subject?.startsWith("Gdzie jest auto"))!;
+    await markEmailThreadRead(db, sandbox.id, mail.threadKey, atMin(sandbox.simOrigin, 125));
+    const item = (await listInbox(db, sandbox.id)).find((i) => i.subject.startsWith("Gdzie jest auto"))!;
+    expect(item).toMatchObject({ rootId: mail.id, composed: false, category: "zapytanie_o_status", hasDraft: true });
   });
 
   it("covers every truck on the road when the client gives no order number", async () => {

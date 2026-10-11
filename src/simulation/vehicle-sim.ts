@@ -162,6 +162,13 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
         const minutes = (s.atMs - (s.modeStartMs ?? s.atMs)) / MIN;
         if (type === "daily_rest" && s.clock.dailyMin > DAILY_LIMIT_MIN) s.clock = { ...s.clock, extensionsUsed: s.clock.extensionsUsed + 1 };
         if (type !== "other_work") s.clock = applyPause(s.clock, type, minutes);
+        // The order left the plan while the truck was waiting (closed early, cancelled): stay put, idle.
+        if (!s.stops[0]) {
+          s.routeKey = null;
+          s.progressS = 0;
+          enter("idle", null);
+          return;
+        }
         startHandling(s.stops[0]);
         return;
       }
