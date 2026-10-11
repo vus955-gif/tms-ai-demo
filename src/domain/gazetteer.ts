@@ -116,12 +116,12 @@ const skeleton = (word: string) => normalize(word).replace(/[^a-z]/g, "").replac
 const names = (p: Place) => [p.name, ...p.aliases].map(normalize);
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\']/g, "\\$&");
 
-/** Places mentioned in a text, in order of appearance. */
-export function placesIn(text: string): Place[] {
+/** Places mentioned in a text, in order of appearance. `extra`: e.g. the client's own points. */
+export function placesIn(text: string, extra: Place[] = []): Place[] {
   const norm = normalize(text);
   const words = norm.split(/[^a-z0-9']+/).filter(Boolean);
   const found: { place: Place; at: number }[] = [];
-  for (const place of PLACES) {
+  for (const place of [...PLACES, ...extra]) {
     let at = -1;
     const take = (i: number) => {
       if (i >= 0 && (at < 0 || i < at)) at = i;
@@ -137,7 +137,8 @@ export function placesIn(text: string): Place[] {
     }
     if (at >= 0) found.push({ place, at });
   }
-  return found.sort((a, b) => a.at - b.at).map((f) => f.place);
+  const ordered = found.sort((a, b) => a.at - b.at).map((f) => f.place);
+  return ordered.filter((p, i) => ordered.findIndex((q) => normalize(q.name) === normalize(p.name)) === i);
 }
 
 export function findPlace(name: string | null | undefined): Place | null {

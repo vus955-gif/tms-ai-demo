@@ -1,6 +1,6 @@
 import type { QuoteMode } from "@/db/schema";
 import { normalize } from "./email-rules";
-import { placesIn } from "./gazetteer";
+import { placesIn, type Place } from "./gazetteer";
 
 /**
  * Sales module rules: which mode an inquiry is, what was asked for and what is
@@ -58,10 +58,10 @@ export function detectMode(text: string): QuoteMode {
 const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"];
 
 /** Rule-based reading of an inquiry (fallback for the AI). */
-export function extractQuoteByRules(text: string): QuoteDetails {
+export function extractQuoteByRules(text: string, extraPlaces: Place[] = []): QuoteDetails {
   const t = normalize(text);
   const d: QuoteDetails = { ...EMPTY_DETAILS };
-  const places = placesIn(text);
+  const places = placesIn(text, extraPlaces);
   // "z Gdańska do Szanghaju" / "Gdańsk – Szanghaj": first place is the origin, second the destination.
   d.origin = places[0]?.name ?? null;
   d.destination = places[1]?.name ?? null;

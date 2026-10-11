@@ -135,6 +135,14 @@ describe("Sales: quotes via agents and road quotes", () => {
     expect(draft.body.replace(/\s/g, "")).toContain(String(updated.price));
   });
 
+  it("uses the stored route between the client's own points", async () => {
+    const q = await inquiry("ct-wisla-1", "Wycena transportu", "Wycena: 12 palet, 5 t, Gądki – Leipzig, termin 20.10.", 635);
+    expect(q).toMatchObject({ mode: "road", status: "gotowe" });
+    const calc = (await quoteDetail(db, sandbox.id, q.id)).calculation!;
+    expect(calc).toMatchObject({ kmSource: "trasa", kmLabel: "trasa z bazy punktów (OSRM)" });
+    expect(calc.loadedKm).toBeGreaterThan(400);
+  });
+
   it("waits for approval when automatic sending is off", async () => {
     await db.update(salesSettings).set({ autoSend: false }).where(eq(salesSettings.sandboxId, sandbox.id));
     const q = await inquiry("ct-wisla-2", "Wycena kolejowa", "Prosimy o ofertę: 2 x 20' koleją z Chengdu do Łodzi, CPT Łódź, 18 t, części maszyn, gotowe 30.10.", 640);

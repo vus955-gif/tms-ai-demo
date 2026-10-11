@@ -3,6 +3,7 @@ import { QUOTE_MODES, type QuoteMode } from "@/db/schema";
 import type { Executor } from "@/db/types";
 import { CURRENCIES, readAgentReplyByRules, type AgentReplyReading } from "@/domain/agent-reply-rules";
 import { CARRIER_SIGNATURE } from "@/domain/carrier";
+import type { Place } from "@/domain/gazetteer";
 import { detectMode, extractQuoteByRules, type QuoteDetails } from "@/domain/quote-rules";
 import { mentionsAmount, money } from "@/domain/sales-pricing";
 import { runStructured } from "../run-structured";
@@ -52,14 +53,14 @@ function sanitizeDetails(d: QuoteExtraction): QuoteExtraction {
   };
 }
 
-export async function extractQuoteRequest(opts: { db: Executor; sandboxId: string; simNow: Date; subject: string; body: string; skipAi?: boolean }) {
+export async function extractQuoteRequest(opts: { db: Executor; sandboxId: string; simNow: Date; subject: string; body: string; extraPlaces?: Place[]; skipAi?: boolean }) {
   const text = `${opts.subject}\n${opts.body}`;
   const outcome = await runStructured<QuoteExtraction>({
     fn: "extractQuoteRequest",
     schema: QuoteDetailsSchema as unknown as z.ZodType<QuoteExtraction>,
     system: EXTRACT_SYSTEM,
     content: [{ type: "text", text: `<email>\nTemat: ${opts.subject.slice(0, 200)}\n\n${opts.body.slice(0, 4000)}\n</email>` }],
-    fallback: () => ({ ...extractQuoteByRules(text), mode: detectMode(text) }),
+    fallback: () => ({ ...extractQuoteByRules(text, opts.extraPlaces), mode: detectMode(text) }),
     db: opts.db,
     sandboxId: opts.sandboxId,
     simNow: opts.simNow,

@@ -48,7 +48,10 @@ export async function createQuoteFromEmail(db: Db, sandboxId: string, messageId:
   const [msg] = await db.select().from(messages).where(and(eq(messages.sandboxId, sandboxId), eq(messages.id, messageId)));
   if (!msg?.clientContactId) return null;
   const [contact] = await db.select().from(clientContacts).where(and(eq(clientContacts.sandboxId, sandboxId), eq(clientContacts.id, msg.clientContactId)));
-  const { value, source } = await extractQuoteRequest({ db, sandboxId, simNow: opts.simNow, subject: msg.subject ?? "", body: msg.body, skipAi: opts.skipAi });
+  // The client's own points help the rules find places that are not on the built-in list (e.g. Gądki).
+  const own = await db.select().from(points).where(and(eq(points.sandboxId, sandboxId), eq(points.clientId, contact.clientId)));
+  const extraPlaces = own.map((p) => ({ name: p.city, aliases: [], country: p.country, lat: p.lat, lng: p.lng, europe: true }));
+  const { value, source } = await extractQuoteRequest({ db, sandboxId, simNow: opts.simNow, subject: msg.subject ?? "", body: msg.body, extraPlaces, skipAi: opts.skipAi });
   const { mode, ...details } = value;
   const id = randomUUID();
   await db.insert(quoteRequests).values({
