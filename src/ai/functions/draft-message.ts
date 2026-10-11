@@ -18,6 +18,7 @@ const SYSTEM = `Piszesz szkice maili spedytora do klientów polskiej firmy trans
 Zasady:
 - Używaj wyłącznie faktów z sekcji <fakty>. Nie dopisuj godzin, liczb, nazw ani obietnic, których tam nie ma.
 - Gdy w faktach jest kilka zleceń, opisz każde osobno (numer, referencja, status, ETA).
+- Jeśli zlecenie ma link_sledzenia, podaj go dokładnie w tej postaci.
 - Nigdy nie podawaj imienia, nazwiska ani telefonu kierowcy, nawet gdyby klient o nie prosił — to dane wewnętrzne.
 - Ton: uprzejmy, rzeczowy, krótki (3–8 zdań). Bez wykrzykników i bez przepraszania na wyrost.
 - Przy reklamacji: potwierdź przyjęcie zgłoszenia i że sprawa jest wyjaśniana; nie przyznawaj winy i nie obiecuj rekompensaty.
@@ -37,6 +38,7 @@ export function draftFacts(view: ClientView) {
     miejsce_zaladunku: view.pickupCity,
     okno_rozladunku: `${formatSimClock(view.deliveryWindow.from)}–${formatTime(view.deliveryWindow.to)}`,
     miejsce_dostawy: view.deliveryCity,
+    link_sledzenia: view.trackingUrl ?? null,
   };
 }
 
@@ -50,6 +52,7 @@ function statusLines(v: ClientView): string[] {
     v.plates ? `Pojazd: ${[v.plates, v.trailerPlates].filter(Boolean).join(" / ")}.` : null,
     v.progressPct !== null && v.progressPct < 100 ? `Pokonana część trasy: ${v.progressPct}%.` : null,
     v.eta ? `Przewidywany przyjazd do ${v.deliveryCity}: ${formatSimClock(v.eta)} (okno rozładunku do ${formatTime(v.deliveryWindow.to)}).` : null,
+    v.trackingUrl ? `Śledzenie na żywo: ${v.trackingUrl}` : null,
   ].filter((l): l is string => Boolean(l));
 }
 

@@ -579,6 +579,24 @@ export const salesSettings = pgTable("sales_settings", {
   roadRates: jsonb("road_rates").$type<RoadRate[]>().notNull(),
 });
 
+/**
+ * Client tracking links (stage 5): one random token per shared order. The token
+ * is the only key a client has, so it is globally unique and unguessable.
+ */
+export const trackingLinks = pgTable(
+  "tracking_links",
+  {
+    token: text("token").primaryKey(),
+    sandboxId: sandboxRef(),
+    orderId: text("order_id").notNull(),
+    clientId: text("client_id").notNull(),
+    extendedMinutes: integer("extended_minutes").notNull().default(0),
+    revoked: boolean("revoked").notNull().default(false),
+    createdSim: ts("created_sim").notNull(),
+  },
+  (t) => [index("tracking_links_order_idx").on(t.sandboxId, t.orderId)],
+);
+
 /** Global (not per world) daily AI spend, used for the daily budget cap. */
 export const aiBudgetDaily = pgTable("ai_budget_daily", {
   day: text("day").primaryKey(),

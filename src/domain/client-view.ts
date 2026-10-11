@@ -17,6 +17,8 @@ export type ClientView = {
   progressPct: number | null;
   references: string[];
   deliveryCity: string;
+  /** Live tracking link for the client, when the dispatcher shared one (stage 5). */
+  trackingUrl?: string | null;
 };
 
 export const CLIENT_STATUS: Record<OrderStatus, string> = {

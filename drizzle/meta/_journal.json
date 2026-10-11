@@ -43,6 +43,13 @@
       "when": 1791679751223,
       "tag": "0005_stage5_sales",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791682289250,
+      "tag": "0006_stage6_tracking",
+      "breakpoints": true
     }
   ]
 }

@@ -23,6 +23,10 @@ export const config = {
   get aiCallsPerSandboxPerHour() {
     return num("AI_CALLS_PER_SANDBOX_PER_HOUR", 60);
   },
+  /** Public address of the app, used in links sent to clients (tracking). */
+  get appUrl() {
+    return (process.env.APP_URL || "http://localhost:3000").replace(/\/+$/, "");
+  },
   get ipSalt() {
     return process.env.SANDBOX_IP_SALT || "tms-ai-demo";
   },

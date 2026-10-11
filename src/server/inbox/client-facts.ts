@@ -1,9 +1,10 @@
 import { and, eq } from "drizzle-orm";
-import { drivers, orders } from "@/db/schema";
+import { drivers, orders, trackingLinks } from "@/db/schema";
 import type { Executor } from "@/db/types";
 import { getRouteByKey } from "@/adapters/routing/static-routes";
 import { clientView, leaksDriverData, type ClientView } from "@/domain/client-view";
 import { distanceFraction } from "@/simulation/geo";
+import { config } from "../config";
 import { loadFleet } from "../monitoring/fleet-data";
 
 /** Builds the client-safe view of one order from the live fleet state. */
@@ -14,7 +15,11 @@ export async function buildClientView(db: Executor, sandboxId: string, orderId: 
   const vehicle = order.vehicleId ? fleet.vehicles.find((v) => v.id === order.vehicleId) : undefined;
   const state = order.vehicleId ? fleet.states.get(order.vehicleId) : undefined;
   const onDeliveryLeg = state && state.orderId === order.id && state.legPurpose === "to_delivery" && state.routeKey;
-  return clientView({
+  const [link] = await db
+    .select({ token: trackingLinks.token })
+    .from(trackingLinks)
+    .where(and(eq(trackingLinks.sandboxId, sandboxId), eq(trackingLinks.orderId, order.id), eq(trackingLinks.revoked, false)));
+  const view = clientView({
     number: order.number,
     status: order.status,
     plates: vehicle?.plates ?? null,
@@ -29,6 +34,7 @@ export async function buildClientView(db: Executor, sandboxId: string, orderId: 
     references: order.references,
     deliveryCity: fleet.points.get(order.deliveryPointId)?.city ?? "",
   });
+  return link ? { ...view, trackingUrl: `${config.appUrl}/sledzenie/${link.token}` } : view;
 }
 
 /** True when a client draft mentions any driver of this world. */

@@ -7,6 +7,8 @@ export async function proxy(request: NextRequest) {
   if (!password) return NextResponse.next();
   const { pathname } = request.nextUrl;
   if (pathname === "/login" || pathname === "/api/login") return NextResponse.next();
+  // Client tracking links are meant to be opened by the carrier's clients, without the demo password.
+  if (pathname.startsWith("/sledzenie/") || pathname.startsWith("/api/track/")) return NextResponse.next();
   const token = request.cookies.get(AUTH_COOKIE)?.value;
   if (token && token === (await authToken(password))) return NextResponse.next();
   if (pathname.startsWith("/api/")) {

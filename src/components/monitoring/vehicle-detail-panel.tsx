@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import type { Snapshot } from "@/server/snapshot";
 import type { VehicleDetail } from "@/server/monitoring/vehicle-detail";
 import type { VehicleView } from "@/server/monitoring/views";
+import { ClientLinkBox } from "@/components/tracking/client-link-box";
 import { RISK_COLOR } from "./colors";
 
 const RISK_LABEL: Record<VehicleView["risk"], string> = { green: "zdąży", yellow: "uwaga", red: "zagrożone", gray: "bez zlecenia w drodze" };
@@ -81,6 +82,8 @@ export function VehicleDetailPanel({
         ) : (
           <p className="text-sm text-muted-foreground">Pojazd nie ma teraz zlecenia{vehicle.pointCity ? ` — stoi w: ${vehicle.pointCity}` : ""}.</p>
         )}
+
+        {o && <ClientLinkBox key={o.id} orderId={o.id} />}
 
         {b && (
           <section>

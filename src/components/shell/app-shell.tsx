@@ -8,6 +8,7 @@ import { useSnapshot } from "@/hooks/use-snapshot";
 import { cn } from "@/lib/utils";
 import { AlertsButton } from "@/components/alerts/alerts-panel";
 import { ClientMailButton } from "@/components/client-mail/client-mail-panel";
+import { ClientViewButton } from "@/components/tracking/client-view-panel";
 import { PhoneButton } from "@/components/phone/phone-panel";
 import { AiBadge } from "./ai-badge";
 import { ClockControls } from "./clock-controls";
@@ -44,6 +45,7 @@ export function AppShell({ children, toolbar }: { children: ReactNode; toolbar?:
         <ResetDialog snapshot={snapshot} />
         <div className="flex-1" />
         {toolbar}
+        <ClientViewButton />
         <ClientMailButton />
         <PhoneButton />
         <AlertsButton />
