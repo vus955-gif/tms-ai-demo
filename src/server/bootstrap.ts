@@ -11,5 +11,6 @@ import "./monitoring/incidents";
 import "./messages/handlers";
 import "./orders/scenario";
 import "./documents/cmr";
+import "./inbox/handlers";
 
 export const BOOTSTRAPPED = true;

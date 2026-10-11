@@ -10,6 +10,7 @@ import { createSandbox, type SandboxRow } from "../sandbox/repository";
 import { runTick } from "../tick/engine";
 import { assignOrder, unassignOrder } from "./assign";
 import { assertAssignable, matchOrder, ordersBoard } from "./board";
+import { approveDraftOrder } from "./drafts";
 
 const realStart = new Date("2026-10-14T06:00:00Z");
 const realAt = (simMinutes: number) => new Date(realStart.getTime() + (simMinutes * 60_000) / 10);
@@ -29,8 +30,11 @@ describe("stage 2: orders, SMS and driver replies", () => {
   });
 
   it("creates the scripted orders and sends ZL-1042 to the van driver", async () => {
-    await tickTo(52);
+    const at = await tickTo(52);
     expect((await order("zl-1042")).status).toBe("WYSLANE");
+    // ZL-1043 arrives as a draft from the client's e-mail (stage 3b); the dispatcher approves it.
+    expect((await order("zl-1043")).status).toBe("SZKIC");
+    await approveDraftOrder(db, sandbox.id, "zl-1043", null, at);
     expect((await order("zl-1043")).status).toBe("NOWE");
     const sms = (await thread("d-grabowski")).find((m) => m.kind === "order")!;
     expect(sms.body).toContain("ZLECENIE ZL-1042");

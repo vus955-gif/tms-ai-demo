@@ -45,11 +45,21 @@ export function OrderCardBody({ order, compact = false }: { order: OrderCardData
       )}
       {order.source === "email" && (
         <div className="mt-1 flex items-center gap-1 text-[11px] text-ai">
-          <Mail className="size-3" aria-hidden /> z maila klienta{order.status === "SZKIC" ? " · szkic AI" : ""}
+          <Mail className="size-3" aria-hidden /> z maila klienta{order.status === "SZKIC" ? " · szkic do zatwierdzenia" : ""}
         </div>
       )}
       {compact && order.eta && <div className="text-[11px] text-muted-foreground">ETA {formatTime(order.eta)}</div>}
     </>
+  );
+}
+
+/** An e-mail draft: not draggable until the dispatcher approves it. */
+export function DraftOrderCard({ order, actions }: { order: OrderCardData; actions?: ReactNode }) {
+  return (
+    <div data-testid={`order-card-${order.number}`} className="rounded-lg border border-ai/40 bg-ai-soft/40 p-2.5 text-sm shadow-xs">
+      <OrderCardBody order={order} />
+      {actions && <div className="mt-2 flex flex-wrap gap-1.5">{actions}</div>}
+    </div>
   );
 }
 

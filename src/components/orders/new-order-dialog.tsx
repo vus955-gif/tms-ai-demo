@@ -13,6 +13,8 @@ import { SNAPSHOT_KEY, useSnapshot } from "@/hooks/use-snapshot";
 import { getJson, postJson } from "@/lib/api";
 import { formatWarsaw, WARSAW } from "@/lib/format";
 import type { CatalogClient } from "@/app/api/catalog/route";
+import type { ExtractedOrder } from "@/domain/email-rules";
+import type { DraftOrderView } from "@/server/inbox/views";
 
 const selectClass = "h-9 w-full rounded-md border bg-background px-2 text-sm";
 
@@ -30,14 +32,92 @@ function localAt(baseMs: number, dayOffset: number, hour: number) {
   return formatWarsaw(t.getTime(), "yyyy-MM-dd'T'HH:mm");
 }
 
-export function NewOrderDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+const toLocal = (iso: string | null | undefined) => (iso ? formatWarsaw(iso, "yyyy-MM-dd'T'HH:mm") : undefined);
+
+type Prefill = {
+  clientId: string;
+  pickupPointId: string;
+  deliveryPointId: string;
+  times: Record<string, string>;
+  pallets?: number;
+  kg?: number;
+  reefer: boolean;
+  adr: boolean;
+  refs: string;
+  notes: string;
+};
+
+function prefillFrom(draft?: DraftOrderView | null, fromEmail?: EmailSource | null): Prefill | null {
+  if (draft) {
+    const v = draft.values;
+    return {
+      clientId: v.clientId,
+      pickupPointId: v.pickupPointId,
+      deliveryPointId: v.deliveryPointId,
+      times: { pickupFrom: toLocal(v.pickupFrom)!, pickupTo: toLocal(v.pickupTo)!, deliveryFrom: toLocal(v.deliveryFrom)!, deliveryTo: toLocal(v.deliveryTo)! },
+      pallets: v.cargoPallets,
+      kg: v.cargoKg,
+      reefer: v.bodyRequired === "chlodnia",
+      adr: v.adrRequired,
+      refs: v.references.join(", "),
+      notes: v.notes,
+    };
+  }
+  if (fromEmail) {
+    const e = fromEmail.extracted;
+    const times = Object.fromEntries(
+      (
+        [
+          ["pickupFrom", e?.pickup_from],
+          ["pickupTo", e?.pickup_to],
+          ["deliveryFrom", e?.delivery_from],
+          ["deliveryTo", e?.delivery_to],
+        ] as const
+      )
+        .filter(([, v]) => v)
+        .map(([k, v]) => [k, toLocal(v)!]),
+    );
+    return {
+      clientId: fromEmail.clientId,
+      pickupPointId: e?.pickup_point_id ?? "",
+      deliveryPointId: e?.delivery_point_id ?? "",
+      times,
+      pallets: e?.pallets ?? undefined,
+      kg: e?.kg ?? undefined,
+      reefer: e?.reefer ?? false,
+      adr: e?.adr ?? false,
+      refs: e?.references.join(", ") ?? "",
+      notes: e?.notes ?? "",
+    };
+  }
+  return null;
+}
+
+export type EmailSource = { messageId: string; clientId: string; extracted: ExtractedOrder | null };
+
+/**
+ * Order form. With `draft` it corrects and approves an e-mail draft; with
+ * `fromEmail` it creates an order from an incomplete e-mail (prefilled).
+ */
+export function NewOrderDialog({
+  open,
+  onOpenChange,
+  draft,
+  fromEmail,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  draft?: DraftOrderView | null;
+  fromEmail?: EmailSource | null;
+}) {
   const { data: snapshot } = useSnapshot();
   const catalog = useQuery({ queryKey: ["catalog"], queryFn: () => getJson<{ clients: CatalogClient[] }>("/api/catalog"), enabled: open && Boolean(snapshot) });
   const queryClient = useQueryClient();
-  const [clientId, setClientId] = useState("");
-  const [pickupPointId, setPickup] = useState("");
-  const [deliveryPointId, setDelivery] = useState("");
-  const [times, setTimes] = useState<Record<string, string>>({});
+  const [prefill] = useState(() => prefillFrom(draft, fromEmail));
+  const [clientId, setClientId] = useState(prefill?.clientId ?? "");
+  const [pickupPointId, setPickup] = useState(prefill?.pickupPointId ?? "");
+  const [deliveryPointId, setDelivery] = useState(prefill?.deliveryPointId ?? "");
+  const [times, setTimes] = useState<Record<string, string>>(prefill?.times ?? {});
   const [error, setError] = useState<string | null>(null);
   const client = catalog.data?.clients.find((c) => c.id === clientId);
   const simMs = snapshot ? new Date(snapshot.simNow).getTime() : 0;
@@ -50,9 +130,14 @@ export function NewOrderDialog({ open, onOpenChange }: { open: boolean; onOpenCh
   const time = (k: keyof typeof defaults) => times[k] ?? defaults[k];
 
   const create = useMutation({
-    mutationFn: (body: unknown) => postJson<{ number: string }>("/api/orders", body),
+    mutationFn: (body: Record<string, unknown>) =>
+      draft
+        ? postJson<{ number: string }>(`/api/orders/${draft.id}/draft`, { action: "approve", values: body })
+        : postJson<{ number: string }>("/api/orders", fromEmail ? { ...body, sourceMessageId: fromEmail.messageId } : body),
     onSuccess: (r) => {
-      toast.success(`Zlecenie ${r.number} założone — przydziel je kierowcy`);
+      toast.success(draft ? `${r.number} zatwierdzone — przydziel je kierowcy` : `Zlecenie ${r.number} założone — przydziel je kierowcy`);
+      void queryClient.invalidateQueries({ queryKey: ["inbox"] });
+      void queryClient.invalidateQueries({ queryKey: ["inbox-thread"] });
       void queryClient.invalidateQueries({ queryKey: ["orders"] });
       void queryClient.invalidateQueries({ queryKey: SNAPSHOT_KEY });
       onOpenChange(false);
@@ -109,7 +194,7 @@ export function NewOrderDialog({ open, onOpenChange }: { open: boolean; onOpenCh
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Nowe zlecenie</DialogTitle>
+          <DialogTitle>{draft ? `Szkic ${draft.number} z maila — popraw i zatwierdź` : fromEmail ? "Zlecenie z maila klienta" : "Nowe zlecenie"}</DialogTitle>
           <DialogDescription>Punkty pochodzą z książki punktów klienta — razem z godzinami i uwagami trafią do SMS-a dla kierowcy.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-3" data-testid="new-order-form">
@@ -119,6 +204,7 @@ export function NewOrderDialog({ open, onOpenChange }: { open: boolean; onOpenCh
               id="client"
               className={selectClass}
               value={clientId}
+              disabled={Boolean(prefill)}
               onChange={(e) => {
                 setClientId(e.target.value);
                 setPickup("");
@@ -180,27 +266,27 @@ export function NewOrderDialog({ open, onOpenChange }: { open: boolean; onOpenCh
           <div className="grid gap-3 sm:grid-cols-4">
             <div className="grid gap-1.5">
               <Label htmlFor="pallets">Palety</Label>
-              <Input id="pallets" name="pallets" type="number" min={1} max={33} defaultValue={10} />
+              <Input id="pallets" name="pallets" type="number" min={1} max={33} defaultValue={prefill ? prefill.pallets : 10} />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="kg">Waga (kg)</Label>
-              <Input id="kg" name="kg" type="number" min={1} max={24000} defaultValue={4000} />
+              <Input id="kg" name="kg" type="number" min={1} max={24000} defaultValue={prefill ? prefill.kg : 4000} />
             </div>
             <label className="flex items-end gap-2 pb-2 text-sm">
-              <input type="checkbox" name="reefer" className="size-4" /> Chłodnia
+              <input type="checkbox" name="reefer" className="size-4" defaultChecked={prefill?.reefer} /> Chłodnia
             </label>
             <label className="flex items-end gap-2 pb-2 text-sm">
-              <input type="checkbox" name="adr" className="size-4" /> ADR
+              <input type="checkbox" name="adr" className="size-4" defaultChecked={prefill?.adr} /> ADR
             </label>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="refs">Numery referencyjne</Label>
-              <Input id="refs" name="refs" placeholder="LW-5512, PO-2207" />
+              <Input id="refs" name="refs" placeholder="LW-5512, PO-2207" defaultValue={prefill?.refs} />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="notes">Uwagi do zlecenia</Label>
-              <Textarea id="notes" name="notes" rows={1} maxLength={500} placeholder="Towar delikatny, nie piętrować" />
+              <Textarea id="notes" name="notes" rows={1} maxLength={500} placeholder="Towar delikatny, nie piętrować" defaultValue={prefill?.notes} />
             </div>
           </div>
           {error && (
@@ -213,7 +299,7 @@ export function NewOrderDialog({ open, onOpenChange }: { open: boolean; onOpenCh
               Anuluj
             </Button>
             <Button type="submit" disabled={create.isPending}>
-              Załóż zlecenie
+              {draft ? "Zatwierdź szkic" : "Załóż zlecenie"}
             </Button>
           </DialogFooter>
         </form>

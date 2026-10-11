@@ -27,6 +27,7 @@ export type OrderCard = {
   bodyRequired: string | null;
   adrRequired: boolean;
   source: string;
+  sourceMessageId: string | null;
   risk: string | null;
   eta: string | null;
   references: string[];
@@ -63,6 +64,7 @@ export function orderCard(fleet: FleetData, o: OrderRow): OrderCard {
     bodyRequired: o.bodyRequired,
     adrRequired: o.adrRequired,
     source: o.source,
+    sourceMessageId: o.sourceMessageId,
     risk: o.risk,
     eta: o.etaPredicted?.toISOString() ?? null,
     references: o.references,

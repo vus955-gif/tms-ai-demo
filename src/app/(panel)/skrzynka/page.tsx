@@ -1,17 +1,15 @@
-import { Mail } from "lucide-react";
-import { ComingSoon } from "@/components/shell/coming-soon";
+import { Suspense } from "react";
+import { ClientOnly } from "@/components/client-only";
+import { InboxView } from "@/components/inbox/inbox-view";
+
+const Loading = () => <div className="p-6 text-sm text-muted-foreground">Wczytywanie skrzynki…</div>;
 
 export default function InboxPage() {
   return (
-    <ComingSoon
-      icon={Mail}
-      title="Skrzynka klientów"
-      stage="3b"
-      items={[
-        "Maile od klientów z kategorią nadaną przez AI",
-        "Szkic zlecenia z maila z zamówieniem",
-        "Szkic odpowiedzi na pytanie „gdzie jest auto?”",
-      ]}
-    />
+    <ClientOnly fallback={<Loading />}>
+      <Suspense fallback={<Loading />}>
+        <InboxView />
+      </Suspense>
+    </ClientOnly>
   );
 }

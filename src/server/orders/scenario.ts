@@ -76,24 +76,6 @@ addTimelineEntries([
     },
   },
   {
-    // Stage 3b turns this into an e-mail from the client with an AI draft.
-    atMin: 40,
-    type: "order.create",
-    payload: {
-      id: "zl-1043",
-      clientId: "cl-wisla",
-      pickupPointId: "pt-wisla-gadki",
-      deliveryPointId: "pt-wisla-lipsk",
-      pickupFromMin: 22 * 60 + 30,
-      pickupToMin: 24 * 60 + 30,
-      deliveryFromMin: 28 * 60 + 30,
-      deliveryToMin: 30 * 60 + 30,
-      cargoPallets: 12,
-      cargoKg: 4800,
-      references: ["LW-5501"],
-    },
-  },
-  {
     atMin: 50,
     type: "order.assign_scenario",
     payload: { orderId: "zl-1042", driverId: "d-grabowski", forced: "refusal", replyAfterMin: 6 },

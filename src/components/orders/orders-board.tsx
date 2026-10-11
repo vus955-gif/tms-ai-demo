@@ -13,7 +13,8 @@ import { cn } from "@/lib/utils";
 import type { DriverLane, MatchView, OrderCard as OrderCardData, OrdersBoard as BoardData } from "@/server/orders/board";
 import { MatchBlock, TIER_LABEL } from "./match-block";
 import { NewOrderDialog } from "./new-order-dialog";
-import { DraggableOrderCard, OrderCardBody } from "./order-card";
+import Link from "next/link";
+import { DraftOrderCard, DraggableOrderCard, OrderCardBody } from "./order-card";
 
 export const ORDERS_KEY = ["orders"] as const;
 
@@ -39,7 +40,15 @@ function useBoardMutations() {
     },
     onError: (e) => toast.error(e.message),
   });
-  return { assign, action };
+  const approve = useMutation({
+    mutationFn: (order: OrderCardData) => postJson(`/api/orders/${order.id}/draft`, { action: "approve" }),
+    onSuccess: (_d, order) => {
+      toast.success(`${order.number} zatwierdzone — przydziel je kierowcy`);
+      refresh();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  return { assign, action, approve };
 }
 
 export function OrdersBoard() {
@@ -62,7 +71,7 @@ export function OrdersBoard() {
     staleTime: 10_000,
   });
   const matchByDriver = new Map((matching.data?.results ?? []).map((m) => [m.driverId, m]));
-  const { assign, action } = useBoardMutations();
+  const { assign, action, approve } = useBoardMutations();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const onDragStart = (e: DragStartEvent) => setDragging((e.active.data.current?.order as OrderCardData) ?? null);
@@ -92,9 +101,24 @@ export function OrdersBoard() {
             </Button>
           </div>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-            {(data?.drafts.length ?? 0) > 0 && (
-              <p className="text-xs text-muted-foreground">Szkice z maili czekają w skrzynce na zatwierdzenie ({data!.drafts.length}).</p>
-            )}
+            {data?.drafts.map((o) => (
+              <DraftOrderCard
+                key={o.id}
+                order={o}
+                actions={
+                  <>
+                    <Button size="xs" onClick={() => approve.mutate(o)} disabled={approve.isPending} data-testid={`approve-${o.number}`}>
+                      Zatwierdź
+                    </Button>
+                    {o.sourceMessageId && (
+                      <Button size="xs" variant="ghost" asChild>
+                        <Link href={`/skrzynka?m=${o.sourceMessageId}`}>Mail i poprawki</Link>
+                      </Button>
+                    )}
+                  </>
+                }
+              />
+            ))}
             {data?.newOrders.map((o) => (
               <DraggableOrderCard
                 key={o.id}

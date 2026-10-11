@@ -379,6 +379,7 @@ export const ALERT_ACTIONS = [
   "napisz_do_kierowcy",
   "przydziel_innego",
   "otworz_dokument",
+  "otworz_mail",
   "brak",
 ] as const;
 export type AlertAction = (typeof ALERT_ACTIONS)[number];

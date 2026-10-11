@@ -12,6 +12,9 @@ test.describe("etap 2 — zlecenia, SMS i komunikator", () => {
     // ZL-1043 appears at 09:10 simulated (~40 s at 60x); the board refreshes with the 15 s poll.
     await expect(page.getByTestId("order-card-ZL-1043")).toBeVisible({ timeout: 90_000 });
     await page.getByRole("button", { name: "1×" }).click();
+    // ZL-1043 comes from the client's e-mail as a draft: approve it first.
+    await page.getByTestId("approve-ZL-1043").click();
+    await expect(page.getByTestId("pick-ZL-1043")).toBeVisible({ timeout: 20_000 });
 
     // Play Marek Zieliński so his bot stays silent.
     await page.getByTestId("phone-toggle").click();

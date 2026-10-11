@@ -34,7 +34,7 @@ export async function createOrder(
   db: Executor,
   sandboxId: string,
   input: NewOrder,
-  opts: { simNow: Date; source: "manual" | "scenario" | "email"; status?: Extract<OrderStatus, "NOWE" | "SZKIC">; sourceMessageId?: string | null; actor?: "dispatcher" | "system" | "ai"; id?: string },
+  opts: { simNow: Date; source: "manual" | "scenario" | "email"; status?: Extract<OrderStatus, "NOWE" | "SZKIC">; sourceMessageId?: string | null; actor?: "dispatcher" | "system" | "ai"; id?: string; reason?: string },
 ) {
   const [client] = await db.select().from(clients).where(and(eq(clients.sandboxId, sandboxId), eq(clients.id, input.clientId)));
   if (!client) throw new HttpError(400, "Nie ma takiego klienta.");
@@ -42,8 +42,9 @@ export async function createOrder(
   for (const id of [input.pickupPointId, input.deliveryPointId]) {
     if (!own.some((p) => p.id === id)) throw new HttpError(400, "Punkt nie należy do wybranego klienta.");
   }
-  const id = opts.id ?? `zl-${randomUUID().slice(0, 8)}`;
   const number = await nextOrderNumber(db, sandboxId);
+  // Ids follow numbers (ZL-1043 → zl-1043): stable across replays of the same world.
+  const id = opts.id ?? number.toLowerCase();
   const status = opts.status ?? "NOWE";
   await db.insert(orders).values({
     sandboxId,
@@ -76,7 +77,7 @@ export async function createOrder(
     fromStatus: null,
     toStatus: status,
     actor: opts.actor ?? (opts.source === "manual" ? "dispatcher" : "system"),
-    reason: status === "SZKIC" ? "Szkic przygotowany przez AI z maila klienta" : opts.source === "manual" ? "Zlecenie założone przez spedytora" : "Nowe zlecenie ze scenariusza",
+    reason: opts.reason ?? (status === "SZKIC" ? "Szkic przygotowany przez AI z maila klienta" : opts.source === "manual" ? "Zlecenie założone przez spedytora" : "Nowe zlecenie ze scenariusza"),
     atSim: opts.simNow,
   });
   return { id, number };
