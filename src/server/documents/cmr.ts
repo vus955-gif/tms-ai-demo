@@ -10,6 +10,7 @@ import { cmrMissingSms, cmrResendSms } from "@/domain/sms-templates";
 import { formatWarsaw } from "@/lib/format";
 import { createRng, seedFromString } from "@/simulation/random";
 import { cmrSample, samplesForOrder, type CmrVariant } from "@/simulation/scenario/cmr-samples";
+import { recordAiAction } from "../ai-actions";
 import { openAlert, resolveAlerts } from "../alerts/repository";
 import { HttpError } from "../http";
 import { sendToDriver, storeDriverInbound } from "../messages/gateway";
@@ -111,6 +112,7 @@ export async function handleCmrDocument(
   if (confident) {
     const [order] = await db.select().from(orders).where(and(eq(orders.sandboxId, sandboxId), eq(orders.id, best.orderId)));
     await transitionOrder(db, sandboxId, order, "DO_ZAMKNIECIA", "ai", `CMR dopasowany (${best.reasons.join(", ")})`, msg.atSim);
+    await recordAiAction(db, sandboxId, outcome.logId, { type: "status", orderId: order.id, number: order.number, from: "ROZLADUNEK", to: "DO_ZAMKNIECIA", documentId: docId });
     await resolveAlerts(db, sandboxId, `cmr-missing:${order.id}`, msg.atSim);
     const issues = [!quality.stamp && "brak pieczątki odbiorcy", !quality.signature && "brak podpisu odbiorcy", quality.remarks && `adnotacja: „${quality.remarks}”`].filter(Boolean);
     await openAlert(

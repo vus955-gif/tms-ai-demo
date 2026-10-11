@@ -10,6 +10,8 @@ export const TRANSITIONS: Rule[] = [
   { from: ["PRZYPISANE"], to: "WYSLANE", actors: ["system"] },
   { from: ["PRZYPISANE", "WYSLANE"], to: "NOWE", actors: ["dispatcher", "system"] },
   { from: ["WYSLANE"], to: "POTWIERDZONE", actors: ["ai", "dispatcher"] },
+  // Undo of a confirmation the AI read wrongly (AI log → "Cofnij").
+  { from: ["POTWIERDZONE"], to: "WYSLANE", actors: ["dispatcher"] },
   { from: ["POTWIERDZONE"], to: "ZALADUNEK", actors: ["system"] },
   { from: ["ZALADUNEK"], to: "W_DRODZE", actors: ["system"] },
   { from: ["W_DRODZE"], to: "ROZLADUNEK", actors: ["system"] },

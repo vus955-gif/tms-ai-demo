@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { POLL_MS, useWorldReady } from "@/hooks/use-snapshot";
 import { getJson, postJson } from "@/lib/api";
+import { STATUS_LABEL } from "@/domain/order-lifecycle";
 import { formatInt, formatSimClock, formatUsd } from "@/lib/format";
 
 export const AI_FUNCTION_LABEL: Record<string, string> = {
@@ -36,6 +37,16 @@ export function AiLogView() {
   const diagnostics = useMutation({
     mutationFn: () => postJson<Diagnostics>("/api/ai/diagnostics"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: LOG_KEY }),
+    onError: (e) => toast.error(e.message),
+  });
+  const revert = useMutation({
+    mutationFn: (id: string) => postJson(`/api/ai/log/${id}`, { action: "revert" }),
+    onSuccess: () => {
+      toast.success("Decyzja AI cofnięta — zlecenie wróciło do poprzedniego statusu.");
+      void queryClient.invalidateQueries({ queryKey: LOG_KEY });
+      void queryClient.invalidateQueries({ queryKey: ["orders"] });
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
     onError: (e) => toast.error(e.message),
   });
   const entries = log.data?.entries ?? [];
@@ -75,6 +86,7 @@ export function AiLogView() {
                 <TableHead>Funkcja</TableHead>
                 <TableHead>Wejście</TableHead>
                 <TableHead>Wynik</TableHead>
+                <TableHead>Akcja</TableHead>
                 <TableHead className="text-right">Tokeny</TableHead>
                 <TableHead className="text-right">Koszt</TableHead>
               </TableRow>
@@ -96,6 +108,23 @@ export function AiLogView() {
                       <Badge variant="outline" className="border-ai/40 text-ai">
                         AI · {formatInt(e.latencyMs)} ms
                       </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-xs">
+                    {e.action ? (
+                      <span className="flex items-center gap-2">
+                        <span className={e.reverted ? "text-muted-foreground line-through" : undefined}>
+                          {e.action.number}: {STATUS_LABEL[e.action.from]} → {STATUS_LABEL[e.action.to]}
+                        </span>
+                        {e.undoable && (
+                          <Button size="xs" variant="outline" onClick={() => revert.mutate(e.id)} disabled={revert.isPending} data-testid={`revert-${e.id}`}>
+                            Cofnij
+                          </Button>
+                        )}
+                        {e.reverted && <span className="text-muted-foreground">cofnięte</span>}
+                      </span>
+                    ) : (
+                      "—"
                     )}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{formatInt(e.inputTokens + e.outputTokens)}</TableCell>

@@ -1,14 +1,15 @@
 import { and, asc, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
-import { alerts, messages, orders, sandboxes } from "@/db/schema";
+import { aiLog, alerts, messages, orders, sandboxes } from "@/db/schema";
 import type { Db } from "@/db/types";
 import "@/server/bootstrap";
 import { createTestDb } from "@/test/db";
+import { revertAiAction } from "../ai-actions";
 import { storeDriverInbound } from "../messages/gateway";
 import { processDriverInbound } from "../messages/inbound";
 import { createSandbox, type SandboxRow } from "../sandbox/repository";
 import { runTick } from "../tick/engine";
-import { assignOrder, unassignOrder } from "./assign";
+import { assignOrder, confirmOrder, unassignOrder } from "./assign";
 import { assertAssignable, matchOrder, ordersBoard } from "./board";
 import { approveDraftOrder } from "./drafts";
 
@@ -76,6 +77,15 @@ describe("stage 2: orders, SMS and driver replies", () => {
 
     const ok = await storeDriverInbound(db, sandbox.id, { driverId: "d-zielinski", body: "OK jadę", atSim: at });
     await processDriverInbound(db, sandbox.id, ok, { simNow: at });
+    expect((await order("zl-1043")).status).toBe("POTWIERDZONE");
+
+    // The dispatcher can undo the AI's reading from the AI log, once.
+    const [entry] = (await db.select().from(aiLog).where(eq(aiLog.sandboxId, sandbox.id))).filter((e) => e.actionTaken);
+    expect(JSON.parse(entry.actionTaken!)).toMatchObject({ orderId: "zl-1043", from: "WYSLANE", to: "POTWIERDZONE" });
+    await revertAiAction(db, sandbox.id, entry.id, at);
+    expect((await order("zl-1043")).status).toBe("WYSLANE");
+    await expect(revertAiAction(db, sandbox.id, entry.id, at)).rejects.toThrow(/już cofnięta/);
+    await confirmOrder(db, sandbox.id, "zl-1043", at);
     expect((await order("zl-1043")).status).toBe("POTWIERDZONE");
   });
 

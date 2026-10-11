@@ -71,6 +71,11 @@ describe("advance", () => {
     expect(state.progressS).toBeCloseTo(30 * 60, 6);
   });
 
+  it("parks at the end of the route when its order disappears mid-way", () => {
+    const { state } = advance(driving({ stops: [] }), 3 * H, env());
+    expect(state).toMatchObject({ mode: "idle", pointId: "B", routeKey: null });
+  });
+
   it("takes a 45-minute break after 4 h 30 min of driving", () => {
     const start = driving({ routeKey: "B__C", stops: [stop("C", "delivery")], clock: { continuousMin: 250, dailyMin: 250, splitFirstPart: false, extensionsUsed: 0 } });
     const { state, events, segments } = advance(start, 2 * H, env());

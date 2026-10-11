@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import { aiLog } from "@/db/schema";
 import "@/server/bootstrap";
+import { isUndoable, parseAiAction, type AiAction } from "@/server/ai-actions";
 import { withSandbox } from "@/server/http";
 
 export type AiLogEntry = {
@@ -19,7 +20,8 @@ export type AiLogEntry = {
   error: string | null;
   atSim: string;
   createdReal: string;
-  actionTaken: string | null;
+  action: AiAction | null;
+  undoable: boolean;
   reverted: boolean;
 };
 
@@ -48,7 +50,8 @@ export async function GET(request: NextRequest) {
       error: r.error,
       atSim: r.atSim.toISOString(),
       createdReal: r.createdReal.toISOString(),
-      actionTaken: r.actionTaken,
+      action: parseAiAction(r.actionTaken),
+      undoable: !r.reverted && isUndoable(parseAiAction(r.actionTaken)),
       reverted: r.reverted,
     }));
     return { entries };

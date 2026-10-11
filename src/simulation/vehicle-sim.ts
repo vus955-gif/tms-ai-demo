@@ -134,6 +134,11 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
   const arrive = () => {
     const stop = s.stops[0];
     if (!stop) {
+      // The order left the plan mid-route (cancelled or taken back): park at the end of the route,
+      // so the next order can start from a known point.
+      if (s.routeKey) s.pointId = env.getRoute(s.routeKey).to;
+      s.routeKey = null;
+      s.progressS = 0;
       enter("idle", null);
       return;
     }

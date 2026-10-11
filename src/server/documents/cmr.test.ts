@@ -3,11 +3,12 @@ import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import type { AiClient, ParseRequest, ParseResponse } from "@/ai/client";
 import { setAiClientForTests } from "@/ai/client";
 import type { CmrReading } from "@/ai/functions/read-cmr";
-import { alerts, documents, driverClientHistory, messages, orders } from "@/db/schema";
+import { aiLog, alerts, documents, driverClientHistory, messages, orders } from "@/db/schema";
 import type { Db } from "@/db/types";
 import "@/server/bootstrap";
 import { cmrSample } from "@/simulation/scenario/cmr-samples";
 import { createTestDb } from "@/test/db";
+import { revertAiAction } from "../ai-actions";
 import { storeDriverInbound } from "../messages/gateway";
 import { processDriverInbound } from "../messages/inbound";
 import { createSandbox, type SandboxRow } from "../sandbox/repository";
@@ -163,6 +164,15 @@ describe("stage 3: CMR documents", () => {
       expect(o.status).toBe("DO_ZAMKNIECIA");
       const alert = (await db.select().from(alerts).where(and(eq(alerts.sandboxId, sandbox.id), eq(alerts.kind, "cmr")))).at(-1)!;
       expect(alert.title).toBe("ZL-1033: CMR gotowy do zamknięcia");
+    });
+
+    it("lets the dispatcher undo the AI match from the AI log", async () => {
+      const [entry] = (await db.select().from(aiLog).where(eq(aiLog.sandboxId, sandbox.id))).filter((e) => e.actionTaken);
+      expect(JSON.parse(entry.actionTaken!)).toMatchObject({ orderId: "zl-1033", to: "DO_ZAMKNIECIA" });
+      await revertAiAction(db, sandbox.id, entry.id, new Date(sandbox.simOrigin.getTime() + 133 * 60_000));
+      expect((await order(sandbox, "zl-1033")).status).toBe("ROZLADUNEK");
+      expect((await docs(sandbox)).at(-1)).toMatchObject({ status: "do_weryfikacji", matchedOrderId: null });
+      await assignDocument(db, sandbox.id, (await docs(sandbox)).at(-1)!.id, "zl-1033", new Date(sandbox.simOrigin.getTime() + 133 * 60_000));
     });
 
     it("rejecting a wrong match puts the order back to unloading", async () => {

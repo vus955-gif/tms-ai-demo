@@ -4,6 +4,7 @@ import type { Db, Executor } from "@/db/types";
 import { classifyDriverMessage } from "@/ai/functions/classify-driver-message";
 import type { DriverMessageClassification } from "@/ai/fallback/driver-message-rules";
 import { windowText } from "@/domain/sms-templates";
+import { recordAiAction } from "../ai-actions";
 import { openAlert } from "../alerts/repository";
 import { transitionOrder } from "../orders/transition";
 
@@ -48,7 +49,7 @@ export async function processDriverInbound(
   const pending = driverOrders.find((o) => o.status === "WYSLANE");
   const current = driverOrders.find((o) => ["POTWIERDZONE", "ZALADUNEK", "W_DRODZE", "ROZLADUNEK"].includes(o.status));
 
-  const { value: c, source } = await classifyDriverMessage({
+  const { value: c, source, logId } = await classifyDriverMessage({
     db,
     sandboxId,
     simNow: opts.simNow,
@@ -99,6 +100,7 @@ export async function processDriverInbound(
     case "potwierdzenie":
       if (pending && c.confidence >= CONFIDENT) {
         await transitionOrder(db, sandboxId, pending, "POTWIERDZONE", "ai", `Kierowca potwierdził: ${quote}`, at);
+        await recordAiAction(db, sandboxId, logId, { type: "status", orderId: pending.id, number: pending.number, from: "WYSLANE", to: "POTWIERDZONE" });
         await alert({
           kind: "order_confirmed",
           severity: "info",
