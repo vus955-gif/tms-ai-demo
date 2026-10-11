@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wyzwania wdrożeniowe TMS</title>
+<style>
+  :root {
+    --bg: #faf9f6; --surface: #fff; --surface-2: #f3f1ec; --ink: #1c1f24; --muted: #5d6471; --line: #e3e0d8;
+    --accent: #0f5c8c; --accent-soft: #e5eff6; --good: #1f7a4d; --good-soft: #e6f3eb; --warn: #8f5600; --warn-soft: #fbf0dc;
+    --bad: #a3302a; --bad-soft: #f8e5e3; --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139;
+      --accent: #6db4e3; --accent-soft: #182a37; --good: #6fcf9a; --good-soft: #15281e; --warn: #f0b45a; --warn-soft: #2c2314;
+      --bad: #f08a83; --bad-soft: #2e1918;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139;
+    --accent: #6db4e3; --accent-soft: #182a37; --good: #6fcf9a; --good-soft: #15281e; --warn: #f0b45a; --warn-soft: #2c2314;
+    --bad: #f08a83; --bad-soft: #2e1918;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16.5px; line-height: 1.65; }
+  .page { max-width: 54rem; margin: 0 auto; padding: 56px 24px 96px; }
+  @media (max-width: 600px) { .page { padding: 32px 16px 64px; } }
+  h1 { font-size: 2.1rem; margin: .2em 0 .3em; line-height: 1.2; }
+  h2 { font-size: 1.45rem; margin: 3rem 0 1rem; padding-top: 1.3rem; border-top: 1px solid var(--line); line-height: 1.25; }
+  h3 { font-size: 1.1rem; margin: 1.8rem 0 .6rem; }
+  p { margin: 0 0 1em; }
+  ul, ol { margin: 0 0 1em; padding-left: 1.3em; }
+  li { margin: .35em 0; }
+  a { color: var(--accent); word-break: break-word; }
+  code { font-family: "Cascadia Code", Consolas, Menlo, monospace; font-size: .86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .eyebrow { font-size: .82rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 650; }
+  .lead { font-size: 1.12rem; color: var(--muted); }
+  .box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 22px; margin: 1.2rem 0; }
+  .box.key { border-left: 4px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; }
+  .note { background: var(--warn-soft); border-radius: 10px; padding: 12px 16px; margin: 1rem 0; font-size: .95rem; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  .c { display: inline-block; font-size: .68rem; font-weight: 650; letter-spacing: .03em; text-transform: uppercase; padding: 0 6px; border-radius: 4px; vertical-align: 1px; white-space: nowrap; }
+  .c.ok { background: var(--good-soft); color: var(--good); }
+  .c.prob { background: var(--warn-soft); color: var(--warn); }
+  .c.no { background: var(--bad-soft); color: var(--bad); }
+  .c.wn { background: var(--accent-soft); color: var(--accent); }
+  .src { font-size: .82rem; color: var(--muted); }
+  .rec { color: var(--good); font-weight: 600; }
+  footer { margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: .86rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="eyebrow">Dokument wdrożeniowy · 11 października 2026</div>
+  <h1>Od demo do produkcji: integracje i wyzwania</h1>
+  <p class="lead">Co w demo jest symulowane, czym to zastąpić w prawdziwej firmie transportowej i na co uważać: telematyka i GPS, SMS/MMS do kierowców, poczta, Comarch ERP Optima, hosting oraz RODO.</p>
+
+  <div class="box key">
+    <strong>Jak czytać oznaczenia</strong>
+    <ul>
+      <li><span class="c ok">potwierdzone</span> — z oficjalnego lub pierwotnego źródła (link obok).</li>
+      <li><span class="c prob">prawdopodobne</span> — ze źródła wtórnego (branżowego, dostawcy, forum).</li>
+      <li><span class="c no">niepotwierdzone</span> — nie udało się sprawdzić; traktować jako pytanie do dostawcy.</li>
+      <li><span class="c wn">wniosek</span> — moja rekomendacja wynikająca z faktów, nie fakt źródłowy.</li>
+    </ul>
+    <p>Stan wiedzy: 11.10.2026. Ceny, licencje i limity dostawców zmieniają się — przed decyzją zakupową potwierdzić u dostawcy.</p>
+  </div>
+
+  <h2>Najważniejsze wnioski</h2>
+  <ol>
+    <li><strong>Odświeżanie pozycji co 2–3 minuty wymaga telematyki z API, nie samego rFMS.</strong> Standard producentów ciężarówek gwarantuje pozycję co najmniej raz na 15 minut. <span class="c ok">potwierdzone</span> <span class="c wn">wniosek</span></li>
+    <li><strong>Busy też liczą czas jazdy.</strong> Od 1.07.2026 pojazdy powyżej 2,5 t w przewozach międzynarodowych muszą mieć tachograf G2V2 i podlegają rozporządzeniu 561/2006 — demo już to uwzględnia (busy międzynarodowe mają limity, krajowe „nie dotyczy”). <span class="c ok">potwierdzone</span></li>
+    <li><strong>Zdjęcia CMR MMS-em są realne:</strong> odbiór MMS przez webhook potwierdzony w SMSAPI (na numerze dedykowanym) i SerwerSMS. <span class="c ok">potwierdzone</span></li>
+    <li><strong>Optima nie ma publicznego REST API.</strong> Oficjalnie: import/eksport XML, a opis formatu tylko dla Autoryzowanych Partnerów Comarch. Faktury (KSeF) powinna wystawiać Optima, TMS przekazuje jej zamknięte zlecenia. <span class="c ok">potwierdzone</span> <span class="c wn">wniosek</span></li>
+    <li><strong>Vercel Hobby nie nadaje się na produkcję</strong> (tylko użytek niekomercyjny, cron raz dziennie). Produkcja: plan Pro, region we Frankfurcie, aktualizacja świata przez cron co minutę zamiast odpytywania z przeglądarki. <span class="c ok">potwierdzone</span> <span class="c wn">wniosek</span></li>
+    <li><strong>GPS kierowców to „inna forma monitoringu”</strong> z Kodeksu pracy: obwieszczenie/regulamin, informacja co najmniej 2 tygodnie wcześniej, prawdopodobnie DPIA. <span class="c ok">potwierdzone</span></li>
+    <li><strong>Anthropic API:</strong> domyślnie nie trenuje na danych klienta, ale dane są przechowywane w USA i nie ma opcji przetwarzania tylko w UE w bezpośrednim API — warto pseudonimizować kierowców w promptach albo użyć Claude przez Amazon Bedrock / Google Vertex w regionie UE. <span class="c ok">potwierdzone</span> <span class="c wn">wniosek</span></li>
+  </ol>
+
+  <h2>1. Co w demo jest symulowane</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Element</th><th>W demo</th><th>W produkcji</th></tr></thead>
+    <tbody>
+      <tr><td>Pozycje GPS, stany pracy kierowcy</td><td>Symulator jazdy po trasach OSRM z regułami 561/2006</td><td>Telematyka (API dostawcy lub rFMS producenta) + pliki tachografu</td></tr>
+      <tr><td>SMS / MMS do kierowców</td><td>Zapis w bazie, „Telefon kierowcy”, boty</td><td>Bramka SMS/MMS z webhookiem (numer dedykowany)</td></tr>
+      <tr><td>Maile klientów i agentów</td><td>Zapis w bazie, „Poczta klienta”, boty</td><td>Microsoft Graph / Gmail API (wspólna skrzynka)</td></tr>
+      <tr><td>Trasy i czasy przejazdu</td><td>552 trasy policzone raz przez OSRM (auto osobowe × współczynnik ciężarówki)</td><td>Routing ciężarowy z ruchem drogowym</td></tr>
+      <tr><td>Księgowość</td><td>Brak</td><td>Eksport do Comarch ERP Optima</td></tr>
+      <tr><td>Aktualizacja świata</td><td>Wywoływana przez otwarty panel (co 15 s)</td><td>Cron co minutę + webhooki dostawców</td></tr>
+    </tbody>
+  </table></div>
+  <p>Architektura demo ma wymienne moduły (bramka wiadomości, bramka poczty, źródło pozycji, routing) — produkcyjne integracje podmieniają implementacje, a reguły domenowe (czas jazdy, ETA, ryzyko, dopasowanie, CMR) zostają. <span class="c wn">wniosek</span></p>
+
+  <h2>2. Telematyka i dane GPS</h2>
+
+  <h3>2.1 rFMS — dane prosto od producenta ciężarówki</h3>
+  <ul>
+    <li><strong>Czym jest:</strong> API ACEA do pobierania danych FMS z pojazdu przez sprzęt producenta, bez montażu dodatkowych urządzeń. Aktualna wersja 5.0.0 (25.07.2025): OAuth2, opis OpenAPI, od 5.0 także powiadomienia push. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://www.fms-standard.com/Truck/down_load/Technical_Specification_rFMS_vehicle_data_V5.0.0_25.07.2025.pdf">specyfikacja rFMS 5.0.0</a></span></li>
+    <li><strong>Dane:</strong> pozycja i prędkość, licznik przebiegu, zużycie paliwa, poziom paliwa i AdBlue, identyfikator kierowcy; <em>stan pracy kierowcy z tachografu jest polem opcjonalnym</em>. <span class="c ok">potwierdzone</span></li>
+    <li><strong>Częstotliwość:</strong> pozycja co najmniej raz na 15 minut, status co najmniej raz na 60 minut, historia minimum 2 tygodnie. <span class="c ok">potwierdzone</span></li>
+    <li><strong>Dostęp:</strong> umowa i subskrypcja u każdego producenta osobno. Volvo (REST, 14 dni historii, subskrypcja za pojazd) i Scania (API serwer–serwer) — <span class="c ok">potwierdzone</span> (<a href="https://www.volvobuses.com/en/services/volvo-connect/integration.html">Volvo</a>, <a href="https://www.scania.com/uk/en/home/services/connected-services/data-access.html">Scania</a>); DAF i MAN — <span class="c prob">prawdopodobne</span>; Mercedes-Benz Trucks, Iveco, Renault Trucks oraz vany — <span class="c no">niepotwierdzone</span>.</li>
+    <li><span class="c wn">wniosek</span> rFMS wystarczy do przebiegów i rozliczeń, ale nie do mapy odświeżanej co 2–3 minuty ani do floty mieszanej z busami.</li>
+  </ul>
+
+  <h3>2.2 Telematyka dodatkowa (aftermarket) z API</h3>
+  <ul>
+    <li><strong>Webfleet:</strong> WEBFLEET.connect (pozycje — limit 6 zapytań/min, do śledzenia zalecane kolejki wiadomości; wiadomości do kierowcy; pozostały czas jazdy UE z płatnym dodatkiem) i TachoShare.connect (pliki tachografu). <span class="c ok">potwierdzone</span> <span class="src"><a href="https://www.webfleet.com/en_ie/fleet-management/integration/resources/">integracje Webfleet</a></span></li>
+    <li><strong>GBox (Inelo):</strong> API istnieje, dokumentacja dla partnerów. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://faq.inelo.pl/article-tags/api">FAQ Inelo</a></span></li>
+    <li><strong>Frotcom:</strong> REST API z pozycjami i wiadomościami. <span class="c prob">prawdopodobne</span> · Framelogic, Navifleet — <span class="c no">niepotwierdzone</span>.</li>
+    <li><span class="c wn">wniosek</span> Jeden dostawca telematyki dla całej floty (ciągniki i busy) upraszcza integrację: jedno API pozycji, jedno źródło danych tachografowych.</li>
+  </ul>
+
+  <h3>2.3 Czas jazdy i tachograf</h3>
+  <ul>
+    <li>Pobieranie danych: pamięć tachografu co najwyżej co 90 dni, karta kierowcy co najwyżej co 28 dni. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://www.legislation.gov.uk/eur/2010/581/article/1/adopted">rozp. 581/2010, art. 1</a></span></li>
+    <li>Wykresówki i wydruki przechowuje się co najmniej rok <span class="c ok">potwierdzone</span> (<a href="https://www.legislation.gov.uk/eur/2014/165/article/33/adopted">rozp. 165/2014, art. 33</a>); 12 miesięcy dla danych cyfrowych podają źródła branżowe <span class="c prob">prawdopodobne</span>.</li>
+    <li>Od 1.07.2026 pojazdy powyżej 2,5 t w przewozach międzynarodowych: tachograf G2V2 i 561/2006. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://transport.ec.europa.eu/news-events/news/stronger-and-more-unified-enforcement-eu-rules-international-road-transport-smart-tachograph-2025-08-19_en">Komisja Europejska</a></span></li>
+    <li>Pozostały czas jazdy „na żywo” dają m.in. Webfleet (wartości orientacyjne) i Michelin Connected Fleet „Tacho Live”. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://docs.connectedfleet.michelin.com/classic/tacho-api/tacho/tacho-live.md">Tacho Live</a></span></li>
+    <li>Interfejs ITS tachografu udostępnia dane osobowe (w tym geolokalizację) tylko za zgodą kierowcy. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://www.legislation.gov.uk/eur/2014/165/article/10/adopted">rozp. 165/2014, art. 10</a></span></li>
+    <li><span class="c wn">wniosek</span> Dane na żywo służą do planowania i alertów (jak w demo). Zgodność z 561/2006 rozlicza się z plików tachografu — TMS nie powinien udawać systemu rozliczeń czasu pracy.</li>
+  </ul>
+
+  <h3>2.4 e-TOLL i SENT GEO</h3>
+  <ul>
+    <li>e-TOLL (pojazdy powyżej 3,5 t): pozycje przez OBU, ZSL albo aplikację e-TOLL PL. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://etoll.gov.pl/system-e-toll/urzadzenia-pokladowe-obu-i-zsl">etoll.gov.pl</a></span> Oficjalnego API, z którego przewoźnik pobrałby własne pozycje, nie znalazłem. <span class="c no">niepotwierdzone</span></li>
+    <li>SENT GEO: przekazywanie geolokalizacji przy przewozie towarów objętych SENT (paliwa, oleje, LPG i inne). <span class="c ok">potwierdzone</span> (<a href="https://www.gov.pl/web/kas/struktura-interfejsu-sent-geo">interfejs SENT GEO</a>); szczegóły kar i progów <span class="c prob">prawdopodobne</span>.</li>
+    <li><span class="c wn">wniosek</span> Dostawca telematyki, który jest dopuszczonym operatorem ZSL, obsłuży jednym urządzeniem e-TOLL, SENT i TMS.</li>
+  </ul>
+
+  <h2>3. SMS i MMS do kierowców</h2>
+  <ul>
+    <li><strong>SMSAPI.pl:</strong> odbiór SMS i MMS na wykupiony numer dedykowany oraz odpowiedzi 2way; callback POST z plikami MMS; serwer musi odpowiedzieć „OK”, inaczej SMSAPI ponawia. Odpowiedzi 2way po 24 h mogą nie zostać przypisane. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://www.smsapi.pl/docs">dokumentacja SMSAPI</a></span></li>
+    <li><strong>SerwerSMS.pl:</strong> odpytywanie odebranych wiadomości (także MMS) albo przekazanie na URL; załączniki w base64; ponowienia po 5, 10, 15 i 60 min. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://dev.serwersms.pl/en/https-api-v2/incomming-messages">dokumentacja SerwerSMS</a></span></li>
+    <li><strong>WhatsApp Business Platform</strong> jako alternatywa dla zdjęć: 24-godzinne okno po wiadomości użytkownika, poza nim tylko zatwierdzone szablony; adres pobrania zdjęcia wygasa po 5 minutach. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://developers.facebook.com/docs/whatsapp/cloud-api/guides/send-messages">Meta — Cloud API</a></span></li>
+    <li>Koszty numerów dedykowanych i umowy powierzenia u dostawców SMS — <span class="c no">niepotwierdzone</span>, do zapytania.</li>
+    <li><span class="c wn">wniosek</span> Architektura: webhook → zdjęcie od razu do magazynu plików (Vercel przyjmuje do 4,5 MB w żądaniu) → kolejka → odczyt AI (jak w demo). MMS zostaje głównym kanałem, bo — jak ustaliliśmy — wielu kierowców nie radzi sobie z mailem.</li>
+  </ul>
+
+  <h2>4. Poczta klientów i agentów</h2>
+  <ul>
+    <li><strong>Microsoft 365 (Graph):</strong> uprawnienia aplikacyjne <code>Mail.Read</code>, <code>Mail.ReadWrite</code>, <code>Mail.Send</code> wymagają zgody administratora i domyślnie obejmują wszystkie skrzynki — zawęża się je przez RBAC for Applications w Exchange Online. Subskrypcje zmian do niespełna 7 dni, opóźnienie powiadomień średnio poniżej minuty. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://learn.microsoft.com/en-us/graph/permissions-reference">uprawnienia Graph</a>, <a href="https://learn.microsoft.com/en-us/exchange/permissions-exo/application-rbac">RBAC for Applications</a>, <a href="https://learn.microsoft.com/en-us/graph/api/resources/subscription">subskrypcje</a></span></li>
+    <li><strong>Google Workspace (Gmail API):</strong> zakresy odczytu są „restricted” (audyt bezpieczeństwa przy przechowywaniu na serwerze), wysyłka „sensitive”; delegację w domenie ustawia super administrator; powiadomienia przez Pub/Sub, odnawiane co 7 dni. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://developers.google.com/workspace/gmail/api/auth/scopes">zakresy Gmail</a>, <a href="https://developers.google.com/workspace/gmail/api/guides/push">push</a></span></li>
+    <li><strong>IMAP/SMTP</strong> jako rezerwa: Google od 14.03.2025 wymaga OAuth (lub haseł aplikacji) <span class="c ok">potwierdzone</span>; Microsoft wyłącza podstawowe uwierzytelnianie SMTP domyślnie pod koniec 2026 <span class="c prob">prawdopodobne</span>.</li>
+    <li><span class="c wn">wniosek</span> Jedna wspólna skrzynka (np. spedycja@) dla klientów i druga dla agentów; TMS czyta tylko je. Treść maili traktowana jako dane, nigdy jako polecenia dla AI (jak w demo).</li>
+  </ul>
+
+  <h2>5. Comarch ERP Optima</h2>
+  <ul>
+    <li><strong>Oficjalnie:</strong> import i eksport dokumentów przez pliki XML (faktury sprzedaży, proformy, dokumenty magazynowe); kontrahenci dopasowywani po kodzie, NIP lub GLN; opis struktury XML dostępny wyłącznie dla Autoryzowanych Partnerów Comarch. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://pomoc.comarch.pl/optima/pl/2026/dokumentacja/eksport-i-import-dokumentow-przez-pliki-xml/">pomoc Comarch</a></span></li>
+    <li>Obiekty COM z dokumentacją dla partnerów <span class="c prob">prawdopodobne</span>; płatne Web API (SOAP) i rozwiązania REST firm trzecich — oferty istnieją <span class="c prob">prawdopodobne</span>. Licencjonowanie API i Optima w Chmurze — <span class="c no">niepotwierdzone</span>.</li>
+    <li><strong>KSeF:</strong> obowiązkowy dla wszystkich od 1.04.2026 (najwięksi od 1.02.2026). <span class="c ok">potwierdzone</span> <span class="src"><a href="https://ksef.podatki.gov.pl/od-kiedy-trzeba-wystawiac-faktury-w-ksef/">ksef.podatki.gov.pl</a></span></li>
+    <li><span class="c wn">wniosek</span> TMS nie wystawia faktur. Po zamknięciu zlecenia (CMR zatwierdzony) TMS przygotowuje paczkę do Optimy: kontrahent, numer zlecenia, referencje klienta, trasa, cena. Pierwszy krok: eksport XML przez partnera Comarch; integracja „na żywo” dopiero, gdy wolumen to uzasadni.</li>
+  </ul>
+
+  <h2>6. Trasy i mapy</h2>
+  <ul>
+    <li>Demo: trasy policzone jednorazowo publicznym OSRM dla aut osobowych i przemnożone przez współczynnik ciężarówki; mapy OpenFreeMap (dane © OpenStreetMap, ODbL).</li>
+    <li><span class="c wn">wniosek</span> Produkcja potrzebuje routingu ciężarowego (wysokość, masa, zakazy, ruch na żywo): własny serwer OSRM/Valhalla albo komercyjne API tras dla ciężarówek. Publiczne serwery OSRM i Nominatim nie służą do ruchu produkcyjnego. Wybór dostawcy i koszty — do porównania w osobnej analizie.</li>
+  </ul>
+
+  <h2>7. Hosting i baza danych</h2>
+  <ul>
+    <li><strong>Vercel:</strong> żądanie i odpowiedź funkcji do 4,5 MB; czas wykonania 300 s (Pro do 800 s); region domyślnie USA (iad1), do zmiany np. na fra1; Cron na wszystkich planach, ale na Hobby najwyżej raz dziennie, na Pro co minutę; Hobby tylko do użytku niekomercyjnego; DPA dla Pro/Enterprise. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://vercel.com/docs/functions/limitations">limity funkcji</a>, <a href="https://vercel.com/docs/cron-jobs/usage-and-pricing">cron</a>, <a href="https://vercel.com/docs/plans/hobby">Hobby</a></span></li>
+    <li><strong>Neon (plan Free):</strong> uśpienie po 5 min bezczynności (na Free nie do wyłączenia), wybudzenie w kilkaset milisekund, region w UE (Frankfurt). <span class="c ok">potwierdzone</span> <span class="src"><a href="https://neon.com/docs/introduction/plans">plany Neon</a></span></li>
+    <li><span class="c wn">wniosek</span> Publiczne demo może zostać na Hobby + Neon Free (ruch niekomercyjny, budzenie bazy akceptowalne). Wdrożenie w firmie: Vercel Pro (fra1) + Neon płatny w UE, aktualizacja świata przez cron co minutę i webhooki dostawców zamiast odpytywania z przeglądarki.</li>
+  </ul>
+
+  <h2>8. RODO i monitoring kierowców</h2>
+  <ul>
+    <li><strong>Kodeks pracy:</strong> GPS to „inna forma monitoringu” (art. 22³ § 4) — dopuszczalna dla organizacji pracy i właściwego używania narzędzi pracy; cele, zakres i sposób w regulaminie, układzie lub obwieszczeniu; informacja dla pracowników co najmniej 2 tygodnie przed uruchomieniem, informacja na piśmie przed dopuszczeniem do pracy, oznakowanie. Limit 3 miesięcy dotyczy tylko nagrań wizyjnych. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://api.sejm.gov.pl/eli/acts/DU/2026/1245/text/T/D20261245L.pdf">tekst jednolity k.p. (Dz.U. 2026 poz. 1245)</a></span></li>
+    <li><strong>RODO:</strong> podstawa z art. 6 ust. 1 lit. f (uzasadniony interes) z testem równowagi; przetwarzanie lokalizacji pracowników jest w wykazie operacji wymagających oceny skutków (DPIA, zwykle przy co najmniej dwóch kryteriach); okres przechowywania według zasady ograniczenia (art. 5 ust. 1 lit. e). <span class="c ok">potwierdzone</span> <span class="src"><a href="https://uodo.gov.pl/pl/674/4212">UODO</a>, <a href="https://www.edpb.europa.eu/system/files/decisions/pl-dpia-list_monitor_polski.pdf">wykaz DPIA</a></span></li>
+    <li><strong>Kierowcy na B2B:</strong> Kodeks pracy ich nie obejmuje — potrzebna osobna podstawa z RODO i obowiązek informacyjny. <span class="c wn">wniosek</span></li>
+    <li><strong>Umowy powierzenia</strong> z każdym podmiotem przetwarzającym: telematyka, bramka SMS, hosting, baza, AI (art. 28 ust. 3). <span class="c ok">potwierdzone</span></li>
+    <li><strong>Anthropic (Claude API):</strong> domyślnie bez trenowania na danych z produktów komercyjnych; Anthropic jest podmiotem przetwarzającym, DPA z SCC w warunkach handlowych; przetwarzanie można ograniczyć do <code>us</code> albo <code>global</code>, dane spoczynkowe w USA; przetwarzanie w UE możliwe przez Amazon Bedrock lub Google Vertex. Okresy retencji podawane przez Anthropic różnią się zależnie od dokumentu — przed wdrożeniem potwierdzić aktualne warunki. <span class="c ok">potwierdzone</span> <span class="src"><a href="https://privacy.claude.com/en/articles/7996868-is-my-data-used-for-model-training">trenowanie</a>, <a href="https://platform.claude.com/docs/en/manage-claude/data-residency">lokalizacja danych</a>, <a href="https://platform.claude.com/docs/en/manage-claude/api-and-data-retention">retencja</a></span></li>
+    <li><span class="c wn">wniosek</span> W promptach wystarczą fakty bez danych osobowych: zamiast imienia i nazwiska — identyfikator kierowcy; numer telefonu nigdy nie trafia do AI. Szkice do klientów już dziś są budowane wyłącznie z danych „dla klienta” (rejestracje, status, ETA, postęp).</li>
+  </ul>
+
+  <h2>9. AI w produkcji</h2>
+  <ul>
+    <li><strong>Koszty i limity</strong> są już w demo (limit wywołań na świat, dzienny budżet, tryb awaryjny, dziennik z kosztami) — w produkcji te same mechanizmy, z budżetem per firma.</li>
+    <li><strong>Jakość odczytu CMR:</strong> 17 syntetycznych zdjęć z zapisaną „prawdą” to gotowy zestaw kontrolny; przed wdrożeniem trzeba go uzupełnić prawdziwymi (zanonimizowanymi) zdjęciami kierowców i zmierzyć trafność. <span class="c wn">wniosek</span></li>
+    <li><strong>Człowiek decyduje:</strong> AI potwierdza tylko jednoznaczne odpowiedzi, każde przejście statusu przez AI można cofnąć w Dzienniku AI, zamknięcie zlecenia i wysyłka ofert zawsze należą do człowieka.</li>
+  </ul>
+
+  <h2>10. Proponowana kolejność wdrożenia</h2>
+  <ol>
+    <li><strong>Pilot bez integracji</strong> (2–4 tygodnie): TMS jako tablica zleceń, komunikator i skrzynka, pozycje wpisywane ręcznie lub z eksportu telematyki. Cel: przyzwyczajenie zespołu, poprawki UX.</li>
+    <li><strong>Telematyka:</strong> API pozycji i czasu jazdy jednego dostawcy dla całej floty.</li>
+    <li><strong>Bramka SMS/MMS</strong> z numerem dedykowanym: zlecenia, potwierdzenia, CMR.</li>
+    <li><strong>Poczta</strong> (Graph lub Gmail) dla skrzynki klientów i agentów.</li>
+    <li><strong>Optima:</strong> eksport zamkniętych zleceń przez partnera Comarch.</li>
+    <li><strong>Formalności RODO</strong> równolegle od początku: obwieszczenie, informacje dla kierowców, DPIA, umowy powierzenia.</li>
+  </ol>
+  <div class="note"><strong>Do potwierdzenia u dostawców:</strong> rFMS u Mercedes-Benz, Iveco, Renault i w vanach; API Framelogic i Navifleet; API e-TOLL dla przewoźnika; licencjonowanie API Optimy i Optimy w Chmurze; koszty numerów dedykowanych MMS; treść umów powierzenia (SMS, Neon).</div>
+
+  <footer>Dokument wdrożeniowy demo TMS. Źródła sprawdzone 11.10.2026; teksty rozporządzeń UE w wersjach pierwotnych (legislation.gov.uk), bo EUR-Lex blokował automatyczne pobieranie. To nie jest porada prawna — kwestie RODO i Kodeksu pracy warto potwierdzić z prawnikiem.</footer>
+</main>
+</body>
+</html>

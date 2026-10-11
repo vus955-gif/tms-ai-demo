@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moduł Sprzedaż</title>
+<style>
+  :root {
+    --bg: #faf9f6; --surface: #fff; --surface-2: #f3f1ec; --ink: #1c1f24; --muted: #5d6471; --line: #e3e0d8;
+    --accent: #0f5c8c; --accent-soft: #e5eff6; --good: #1f7a4d; --good-soft: #e6f3eb; --warn: #8f5600; --warn-soft: #fbf0dc;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139;
+      --accent: #6db4e3; --accent-soft: #182a37; --good: #6fcf9a; --good-soft: #15281e; --warn: #f0b45a; --warn-soft: #2c2314;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139;
+    --accent: #6db4e3; --accent-soft: #182a37; --good: #6fcf9a; --good-soft: #15281e; --warn: #f0b45a; --warn-soft: #2c2314;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16.5px; line-height: 1.65; }
+  .page { max-width: 54rem; margin: 0 auto; padding: 56px 24px 96px; }
+  @media (max-width: 600px) { .page { padding: 32px 16px 64px; } }
+  h1 { font-size: 2.1rem; margin: .2em 0 .3em; line-height: 1.2; }
+  h2 { font-size: 1.45rem; margin: 3rem 0 1rem; padding-top: 1.3rem; border-top: 1px solid var(--line); line-height: 1.25; }
+  h3 { font-size: 1.1rem; margin: 1.8rem 0 .6rem; }
+  p { margin: 0 0 1em; }
+  ul, ol { margin: 0 0 1em; padding-left: 1.3em; }
+  li { margin: .3em 0; }
+  code { font-family: "Cascadia Code", Consolas, Menlo, monospace; font-size: .86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .eyebrow { font-size: .82rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 650; }
+  .lead { font-size: 1.12rem; color: var(--muted); }
+  .box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 22px; margin: 1.2rem 0; }
+  .box.key { border-left: 4px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; }
+  .note { background: var(--warn-soft); border-radius: 10px; padding: 12px 16px; margin: 1rem 0; font-size: .95rem; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  .rec { color: var(--good); font-weight: 600; }
+  .decision { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 20px; margin: 1rem 0; }
+  .decision h3 { margin-top: .2rem; }
+  footer { margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: .86rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="eyebrow">Specyfikacja etapu · szkic do akceptacji · 11 października 2026</div>
+  <h1>Moduł Sprzedaż: wyceny przez agentów i wyceny drogowe</h1>
+  <p class="lead">Pierwszy etap po MVP (Twoja decyzja „od A”). Opis na podstawie Twojej wiadomości o Sea/Rail/Air i wycenach drogowych. Zbudowany w nocy na osobnej gałęzi <code>etap-sprzedaz</code> — gałąź główna zostaje czystym MVP do testów.</p>
+
+  <div class="box key">
+    <strong>Twoje założenia (z rozmowy)</strong>
+    <ul>
+      <li>Sea, Rail, Air nie są wyceniane z własnych stawek, tylko przez zaufanych agentów (ludzi, nie agenty AI).</li>
+      <li>AI czyta zapytanie od klienta. Jeśli są wymagane dane (incoterms, waga, ilość, CBM…), odpowiada „dziękujemy za przesłanie zapytania, powrócimy z wyceną jak najszybciej” i rozsyła zapytanie do zaufanych agentów zapisanych w systemie.</li>
+      <li>AI zbiera stawki od agentów i przekazuje handlowcowi. Handlowiec wybiera stawkę albo sam negocjuje; AI przygotowuje drafty maili.</li>
+      <li>Wyceny drogowe dla własnej floty: stawki za km i marże w bazie, AI przygotowuje draft wyceny dla handlowca.</li>
+    </ul>
+    <p>Ze specyfikacji MVP (§16): zapytanie do agentów <em>bez danych klienta</em>, przełącznik „automatycznie / do zatwierdzenia”, zbieranie stawek z przypomnieniami i terminem, przełącznik roli „Spedytor / Handlowiec”.</p>
+  </div>
+
+  <h2>1. Przepływ</h2>
+  <ol>
+    <li><strong>Zapytanie klienta</strong> trafia do Skrzynki (mail, Poczta klienta). Kategoria „zapytanie ofertowe” zakłada <strong>wycenę</strong> (numer <code>WY-1001</code>…) i rozpoznaje tryb: morski, lotniczy, kolejowy albo drogowy.</li>
+    <li><strong>Kontrola kompletności</strong> (algorytm + AI): dla każdego trybu inna lista wymaganych danych (tabela niżej). Braki → szkic prośby o uzupełnienie do klienta.</li>
+    <li><strong>Sea / Rail / Air, komplet danych:</strong> potwierdzenie do klienta („dziękujemy… powrócimy z wyceną”) i zapytania (RFQ) do agentów obsługujących dany tryb — bez nazwy klienta, kontaktów i referencji klienta. Domyślnie automatycznie; przełącznik „do zatwierdzenia” zatrzymuje oba kroki do kliknięcia.</li>
+    <li><strong>Agenci odpowiadają</strong> (w demo — boty z realistycznymi stawkami, czasem bez odpowiedzi albo „brak miejsca”). AI odczytuje z maila: cenę, walutę, ważność, czas tranzytu, warunki i dopłaty. Brak odpowiedzi → przypomnienie po 3 h, po terminie (8 h) status „brak odpowiedzi”.</li>
+    <li><strong>Handlowiec</strong> widzi zestawienie stawek, wybiera jedną i wpisuje marżę → <strong>kalkulacja liczona przez algorytm</strong> → AI pisze szkic oferty dla klienta. Albo „Negocjuj”: AI pisze szkic do agenta z ceną docelową.</li>
+    <li><strong>Drogowe:</strong> od razu kalkulacja ze stawek za km dla typu pojazdu, dopłat (ADR, chłodnia) i marży → szkic oferty. Km z tras OSRM, gdy oba miejsca są w bazie punktów; w innym razie szacunek (wbudowana lista miast × współczynnik krętości dróg), wyraźnie oznaczony.</li>
+    <li><strong>Status wyceny:</strong> zbieranie stawek → gotowe do oferty → oferta wysłana → wygrana / przegrana (ręcznie).</li>
+  </ol>
+
+  <h3>Wymagane dane według trybu</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Tryb</th><th>Wymagane</th><th>Mile widziane</th></tr></thead>
+    <tbody>
+      <tr><td>Morski FCL</td><td>port/miejsce nadania, port/miejsce przeznaczenia, incoterms, typ i liczba kontenerów, towar, waga, data gotowości</td><td>towar niebezpieczny (IMO), wartość</td></tr>
+      <tr><td>Morski LCL</td><td>skąd, dokąd, incoterms, liczba opakowań, objętość (CBM), waga, towar, data gotowości</td><td>wymiary, piętrowalność</td></tr>
+      <tr><td>Lotniczy</td><td>lotnisko/miasto nadania i przeznaczenia, incoterms, liczba opakowań, waga, wymiary lub CBM, towar, data gotowości</td><td>DGR, temperatura</td></tr>
+      <tr><td>Kolejowy</td><td>skąd, dokąd, incoterms, typ i liczba kontenerów, waga, towar, data gotowości</td><td>terminal</td></tr>
+      <tr><td>Drogowy</td><td>skąd, dokąd, liczba palet lub typ pojazdu, waga, termin</td><td>ADR, chłodnia, wymiary</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>2. Zasada: algorytm liczy, AI pisze</h2>
+  <p>Jak w całym demo: AI czyta maile (zapytanie klienta, odpowiedź agenta) i pisze szkice. Każda liczba w ofercie — cena zakupu, marża, km, dopłaty, suma — pochodzi z kalkulacji w kodzie, a szkic z AI, w którym pojawi się inna kwota niż wyliczona, jest zastępowany szablonem. Do agenta nie trafia nazwa klienta ani jego dane kontaktowe (sprawdzane przed zapisem).</p>
+
+  <h2>3. Decyzje (z alternatywami)</h2>
+
+  <div class="decision">
+    <h3>3.1 Gdzie żyje Sprzedaż</h3>
+    <ul>
+      <li><strong>A. Osobny ekran „Sprzedaż”</strong> (lista wycen, zestawienie stawek, kalkulator) + przełącznik roli w górnym pasku. Plusy: czytelny podział pracy handlowca i spedytora. Minusy: jeszcze jedna pozycja w menu.</li>
+      <li><strong>B. W Skrzynce</strong> jako panel przy zapytaniu ofertowym. Plusy: mniej ekranów. Minusy: zestawienie stawek od kilku agentów, przypomnienia i statusy nie mieszczą się w panelu maila.</li>
+    </ul>
+    <p class="rec">Rekomendacja: A. W Skrzynce zapytanie ofertowe dostaje link „Otwórz wycenę”.</p>
+  </div>
+
+  <div class="decision">
+    <h3>3.2 Korespondencja z agentami</h3>
+    <ul>
+      <li><strong>A. Ta sama tabela wiadomości</strong> co kierowcy i klienci (nowa strona rozmowy: agent). Plusy: jedna bramka, jeden dziennik, to samo „nic nie wychodzi z demo”. Minusy: kolumna <code>agent_id</code> w wiadomościach.</li>
+      <li><strong>B. Osobna tabela</strong>. Plusy: izolacja. Minusy: dublowanie logiki wątków i szkiców.</li>
+    </ul>
+    <p class="rec">Rekomendacja: A.</p>
+  </div>
+
+  <div class="decision">
+    <h3>3.3 Automatyczne potwierdzenie i rozesłanie RFQ</h3>
+    <ul>
+      <li><strong>A. Automatycznie</strong> (jak w Twoim opisie), z przełącznikiem na „do zatwierdzenia”. Plusy: klient dostaje odpowiedź od razu, agenci szybciej wyceniają. Minusy: błąd AI w kompletności wychodzi na zewnątrz — dlatego kompletność sprawdza też algorytm.</li>
+      <li><strong>B. Zawsze do zatwierdzenia</strong>. Plusy: pełna kontrola. Minusy: traci się główną wartość automatu.</li>
+    </ul>
+    <p class="rec">Rekomendacja: A — domyślnie automatycznie, przełącznik w ustawieniach Sprzedaży.</p>
+  </div>
+
+  <div class="decision">
+    <h3>3.4 Kilometry dla wycen drogowych</h3>
+    <ul>
+      <li><strong>A. Trasy z bazy (OSRM) dla znanych punktów, a dla reszty wbudowana lista ok. 70 miast Europy</strong> z odległością w linii prostej × 1,3 (szacunek, wyraźnie oznaczony). Plusy: działa offline i deterministycznie, bez zewnętrznych usług. Minusy: szacunek ±10–15%.</li>
+      <li><strong>B. Publiczny OSRM / Nominatim w locie</strong>. Plusy: dokładne km. Minusy: zasady publicznych serwerów zabraniają ruchu produkcyjnego, zależność od cudzej usługi w publicznym demo.</li>
+      <li><strong>C. Płatne API tras</strong> (np. dostawca map). Plusy: dokładność, trasy ciężarowe. Minusy: klucz i koszty — to temat na wdrożenie.</li>
+    </ul>
+    <p class="rec">Rekomendacja: A w demo, C opisane w dokumencie wdrożeniowym.</p>
+  </div>
+
+  <div class="decision">
+    <h3>3.5 Model cenowy drogowy</h3>
+    <ul>
+      <li><strong>A. Stawka za km ładowny wg typu pojazdu</strong> (bus / solo / ciągnik), minimum za kurs, dopłaty procentowe (ADR, chłodnia), marża % (domyślna, z możliwością zmiany przy wycenie). PLN w kraju, EUR za granicą.</li>
+      <li><strong>B. A + dojazd pusty</strong> z najbliższej bazy do załadunku. Plusy: realniejsza cena. Minusy: więcej założeń.</li>
+    </ul>
+    <p class="rec">Rekomendacja: A, z opcjonalnym polem „km dojazdu” w kalkulatorze (domyślnie 0).</p>
+  </div>
+
+  <div class="decision">
+    <h3>3.6 Waluty</h3>
+    <p>Oferta w walucie wybranej stawki agenta (zwykle USD dla frachtu morskiego, EUR dla lotniczego/kolejowego). Bez przeliczeń kursowych w demo — kurs to osobna decyzja handlowca. <span class="rec">Rekomendacja: tak, jak opisano.</span></p>
+  </div>
+
+  <div class="decision">
+    <h3>3.7 Agenci w demo</h3>
+    <p>8 fikcyjnych agentów (domeny <code>.example</code>): 3 morskich, 2 lotniczych, 2 kolejowych, 1 multimodalny. Boty odpowiadają po 20–180 min symulacji, ok. 75% odpowiada, czasem „brak miejsca na ten termin”, czasem z dopłatami (BAF, THC). Stawki z przedziałów orientacyjnych dla tras demo — fikcyjne, nie są rynkową wyceną.</p>
+  </div>
+
+  <h2>4. Ekrany</h2>
+  <ul>
+    <li><strong>Sprzedaż → lista wycen:</strong> numer, klient, tryb, trasa, status, „3/4 stawki”, termin.</li>
+    <li><strong>Wycena:</strong> zapytanie klienta, odczytane dane z brakami, tabela agentów (wysłane / przypomniane / odpowiedź: cena, waluta, ważność, tranzyt, warunki), wybór stawki, marża, kalkulacja, szkic oferty, „Negocjuj”, „Wygrana / Przegrana”.</li>
+    <li><strong>Drogowa:</strong> kalkulacja krok po kroku (km, stawka, minimum, dopłaty, marża, suma) i szkic oferty.</li>
+    <li><strong>Ustawienia Sprzedaży:</strong> przełącznik automatu, lista agentów (tryby, aktywny), stawki za km i marża domyślna.</li>
+  </ul>
+
+  <h2>5. Poza zakresem tego etapu</h2>
+  <ul>
+    <li>Kursy walut, faktury, CRM lejka sprzedaży, rozliczenia z agentami.</li>
+    <li>Zamiana wygranej wyceny drogowej na zlecenie — tak, jako przycisk „Utwórz zlecenie” tylko dla znanych punktów (resztę w etapie 4 z dodawaniem klientów i punktów).</li>
+  </ul>
+
+  <h2>6. Testy i kryteria akceptacji</h2>
+  <ul>
+    <li>Kompletne zapytanie morskie → potwierdzenie do klienta i RFQ do agentów morskich; w RFQ nie ma nazwy klienta, nazwisk ani adresów e-mail klienta (test automatyczny).</li>
+    <li>Niekompletne zapytanie → lista braków i szkic prośby o uzupełnienie; RFQ nie wychodzi.</li>
+    <li>Odpowiedzi agentów są odczytywane do tabeli; przypomnienie po 3 h, „brak odpowiedzi” po terminie.</li>
+    <li>Kalkulacja: cena zakupu + marża = cena oferty; szkic z AI z inną kwotą jest odrzucany.</li>
+    <li>Wycena drogowa liczy się z km × stawki, minimum i dopłat; znane punkty dają km z tras, inne miasta — szacunek z oznaczeniem.</li>
+    <li>Bez klucza API wszystko działa na regułach i szablonach.</li>
+  </ul>
+
+  <footer>Specyfikacja etapu Sprzedaż · szkic do Twojej akceptacji. Wszystkie dane w demo są fikcyjne.</footer>
+</main>
+</body>
+</html>

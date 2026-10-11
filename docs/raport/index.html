@@ -73,6 +73,8 @@
         <tr><td>3 — CMR</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>3b — skrzynka klientów</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>Dodatki: „Cofnij” w Dzienniku AI, poprawki</td><td><span class="tag done">gotowe</span></td><td>integracyjne — zielone; build produkcyjny OK</td></tr>
+        <tr><td>Sprzedaż (gałąź <code>etap-sprzedaz</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (217 + 17)</td></tr>
+        <tr><td>Dokument wdrożeniowy</td><td><span class="tag done">gotowe</span></td><td>—</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -256,6 +258,55 @@
     <li>Przydziel zlecenie kierowcy, na „Telefonie kierowcy” odpisz „ok”, potem Dziennik AI. <span class="expect">Wpis „Wiadomość kierowcy” z akcją „ZL-…: Wysłane do kierowcy → W realizacji” i „Cofnij”. Po kliknięciu: komunikat, zlecenie z powrotem „Wysłane do kierowcy”, przy wpisie „cofnięte”. Bez klucza wpis ma etykietę „reguły awaryjne”, ale „Cofnij” też działa.</span></li>
     <li>Na zleceniu „W realizacji” kliknij „Anuluj”. <span class="expect">Auto dojeżdża do punktu i staje jako wolne; można mu przydzielić nowe zlecenie i rusza.</span></li>
   </ol>
+
+  <h2 id="sprzedaz">Etap Sprzedaż — na osobnej gałęzi <span class="tag part">do akceptacji</span></h2>
+  <p>Zgodnie z kolejnością (MVP → Twoje testy → poprawki → Sprzedaż) zbudowałem Sprzedaż na gałęzi <code>etap-sprzedaz</code>. Gałąź główna to czyste MVP do testów. Specyfikacja etapu z decyzjami i alternatywami: <a href="../superpowers/specs/2026-10-11-sprzedaz-design.html">2026-10-11-sprzedaz-design.html</a> — czeka na Twoją akceptację, kod można wyrzucić albo poprawić.</p>
+  <div class="box">
+    <strong>Jak przełączyć się na Sprzedaż</strong>
+    <ol>
+      <li>Zatrzymaj <code>npm run dev</code>.</li>
+      <li><code>git switch etap-sprzedaz</code>, potem <code>npm run dev</code> (baza sama dostanie nową migrację).</li>
+      <li>W menu po lewej przełącz rolę na <strong>Handlowiec</strong> — pojawi się „Sprzedaż”.</li>
+      <li>Powrót do MVP: <code>git switch main</code>. Gdyby coś się gryzło, usuń katalog <code>.pglite</code>.</li>
+    </ol>
+  </div>
+  <h3>Co powstało</h3>
+  <ul>
+    <li><strong>Zapytanie ofertowe z maila → wycena WY-…</strong> z rozpoznanym trybem (morski, lotniczy, kolejowy, drogowy) i danymi do wyceny. Kompletność sprawdza algorytm według listy dla trybu (incoterms, kontener, waga, CBM, towar, data gotowości…). Braki → szkic prośby do klienta; handlowiec może też wpisać dane sam.</li>
+    <li><strong>Sea / Air / Rail:</strong> potwierdzenie do klienta Twoimi słowami („Dziękujemy za przesłanie zapytania — powrócimy z wyceną jak najszybciej”) i zapytania RFQ do zaufanych agentów danego trybu — <strong>bez nazwy klienta i kontaktów</strong> (pilnuje test). Automatycznie albo — po przełączeniu w ustawieniach — do zatwierdzenia.</li>
+    <li><strong>Agenci (fikcyjni, 8 firm)</strong> odpowiadają po 20–300 min symulacji, po polsku lub angielsku, czasem „brak miejsca”, czasem wcale. AI (albo reguły) odczytuje stawkę, walutę, ważność, tranzyt i warunki. Przypomnienie po 3 h, termin 8 h, potem „gotowe do oferty”.</li>
+    <li><strong>Zestawienie stawek → marża → oferta:</strong> wybierasz stawkę, wpisujesz marżę, system liczy cenę (kod, nie AI), AI pisze szkic oferty; szkic z inną kwotą niż wyliczona jest zastępowany szablonem. Wysłanie oferty zmienia status.</li>
+    <li><strong>Negocjacje:</strong> „Szkic negocjacji” z ceną docelową do wybranego agenta (bez danych klienta i bez ceny dla klienta); bot agenta akceptuje albo proponuje środek.</li>
+    <li><strong>Wyceny drogowe</strong> ze stawek własnej floty: stawka za km według pojazdu (bus / solówka / ciągnik), minimum, dopłaty ADR i chłodnia, marża. Kilometry z tras OSRM, gdy oba miejsca są punktami klienta; dla innych miast szacunek z wbudowanej listy ~90 miejsc (linia prosta × 1,3), wyraźnie oznaczony; można wpisać km ręcznie.</li>
+    <li><strong>Ustawienia Sprzedaży:</strong> automat, marża domyślna, dopłaty, stawki drogowe, aktywni agenci. <strong>Przełącznik roli</strong> Spedytor / Handlowiec zmienia menu (zapamiętany w przeglądarce).</li>
+    <li>W <strong>Skrzynce</strong> zapytanie ofertowe dostaje ramkę „Wycena WY-… — Otwórz wycenę” zamiast „Sprzedaż – wkrótce”.</li>
+  </ul>
+  <h3>Decyzje, które podjąłem sam (do Twojej oceny)</h3>
+  <ul>
+    <li>Wszystkie decyzje z alternatywami są w specyfikacji etapu (osobny ekran, wspólna tabela wiadomości z agentami, automat z przełącznikiem, szacunek km zamiast publicznego OSRM w locie, model cenowy za km, waluta stawki agenta).</li>
+    <li><strong>Zapytanie do agenta nie przechodzi przez AI</strong> — to szablon z polami ładunku, więc dane klienta fizycznie nie mają jak do niego trafić.</li>
+    <li><strong>Stawki agentów w demo są fikcyjne</strong> — mają tylko sensowne proporcje (np. eksport do Azji tańszy niż import), nie są wyceną rynkową.</li>
+    <li>Gdy handlowiec sam uzupełni brakujące dane, niewysłany szkic prośby do klienta znika.</li>
+  </ul>
+  <h3>Testy do przeklikania (na gałęzi <code>etap-sprzedaz</code>)</h3>
+  <ol class="checks">
+    <li>Rola „Handlowiec”. <span class="expect">Menu: Sprzedaż, Zlecenia, Skrzynka, Dziennik AI. „Spedytor” wraca do 6 pozycji MVP.</span></li>
+    <li>Poczta klienta → Sudety Papier → przykład „Wycena”. <span class="expect">W Sprzedaży WY-… „brak danych: data gotowości towaru, rodzaj towaru”, w wątku klienta szkic prośby o uzupełnienie.</span></li>
+    <li>Wpisz towar „papier” i datę „25.10” → „Zapisz dane”. <span class="expect">„Zbieranie stawek”, zapytania do 4 agentów morskich, termin odpowiedzi; szkic prośby znika, w korespondencji potwierdzenie dla klienta.</span></li>
+    <li>Tempo 60× i kilka minut. <span class="expect">Stawki w USD z tranzytem, ważnością i warunkami; czasem „brak miejsca”; niektórzy dostają przypomnienie; po terminie „bez odpowiedzi” i status „gotowe do oferty”.</span></li>
+    <li>Rozwiń agenta (strzałka przy nazwie). <span class="expect">Wątek: zapytanie bez nazwy klienta, odpowiedź agenta (PL lub EN).</span></li>
+    <li>Wybierz stawkę, marża 12 → „Zastosuj stawkę i marżę” → „Szkic oferty” → „Wyślij ofertę”. <span class="expect">Cena = zakup + 12% zaokrąglone w górę; w szkicu ta sama kwota; status „oferta wysłana”; oferta widoczna w Skrzynce w wątku klienta.</span></li>
+    <li>U innego agenta: cena docelowa → „Szkic negocjacji” → „Wyślij do agenta”, poczekaj (60×). <span class="expect">Agent akceptuje albo proponuje środek; stawka w tabeli się zmienia.</span></li>
+    <li>Poczta klienta → Hanza Retail → „Ile kosztowałby transport lotniczy 2 palet próbek (180 kg) z Poznania do Toronto?”. <span class="expect">Brak incoterms i CBM; po wpisaniu EXW i 1,6 zapytania do 3 agentów lotniczych z „Waga płatna: 267 kg”.</span></li>
+    <li>Poczta klienta → Meble Wielkopolska → „Prosimy o wycenę: 10 palet, 4 t, Poznań – Lyon, termin 20.10.”. <span class="expect">Od razu „gotowe do oferty”: solówka, ok. 1 400 km „szacunek”, EUR, dopłaty, marża, cena. Km ręcznie 1250 → „Przelicz” → nowa cena; „Szkic oferty” z tą kwotą.</span></li>
+    <li>Poczta klienta → Logistyka Wisła → „Wycena: 12 palet, 5 t, Gądki – Leipzig, termin 20.10.”. <span class="expect">Kilometry „trasa z bazy punktów (OSRM)”.</span></li>
+    <li>Ustawienia → wyłącz automat → nowe kompletne zapytanie morskie. <span class="expect">„Do zatwierdzenia” i przycisk „Wyślij potwierdzenie i zapytania”. Wyłączony agent nie dostaje zapytań.</span></li>
+    <li>Z kluczem API: <span class="expect">„✦ odczyt AI” przy danych i stawkach, w Dzienniku AI „Zapytanie ofertowe”, „Stawka agenta”, „Szkic wiadomości”.</span></li>
+  </ol>
+
+  <h2 id="wdrozenie">Dokument wdrożeniowy <span class="tag done">gotowe</span></h2>
+  <p><a href="../wdrozenie/2026-10-11-wyzwania-wdrozeniowe.html">Od demo do produkcji: integracje i wyzwania</a> — telematyka i GPS (rFMS, aftermarket, tachograf, e-TOLL/SENT), SMS/MMS (odbiór zdjęć CMR), poczta (Graph, Gmail), Comarch ERP Optima (XML, KSeF), hosting (Vercel, Neon), RODO i monitoring kierowców, AI w produkcji, kolejność wdrożenia. Każde twierdzenie ma źródło i oznaczenie pewności (potwierdzone / prawdopodobne / niepotwierdzone / wniosek).</p>
+  <p>Najważniejsze dla Ciebie: odświeżanie pozycji co 2–3 min wymaga telematyki z API (standard producentów daje co 15 min); od 1.07.2026 busy w transporcie międzynarodowym podlegają 561/2006 (demo to uwzględnia); MMS przez webhook działa w SMSAPI i SerwerSMS; Optima — eksport XML przez partnera Comarch, faktury i KSeF zostają w Optimie.</p>
 
   <footer>
     Kod: MIT. Trasy: © OpenStreetMap contributors (ODbL), OSRM. Dane w demo są fikcyjne.
