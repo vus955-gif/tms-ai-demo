@@ -1,12 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { resetWorld } from "./helpers";
 
 test.describe("etap 3b — skrzynka klientów", () => {
   test("mail z zamówieniem daje szkic ZL-1043, spedytor go zatwierdza", async ({ page }) => {
     test.setTimeout(150_000);
     await page.goto("/skrzynka");
-    await page.getByTestId("reset-open").click();
-    await page.getByTestId("reset-confirm").click();
-    await expect(page.getByTestId("sim-clock")).toContainText(/08:3\d/);
+    await resetWorld(page);
     await page.getByRole("button", { name: "60×" }).click();
 
     // The order e-mail arrives at 09:10 simulated (~40 s at 60x).
