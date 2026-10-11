@@ -41,7 +41,8 @@
     <li><strong>Szablon zlecenia stałego:</strong> klient, punkt załadunku i rozładunku z książki punktów tego klienta, okna godzinowe, dzień rozładunku (tego dnia / następnego / po 2 dniach), dni tygodnia, palety, waga, chłodnia, referencje.</li>
     <li><strong>Paczka na najbliższy tydzień:</strong> wszystkie wystąpienia aktywnych szablonów na 7 dni od jutra, każde z prognozą: zdąży / ryzyko / brak kierowcy, z najlepszym kierowcą i powodem.</li>
     <li><strong>Jedno kliknięcie:</strong> „Utwórz zaznaczone” zamienia wybrane dni w zlecenia, które czekają w Zleceniach na przydział. Drugi raz tego samego dnia się nie utworzy.</li>
-    <li><strong>Obsługa szablonów:</strong> dodawanie, edycja, wstrzymanie (aktywny / nieaktywny), usunięcie. Usunięcie szablonu nie rusza już utworzonych zleceń.</li>
+    <li><strong>Obsługa szablonów:</strong> dodawanie, edycja, wstrzymanie (aktywny / nieaktywny), usunięcie. Usunięcie szablonu nie rusza już utworzonych zleceń. W demo najwyżej 20 szablonów na świat.</li>
+    <li><strong>Jeden dzień — jedno zlecenie:</strong> pilnuje tego baza danych (dwie karty, podwójne kliknięcie). Anulowane zlecenie zwalnia dzień, więc można je utworzyć ponownie.</li>
   </ul>
 
   <h2>2. Decyzje (z alternatywami)</h2>
@@ -66,7 +67,7 @@
   <div class="decision">
     <h3>2.3 Stany prognozy</h3>
     <ul>
-      <li><strong>A. Według zapasu czasu:</strong> brak kandydata → „brak kierowcy”; zapas na załadunku poniżej 30 minut → „ryzyko”; w pozostałych przypadkach → „zdąży”.</li>
+      <li><strong>A. Według zapasu czasu:</strong> brak kandydata → „brak kierowcy”; zapas na załadunku albo na rozładunku poniżej 30 minut → „ryzyko”; w pozostałych przypadkach → „zdąży”. Dla dni naprzód liczy się głównie rozładunek: auto i tak czeka na otwarcie okna załadunku.</li>
       <li><strong>B. Według oceny z klocków</strong> (wysoka / średnia / niska). Minusy: ocena miesza puste kilometry i koszt z terminowością, przez co „niska” myliła się z „nie zdąży”.</li>
     </ul>
     <p class="rec">Rekomendacja: A. Próg 30 minut jest jedną stałą (<code>RISK_SLACK_MIN</code>), łatwo go zmienić.</p>
@@ -97,6 +98,7 @@
     <li><strong>Położenie floty za kilka dni</strong> to koniec bieżących zleceń — system nie zna przyszłych zleceń jednorazowych. Im dalej, tym prognoza mniej pewna.</li>
     <li><strong>Każde zlecenie liczone osobno</strong> (punkt 2.2) — po utworzeniu i przydzieleniu jednego zlecenia prognoza dla kolejnych się zmienia.</li>
     <li><strong>Prognoza nie rezerwuje kierowcy.</strong> Rezerwacja zaczyna się dopiero przy przydziale w Zleceniach.</li>
+    <li><strong>Kolejka auta jest kolejką, nie kalendarzem.</strong> Prognozowane zlecenie trafia na koniec przydzielonych zleceń auta. Jeśli auto ma już przydzielone zlecenie na piątek, czwartkowy dzień szablonu jest liczony tak, jakby jechał po piątku, i może wyjść „nie zdąży”, choć w czwartek auto jest wolne. Przy przydzielaniu dni po kolei (od najwcześniejszego) problem nie występuje. To ograniczenie samego modelu symulacji (przystanki auta są kolejką); usunięcie go to zmiana rdzenia — do decyzji, jeśli okaże się ważne w praktyce.</li>
   </ul>
 
   <h2>4. Czego nie ma: nowi klienci i punkty (etap 4b)</h2>
@@ -123,7 +125,7 @@
   <h2>6. Kryteria akceptacji</h2>
   <ul>
     <li>Paczka pokazuje wszystkie dni aktywnych szablonów na 7 dni od jutra, z prognozą i powodem.</li>
-    <li>„Utwórz zaznaczone” tworzy zlecenia NOWE tylko dla wybranych dni; ponowne kliknięcie nie tworzy duplikatów; utworzony dzień pokazuje numer zlecenia.</li>
+    <li>„Utwórz zaznaczone” tworzy zlecenia NOWE tylko dla wybranych dni; ponowne lub równoczesne kliknięcie nie tworzy duplikatów; utworzony dzień pokazuje numer zlecenia; pominięte dni mają powód (już utworzone, okno minęło, szablon wstrzymany).</li>
     <li>Wstrzymany szablon znika z paczki; szablon z punktem innego klienta albo z odwróconym oknem nie zapisze się (komunikat po polsku).</li>
     <li>Prognoza respektuje kartotekę floty i terminarz (etap 6).</li>
   </ul>
