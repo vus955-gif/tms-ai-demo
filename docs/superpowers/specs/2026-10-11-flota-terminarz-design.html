@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flota i terminarz</title>
+<style>
+  :root { --bg: #faf9f6; --surface: #fff; --surface-2: #f3f1ec; --ink: #1c1f24; --muted: #5d6471; --line: #e3e0d8; --accent: #0f5c8c; --good: #1f7a4d; --radius: 12px; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139; --accent: #6db4e3; --good: #6fcf9a; } }
+  :root[data-theme="dark"] { --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139; --accent: #6db4e3; --good: #6fcf9a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16.5px; line-height: 1.65; }
+  .page { max-width: 52rem; margin: 0 auto; padding: 56px 24px 96px; }
+  @media (max-width: 600px) { .page { padding: 32px 16px 64px; } }
+  h1 { font-size: 2.1rem; margin: .2em 0 .3em; line-height: 1.2; }
+  h2 { font-size: 1.45rem; margin: 3rem 0 1rem; padding-top: 1.3rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.1rem; margin: 1.6rem 0 .5rem; }
+  p { margin: 0 0 1em; } ul, ol { margin: 0 0 1em; padding-left: 1.3em; } li { margin: .3em 0; }
+  code { font-family: "Cascadia Code", Consolas, Menlo, monospace; font-size: .86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .eyebrow { font-size: .82rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 650; }
+  .lead { font-size: 1.12rem; color: var(--muted); }
+  .decision { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 20px; margin: 1rem 0; }
+  .decision h3 { margin-top: .2rem; }
+  .rec { color: var(--good); font-weight: 600; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  footer { margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: .86rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="eyebrow">Specyfikacja etapu 6 · szkic do akceptacji · 11 października 2026</div>
+  <h1>Kartoteka floty i terminarz kierowców</h1>
+  <p class="lead">Z Twojej wizji: „flota — serwisy i przeglądy z przebiegiem i dokumentami” oraz terminarz kierowcy dodany w 4.9. Oba moduły zasilają dopasowanie kierowców do zleceń.</p>
+
+  <h2>1. Zakres</h2>
+  <ul>
+    <li><strong>Terminy pojazdów:</strong> badanie techniczne, ubezpieczenie OC, legalizacja tachografu (pojazdy objęte 561/2006), serwis okresowy według przebiegu.</li>
+    <li><strong>Terminy naczep:</strong> badanie techniczne, świadectwo ATP dla chłodni.</li>
+    <li><strong>Dokumenty kierowców:</strong> prawo jazdy, kwalifikacja (kod 95), karta kierowcy, badania lekarskie i psychotesty, zaświadczenie ADR.</li>
+    <li><strong>Statusy:</strong> w porządku / wkrótce (do 30 dni albo 5 000 km) / po terminie. „Odnotuj wykonanie” wylicza następny termin (uproszczone okresy).</li>
+    <li><strong>Terminarz:</strong> tydzień kierowców z urlopami, zwolnieniami, szkoleniami, badaniami, dniami wolnymi i zleceniami; dodawanie i usuwanie nieobecności.</li>
+  </ul>
+
+  <h2>2. Decyzje (z alternatywami)</h2>
+  <div class="decision">
+    <h3>2.1 Co blokuje przydział</h3>
+    <ul>
+      <li><strong>A. Terminy prawne (badanie, OC, tachograf, ATP, dokumenty kierowcy) blokują, gdy wygasają przed początkiem zlecenia; serwis według km tylko ostrzega.</strong> Plusy: auto bez ważnego badania nie pojedzie; serwis to decyzja warsztatu. Minusy: brak.</li>
+      <li><strong>B. Wszystko tylko ostrzega.</strong> Plusy: elastyczność. Minusy: łatwo przeoczyć wygasłe OC.</li>
+    </ul>
+    <p class="rec">Rekomendacja: A. Zaświadczenie ADR kierowcy już dziś filtruje zlecenia ADR, więc w kartotece tylko ostrzega.</p>
+  </div>
+  <div class="decision">
+    <h3>2.2 Przebieg do serwisu</h3>
+    <ul>
+      <li><strong>A. Przebieg z kartoteki</strong> (stan licznika pojazdu), w produkcji z telematyki (rFMS / API dostawcy).</li>
+      <li><strong>B. Przebieg liczony z symulacji</strong> w demo. Plusy: rośnie na oczach. Minusy: drobne km w ciągu pokazu nic nie zmieniają, a komplikują model.</li>
+    </ul>
+    <p class="rec">Rekomendacja: A.</p>
+  </div>
+  <div class="decision">
+    <h3>2.3 Skany dokumentów</h3>
+    <p>W demo tylko numer dokumentu; plików nie przechowujemy (jak zdjęć własnych w CMR). W produkcji: magazyn plików z dostępem tylko dla firmy. <span class="rec">Rekomendacja: tak, jak opisano.</span></p>
+  </div>
+
+  <h2>3. Okresy po „Odnotuj wykonanie” (uproszczone w demo)</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Termin</th><th>Następny za</th></tr></thead>
+    <tbody>
+      <tr><td>badanie techniczne, OC</td><td>12 miesięcy</td></tr>
+      <tr><td>legalizacja tachografu</td><td>24 miesiące</td></tr>
+      <tr><td>ATP</td><td>36 miesięcy</td></tr>
+      <tr><td>kwalifikacja, karta kierowcy, badania, ADR</td><td>60 miesięcy</td></tr>
+      <tr><td>serwis</td><td>bus 30 000 km, solówka 60 000 km, ciągnik 100 000 km</td></tr>
+    </tbody>
+  </table></div>
+  <p>Prawdziwe okresy zależą od rodzaju pojazdu, wieku i przepisów — do ustawienia w produkcji.</p>
+
+  <h2>4. Kryteria akceptacji</h2>
+  <ul>
+    <li>Pojazd z przeterminowanym terminem blokującym i kierowca z nieobecnością w czasie zlecenia są w „klockach” wykluczeni z powodem.</li>
+    <li>„Odnotuj wykonanie” przywraca pojazd do przydziału.</li>
+    <li>Licznik przy „Flota” pokazuje terminy po terminie i zbliżające się.</li>
+  </ul>
+  <footer>Specyfikacja etapu 6 · szkic do Twojej akceptacji.</footer>
+</main>
+</body>
+</html>
