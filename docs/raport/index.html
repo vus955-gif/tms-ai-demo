@@ -58,7 +58,7 @@
 </head>
 <body>
 <main class="page">
-  <div class="eyebrow">Raport z nocnej pracy · 10/11 października 2026 · aktualizacja ok. 05:20</div>
+  <div class="eyebrow">Raport z nocnej pracy · 10/11 października 2026 · aktualizacja ok. 05:40</div>
   <h1>Co zrobiłem w nocy i jak to przetestować</h1>
   <p class="lead">Każdy etap ma opis, decyzje podjęte bez Ciebie oraz listę testów do przeklikania. Wszystko działa lokalnie, nic nie zostało opublikowane.</p>
 
@@ -88,7 +88,7 @@
         <tr><td>Sprzedaż (gałąź <code>etap-sprzedaz</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (228 + 17)</td></tr>
         <tr><td>5 — panel klienta (gałąź <code>etap-5-panel-klienta</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (233 + 18)</td></tr>
         <tr><td>6 — flota i terminarz (gałąź <code>etap-6-flota-terminarz</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (241 + 20)</td></tr>
-        <tr><td>4a — zlecenia stałe (gałąź <code>etap-4-szablony</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (250 + 22)</td></tr>
+        <tr><td>4a — zlecenia stałe (gałąź <code>etap-4-szablony</code>)</td><td><span class="tag part">do akceptacji</span></td><td>jednostkowe, integracyjne, e2e — zielone (257 + 22); build produkcyjny OK</td></tr>
         <tr><td>4b — nowi klienci i punkty</td><td><span class="tag todo">czeka na decyzję</span></td><td>—</td></tr>
         <tr><td>Przegląd kodu i poprawki</td><td><span class="tag done">gotowe</span></td><td>testy do każdej poprawki</td></tr>
         <tr><td>Dokument wdrożeniowy</td><td><span class="tag done">gotowe</span></td><td>—</td></tr>
@@ -378,6 +378,7 @@
     <li><strong>„Zlecenia stałe”</strong> w menu spedytora. Po lewej szablony: klient, trasa z książki punktów klienta, dni tygodnia, okna, ładunek, przełącznik „aktywny”, edycja po kliknięciu nazwy, usuwanie.</li>
     <li><strong>„Paczka na najbliższy tydzień”</strong>: każdy dzień każdego aktywnego szablonu na 7 dni od jutra, z prognozą <em>zdąży / ryzyko / brak kierowcy</em>, najlepszym kierowcą i powodem. Prognozę liczą te same reguły co „klocki” (czas jazdy z przerwami, okna, pojemność, chłodnia, kartoteka floty, terminarz) — bez AI.</li>
     <li><strong>„Utwórz zaznaczone (N)”</strong>: domyślnie zaznaczone wszystko, co jeszcze nie istnieje; wybrane dni stają się zleceniami „Nowe” w puli Zleceń, z datą w referencjach. Drugi raz tego samego dnia się nie utworzy — wiersz pokazuje numer zlecenia.</li>
+    <li><strong>Zabezpieczenia:</strong> jeden dzień szablonu to jedno zlecenie (pilnuje baza — dwie karty czy podwójne kliknięcie nie zrobią duplikatu); anulowane zlecenie zwalnia dzień; usunięte szablony nie wracają; limit 20 szablonów; zaznaczenie zrobione przed północą działa także po niej.</li>
     <li><strong>Brak kierowcy z konkretem:</strong> zamiast ogólnika pokazuje pojazdy, które pasują ładunkiem, i co je blokuje, np. „GD 2M88: świadectwo ATP (chłodnia) ważne tylko do …”.</li>
     <li><strong>Scenariusz:</strong> trzy szablony (Agro-Pol pn/śr/pt, Baltic Foods chłodnia pn–pt, Hanza wt/cz). ATP jedynej chłodni ważne jeszcze 6 dni, więc paczka kończy się co najmniej jednym czerwonym dniem Baltic.</li>
   </ul>
@@ -394,8 +395,10 @@
     <li>„Nowy” → klient Agro-Pol, załadunek i rozładunek w tym samym punkcie → „Zapisz”. <span class="expect">Komunikat „Załadunek i rozładunek muszą być w różnych punktach”. Po zmianie rozładunku zapisuje się i pojawia w paczce.</span></li>
     <li>Kliknij nazwę szablonu, zmień dni tygodnia i zapisz. <span class="expect">Paczka przelicza się z nowymi dniami.</span></li>
     <li>Terminarz → dodaj Annie Wiśniewskiej urlop na dzień, w którym jedzie Baltic. <span class="expect">W paczce ten dzień: „brak kierowcy”, „GD 2M88: urlop …”.</span></li>
+    <li>Zlecenia → przy zleceniu utworzonym z szablonu „Anuluj”. Wróć do „Zlecenia stałe”. <span class="expect">Ten dzień znów ma pole wyboru i prognozę; można go utworzyć ponownie.</span></li>
+    <li>Usuń (kosz) wszystkie szablony. <span class="expect">Lista i paczka puste — przykładowe szablony nie wracają; utworzone wcześniej zlecenia zostają w Zleceniach.</span></li>
   </ol>
-  <p class="expect">Uwagi: usuwanie szablonu działa od razu, bez pytania (utworzone zlecenia zostają) — jeśli wolisz potwierdzenie, dodam je. Prognoza liczy każde zlecenie osobno, więc ten sam kierowca może być „najlepszy” dla dwóch zleceń jednego dnia; to zapisane na ekranie i w specyfikacji.</p>
+  <p class="expect">Uwagi: usuwanie szablonu działa od razu, bez pytania (utworzone zlecenia zostają) — jeśli wolisz potwierdzenie, dodam je. Prognoza liczy każde zlecenie osobno, więc ten sam kierowca może być „najlepszy” dla dwóch zleceń jednego dnia; to zapisane na ekranie i w specyfikacji. Drugie ograniczenie: gdy auto ma już przydzielone późniejsze zlecenie, wcześniejszy dzień szablonu liczy się „po nim” (kolejka auta, nie kalendarz) — przydzielaj dni po kolei; opis i opcja zmiany w specyfikacji, punkt 3.</p>
 
   <h2 id="przeglad">Niezależny przegląd kodu i poprawki <span class="tag done">gotowe</span></h2>
   <p>W nocy osobny agent-recenzent przejrzał kod etapów 3, 3b i Sprzedaży pod kątem błędów, bezpieczeństwa i zasad projektu. Naprawiłem wszystkie uwagi o wysokiej pewności i większość pozostałych, każdą z testem:</p>
@@ -407,6 +410,18 @@
     <li><strong>Sprzedaż:</strong> twarda blokada danych klienta w zapytaniach i negocjacjach z agentami (nazwa, osoba, e-mail, telefon — wtedy wycena czeka na człowieka); pola odczytane przez AI zawężane do bezpiecznych wartości (miejsca tylko z listy lub punktów klienta, data tylko jako data); „kolejny tydzień” nie jest już transportem kolejowym, „4.5 t” nie jest datą; kalkulacja drogowa przelicza pojazd po zmianie palet/wagi i zeruje ręczne km po zmianie trasy; statusy wyceny (wygrana tylko po ofercie, zamkniętej nie da się otworzyć); podwójne kliknięcie nie wysyła zapytań dwa razy; starsze światy dostają ustawienia Sprzedaży automatycznie.</li>
   </ul>
 
+  <h3>Przegląd etapu 4a (nad ranem)</h3>
+  <p>Drugi agent-recenzent przejrzał zlecenia stałe. Naprawione, każde z testem:</p>
+  <ul>
+    <li><strong>Duplikaty:</strong> dwa równoczesne kliknięcia „Utwórz zaznaczone” (dwie karty) mogły dać dwa zlecenia na ten sam dzień albo błąd 500. Teraz pilnuje tego baza (unikalny indeks), a drugie kliknięcie dostaje „już utworzone”.</li>
+    <li><strong>Anulowanie:</strong> anulowane zlecenie z szablonu blokowało dzień na zawsze — teraz go zwalnia.</li>
+    <li><strong>Usuwanie:</strong> po usunięciu ostatniego szablonu przykładowe wracały same — teraz usunięte są archiwizowane, a lista może być pusta.</li>
+    <li><strong>Północ:</strong> zaznaczenie zrobione tuż przed północą (czasu symulacji) gubiło pierwszy dzień bez słowa — teraz dzień liczy się z klucza, a każdy pominięty dzień ma powód w komunikacie.</li>
+    <li><strong>„Ryzyko”:</strong> brało pod uwagę tylko załadunek, który dla dni naprzód zawsze ma zapas — teraz także rozładunek.</li>
+    <li><strong>Wydajność i limity:</strong> paczka ładuje terminy, nieobecności i historię raz (zamiast dla każdego dnia), odświeża się co 30 minut czasu symulacji; limit 20 szablonów.</li>
+    <li><strong>Formularz:</strong> pusta godzina albo „10,5” palet dawały po cichu 0 albo angielski błąd — teraz polski komunikat; doszło pole ADR i rozładunek „po 3 dniach”.</li>
+  </ul>
+
   <h2 id="galezie">Mapa gałęzi</h2>
   <div class="table-wrap"><table>
     <thead><tr><th>Gałąź</th><th>Zawartość</th><th>Testy</th></tr></thead>
@@ -415,10 +430,10 @@
       <tr><td><code>etap-sprzedaz</code></td><td>main + Sprzedaż</td><td>228 + 17</td></tr>
       <tr><td><code>etap-5-panel-klienta</code></td><td>etap-sprzedaz + panel klienta</td><td>233 + 18</td></tr>
       <tr><td><code>etap-6-flota-terminarz</code></td><td>etap-5 + kartoteka floty i terminarz</td><td>241 + 20</td></tr>
-      <tr><td><code>etap-4-szablony</code></td><td>etap-6 + zlecenia stałe (całość)</td><td>250 + 22</td></tr>
+      <tr><td><code>etap-4-szablony</code></td><td>etap-6 + zlecenia stałe (całość)</td><td>257 + 22</td></tr>
     </tbody>
   </table></div>
-  <div class="note"><strong>Przy przełączaniu gałęzi:</strong> zatrzymaj <code>npm run dev</code>, przełącz, uruchom ponownie (baza sama doda brakujące tabele). Wracając do starszej gałęzi, w razie dziwnych błędów usuń <code>.pglite</code>; gdy <code>npm run typecheck</code> zgłasza nieistniejące trasy — usuń katalog <code>.next</code>. Jeśli karta przeglądarki po restartach zacznie się przeładowywać w kółko, otwórz nową kartę (to stan starej karty, nie aplikacji).</div>
+  <div class="note"><strong>Przy przełączaniu gałęzi:</strong> zatrzymaj <code>npm run dev</code>, przełącz, uruchom ponownie (baza sama doda brakujące tabele). Wracając do starszej gałęzi, w razie dziwnych błędów usuń <code>.pglite</code>; gdy <code>npm run typecheck</code> zgłasza nieistniejące trasy — usuń katalog <code>.next</code>. Jeśli karta przeglądarki po restartach zacznie się przeładowywać w kółko, otwórz nową kartę (to stan starej karty, nie aplikacji). W terminalu <code>npm run dev</code> mogą się pojawiać wpisy <code>Error: aborted</code> / <code>ECONNRESET</code> po zamknięciu karty w trakcie zapytania — to przerwane połączenie obsłużone przez Next.js; w testach serwer działał dalej bez zakłóceń.</div>
 
   <h2 id="wdrozenie">Dokument wdrożeniowy <span class="tag done">gotowe</span></h2>
   <p><a href="../wdrozenie/2026-10-11-wyzwania-wdrozeniowe.html">Od demo do produkcji: integracje i wyzwania</a> — telematyka i GPS (rFMS, aftermarket, tachograf, e-TOLL/SENT), SMS/MMS (odbiór zdjęć CMR), poczta (Graph, Gmail), Comarch ERP Optima (XML, KSeF), hosting (Vercel, Neon), RODO i monitoring kierowców, AI w produkcji, kolejność wdrożenia. Każde twierdzenie ma źródło i oznaczenie pewności (potwierdzone / prawdopodobne / niepotwierdzone / wniosek).</p>
