@@ -176,7 +176,12 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
         const done = s.stops.shift();
         if (done) events.push({ type: "departed", stop: done, atMs: s.atMs });
         const next = s.stops[0];
-        if (next && done) {
+        if (next && done && next.pointId === done.pointId) {
+          // Unloaded here and the next job starts at the same place: no driving in between.
+          s.routeKey = null;
+          s.progressS = 0;
+          arrive();
+        } else if (next && done) {
           s.routeKey = env.routeKeyBetween(done.pointId, next.pointId);
           s.progressS = 0;
           s.pointId = null;
