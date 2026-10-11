@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
-import { agentQuotes, agents, clientContacts, clients, messages, points, quoteRequests, salesSettings, type QuoteMode } from "@/db/schema";
+import { agentQuotes, agents, clientContacts, clients, messages, points, quoteRequests, salesSettings, type QuoteMode, type QuoteStatus } from "@/db/schema";
 import type { Db, Executor } from "@/db/types";
 import { extractQuoteRequest, readAgentReply } from "@/ai/functions/sales";
 import { getRouteByKey, hasRouteKey } from "@/adapters/routing/static-routes";
 import { CARRIER_SIGNATURE } from "@/domain/carrier";
 import { findPlace, greatCircleKm, ROAD_DETOUR_FACTOR } from "@/domain/gazetteer";
 import { normalize } from "@/domain/email-rules";
-import { EMPTY_DETAILS, MODE_LABEL, missingFor, rfqSummary, roadVehicleFor, type QuoteDetails } from "@/domain/quote-rules";
+import { leaksClientData } from "@/domain/client-leak";
+import { EMPTY_DETAILS, MODE_LABEL, missingFor, normalizeDetails, rfqSummary, roadVehicleFor, type QuoteDetails } from "@/domain/quote-rules";
+import { agentsSeed, roadRatesSeed } from "@/simulation/scenario/agents";
 import { roadCalculation, type RoadCalculation } from "@/domain/sales-pricing";
 import { formatSimClock } from "@/lib/format";
 import { routeKey } from "@/simulation/route-geometry";
@@ -22,15 +24,31 @@ export const REMINDER_AFTER_MIN = 180;
 export const DEADLINE_AFTER_MIN = 480;
 
 export type QuoteRow = typeof quoteRequests.$inferSelect;
+export const CLOSED: QuoteStatus[] = ["wygrana", "przegrana", "anulowana"];
+
+/** Demo agents and default road rates for a world (also for worlds older than the Sales module). */
+export async function seedSales(db: Executor, sandboxId: string) {
+  const existing = await db.select({ id: agents.id }).from(agents).where(eq(agents.sandboxId, sandboxId));
+  if (existing.length === 0) {
+    await db.insert(agents).values(
+      agentsSeed.map((a) => ({ sandboxId, id: a.id, company: a.company, contactName: a.contactName, email: a.email, modes: a.modes, regions: a.regions, replyRate: a.replyRate, priceFactor: a.priceFactor })),
+    );
+  }
+  await db.insert(salesSettings).values({ sandboxId, roadRates: roadRatesSeed }).onConflictDoNothing();
+}
 
 export async function loadQuote(db: Executor, sandboxId: string, id: string) {
   const [q] = await db.select().from(quoteRequests).where(and(eq(quoteRequests.sandboxId, sandboxId), eq(quoteRequests.id, id)));
   return q;
 }
 
+/** Settings of the world; worlds created before the Sales module get defaults (and agents) on first use. */
 export async function loadSettings(db: Executor, sandboxId: string) {
   const [s] = await db.select().from(salesSettings).where(eq(salesSettings.sandboxId, sandboxId));
-  return s;
+  if (s) return s;
+  await seedSales(db, sandboxId);
+  const [created] = await db.select().from(salesSettings).where(eq(salesSettings.sandboxId, sandboxId));
+  return created;
 }
 
 async function nextQuoteNumber(db: Executor, sandboxId: string) {
@@ -52,7 +70,9 @@ export async function createQuoteFromEmail(db: Db, sandboxId: string, messageId:
   const own = await db.select().from(points).where(and(eq(points.sandboxId, sandboxId), eq(points.clientId, contact.clientId)));
   const extraPlaces = own.map((p) => ({ name: p.city, aliases: [], country: p.country, lat: p.lat, lng: p.lng, europe: true }));
   const { value, source } = await extractQuoteRequest({ db, sandboxId, simNow: opts.simNow, subject: msg.subject ?? "", body: msg.body, extraPlaces, skipAi: opts.skipAi });
-  const { mode, ...details } = value;
+  const { mode, ...raw } = value;
+  // Fields read from the e-mail end up in messages to agents: narrow them to safe values.
+  const details = normalizeDetails(raw, extraPlaces);
   const id = randomUUID();
   await db.insert(quoteRequests).values({
     sandboxId,
@@ -77,8 +97,9 @@ export async function createQuoteFromEmail(db: Db, sandboxId: string, messageId:
  * sea/air/rail complete → acknowledge and send RFQs (or wait for approval);
  * road complete → calculate from the own rates.
  */
-export async function progress(db: Db, sandboxId: string, quoteId: string, simNow: Date, opts: { skipAi?: boolean; askClient?: boolean } = {}) {
+export async function progress(db: Db, sandboxId: string, quoteId: string, simNow: Date, opts: { skipAi?: boolean; askClient?: boolean; routeChanged?: boolean } = {}) {
   const quote = await loadQuote(db, sandboxId, quoteId);
+  if (CLOSED.includes(quote.status)) return;
   const details = { ...EMPTY_DETAILS, ...(quote.details as Partial<QuoteDetails>) };
   const missing = missingFor(quote.mode, details);
   await db.update(quoteRequests).set({ missingFields: missing }).where(and(eq(quoteRequests.sandboxId, sandboxId), eq(quoteRequests.id, quoteId)));
@@ -110,7 +131,8 @@ export async function progress(db: Db, sandboxId: string, quoteId: string, simNo
     }
   }
   if (quote.mode === "road") {
-    await calculateRoad(db, sandboxId, quoteId, {});
+    // Details decide the vehicle again (pallets or weight may have changed); a new route drops manual km.
+    await calculateRoad(db, sandboxId, quoteId, { vehicleKind: details.vehicleKind ?? roadVehicleFor(details), kmOverride: opts.routeChanged ? null : undefined });
     return;
   }
   if (!["niekompletne", "do_zatwierdzenia"].includes(quote.status)) return;
@@ -125,6 +147,26 @@ const ACK_TEXT = "Dziękujemy za przesłanie zapytania — powrócimy z wyceną 
 export async function sendAckAndRfqs(db: Executor, sandboxId: string, quoteId: string, simNow: Date) {
   const quote = await loadQuote(db, sandboxId, quoteId);
   const details = { ...EMPTY_DETAILS, ...(quote.details as Partial<QuoteDetails>) };
+  const deadline = new Date(simNow.getTime() + DEADLINE_AFTER_MIN * MIN);
+  const summary = rfqSummary(quote.mode, details);
+  const subject = `Zapytanie ${quote.number}: ${MODE_LABEL[quote.mode]} ${routeText(details)}`;
+  // Hard guard: nothing identifying the client may reach an agent. If it would, a human decides.
+  const [client] = await db.select().from(clients).where(and(eq(clients.sandboxId, sandboxId), eq(clients.id, quote.clientId)));
+  const people = await db.select().from(clientContacts).where(and(eq(clientContacts.sandboxId, sandboxId), eq(clientContacts.clientId, quote.clientId)));
+  if (leaksClientData(`${subject}\n${summary}`, client, people)) {
+    await db
+      .update(quoteRequests)
+      .set({ status: "do_zatwierdzenia", missingFields: ["dane do zapytania zawierają dane klienta — popraw pola przed wysłaniem"] })
+      .where(and(eq(quoteRequests.sandboxId, sandboxId), eq(quoteRequests.id, quoteId)));
+    return;
+  }
+  // Claim the quote first, so a double click cannot send the RFQs twice.
+  const claimed = await db
+    .update(quoteRequests)
+    .set({ status: "zbieranie", deadlineSim: deadline })
+    .where(and(eq(quoteRequests.sandboxId, sandboxId), eq(quoteRequests.id, quoteId), inArray(quoteRequests.status, ["niekompletne", "do_zatwierdzenia"])))
+    .returning({ id: quoteRequests.id });
+  if (claimed.length === 0) return;
   if (quote.sourceMessageId) {
     const [src] = await db.select().from(messages).where(and(eq(messages.sandboxId, sandboxId), eq(messages.id, quote.sourceMessageId)));
     await storeClientOutbound(db, sandboxId, {
@@ -137,8 +179,6 @@ export async function sendAckAndRfqs(db: Executor, sandboxId: string, quoteId: s
     });
   }
   const list = (await db.select().from(agents).where(and(eq(agents.sandboxId, sandboxId), eq(agents.active, true)))).filter((a) => a.modes.includes(quote.mode));
-  const deadline = new Date(simNow.getTime() + DEADLINE_AFTER_MIN * MIN);
-  const summary = rfqSummary(quote.mode, details);
   for (const agent of list) {
     const aqId = randomUUID();
     await db.insert(agentQuotes).values({ sandboxId, id: aqId, requestId: quoteId, agentId: agent.id, status: "wyslane", sentSim: simNow });
@@ -146,7 +186,7 @@ export async function sendAckAndRfqs(db: Executor, sandboxId: string, quoteId: s
       agentId: agent.id,
       threadKey: rfqThread(quoteId, agent.id),
       direction: "out",
-      subject: `Zapytanie ${quote.number}: ${MODE_LABEL[quote.mode]} ${routeText(details)}`,
+      subject,
       body: `Dzień dobry,\n\nprosimy o stawkę dla poniższej wysyłki:\n\n${summary}\n\nProsimy o odpowiedź do ${formatSimClock(deadline)}.\n\nPozdrawiam\n${CARRIER_SIGNATURE}`,
       atSim: simNow,
       state: "sent",
@@ -165,10 +205,7 @@ export async function sendAckAndRfqs(db: Executor, sandboxId: string, quoteId: s
   }
   await scheduleEvent(db, sandboxId, { dueSim: new Date(simNow.getTime() + REMINDER_AFTER_MIN * MIN), type: "sales.reminder", payload: { quoteId } });
   await scheduleEvent(db, sandboxId, { dueSim: deadline, type: "sales.deadline", payload: { quoteId } });
-  await db
-    .update(quoteRequests)
-    .set({ status: list.length > 0 ? "zbieranie" : "gotowe", deadlineSim: deadline })
-    .where(and(eq(quoteRequests.sandboxId, sandboxId), eq(quoteRequests.id, quoteId)));
+  if (list.length === 0) await db.update(quoteRequests).set({ status: "gotowe" }).where(and(eq(quoteRequests.sandboxId, sandboxId), eq(quoteRequests.id, quoteId)));
 }
 
 /** Road km: the stored OSRM route when both places are the client's known points, otherwise an estimate. */
@@ -193,6 +230,7 @@ export async function calculateRoad(
   opts: { kmOverride?: number | null; emptyKm?: number; marginPct?: number; vehicleKind?: "bus" | "solo" | "tractor" | null },
 ): Promise<RoadCalculation | null> {
   const quote = await loadQuote(db, sandboxId, quoteId);
+  if (CLOSED.includes(quote.status)) return null;
   const settings = await loadSettings(db, sandboxId);
   const details = { ...EMPTY_DETAILS, ...(quote.details as Partial<QuoteDetails>) };
   const previous = quote.calculation as (RoadCalculation & { kmOverride?: number | null }) | null;

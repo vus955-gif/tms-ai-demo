@@ -11,7 +11,7 @@ import { processClientEmail } from "../inbox/process";
 import { atMin } from "../sandbox/seed";
 import { createSandbox, type SandboxRow } from "../sandbox/repository";
 import { runTick } from "../tick/engine";
-import { approveSending, draftNegotiation, draftOffer, recalcRoad, selectRate, sendAgentDraft, updateDetails } from "./actions";
+import { approveSending, draftNegotiation, draftOffer, recalcRoad, selectRate, sendAgentDraft, setOutcome, updateDetails } from "./actions";
 import { quoteDetail } from "./views";
 
 const realStart = new Date("2026-10-14T06:00:00Z");
@@ -143,11 +143,25 @@ describe("Sales: quotes via agents and road quotes", () => {
     expect(calc.loadedKm).toBeGreaterThan(400);
   });
 
+  it("re-derives the road vehicle when the salesperson corrects the load", async () => {
+    const q = await inquiry("ct-meble-1", "Wycena", "Prosimy o wycenę: 4 palety, 800 kg, Poznań – Berlin, termin 21.10.", 636);
+    expect((await quoteDetail(db, sandbox.id, q.id)).calculation).toMatchObject({ vehicleKind: "bus" });
+    await updateDetails(db, sandbox.id, q.id, { pallets: 30, weightKg: 20000 }, at(637));
+    expect((await quoteDetail(db, sandbox.id, q.id)).calculation).toMatchObject({ vehicleKind: "tractor" });
+  });
+
+  it("allows a win only after an offer and never re-opens a closed quote", async () => {
+    const [q] = await db.select().from(quoteRequests).where(and(eq(quoteRequests.sandboxId, sandbox.id), eq(quoteRequests.number, "WY-1003")));
+    await expect(setOutcome(db, sandbox.id, q.id, "wygrana", at(638))).rejects.toThrow(/wysłano ofertę/);
+    await setOutcome(db, sandbox.id, q.id, "przegrana", at(638));
+    await expect(setOutcome(db, sandbox.id, q.id, "anulowana", at(639))).rejects.toThrow(/zamknięta/);
+  });
+
   it("waits for approval when automatic sending is off", async () => {
     await db.update(salesSettings).set({ autoSend: false }).where(eq(salesSettings.sandboxId, sandbox.id));
     const q = await inquiry("ct-wisla-2", "Wycena kolejowa", "Prosimy o ofertę: 2 x 20' koleją z Chengdu do Łodzi, CPT Łódź, 18 t, części maszyn, gotowe 30.10.", 640);
     expect(q.status).toBe("do_zatwierdzenia");
-    await approveSending(db, sandbox.id, q.id, at(641));
+    await Promise.all([approveSending(db, sandbox.id, q.id, at(641)), approveSending(db, sandbox.id, q.id, at(641)).catch(() => null)]);
     const view = await quoteDetail(db, sandbox.id, q.id);
     expect(view.status).toBe("zbieranie");
     expect(view.agents.map((a) => a.agentId).sort()).toEqual(["ag-eurasia", "ag-gdansk-cargo", "ag-multi", "ag-silk-rail"]);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { findPlace, greatCircleKm, placesIn } from "./gazetteer";
-import { chargeableWeightKg, detectMode, extractQuoteByRules, missingFor, rfqSummary, roadVehicleFor } from "./quote-rules";
+import { leaksClientData } from "./client-leak";
+import { chargeableWeightKg, detectMode, extractQuoteByRules, missingFor, normalizeDetails, rfqSummary, roadVehicleFor } from "./quote-rules";
 import { mentionsAmount, money, offerPrice, roadCalculation } from "./sales-pricing";
 
 describe("Sales rules", () => {
@@ -9,6 +10,8 @@ describe("Sales rules", () => {
     expect(detectMode("Transport lotniczy 2 palet do Toronto")).toBe("air");
     expect(detectMode("Kontener koleją z Chengdu do Małaszewicz")).toBe("rail");
     expect(detectMode("Ile za 10 palet Poznań – Lyon?")).toBe("road");
+    expect(detectMode("Prosimy o wycenę 10 palet Poznań – Lyon, kolejne zapytania prześlemy w kolejnym tygodniu")).toBe("road");
+    expect(detectMode("Rozładunek: ul. Portowa 5, Gdynia, 10 palet")).toBe("road");
   });
 
   it("finds places, also declined, in order of appearance", () => {
@@ -41,6 +44,16 @@ describe("Sales rules", () => {
     expect(rfq).not.toContain("Wisła");
   });
 
+  it("does not read a decimal weight as a ready date", () => {
+    expect(extractQuoteByRules("Poznań – Lyon, 4.5 t, 12 palet").readyDate).toBeNull();
+    expect(extractQuoteByRules("Poznań – Lyon, 4.5 t, gotowe 20.10").readyDate).toBe("20.10");
+  });
+
+  it("narrows AI free text before it can reach an agent", () => {
+    const n = normalizeDetails({ ...extractQuoteByRules(""), origin: "Sudety Papier, ul. Fabryczna 1, Jelenia Góra", destination: "Szanghaj", readyDate: "zadzwoń 601 222 333", commodity: "papier <script>" }, []);
+    expect(n).toMatchObject({ origin: null, destination: "Shanghai", readyDate: null, commodity: "papier script" });
+  });
+
   it("picks the smallest road vehicle the load fits in", () => {
     expect(roadVehicleFor({ ...extractQuoteByRules("6 palet, 900 kg"), vehicleKind: null })).toBe("bus");
     expect(roadVehicleFor(extractQuoteByRules("14 palet, 6 t"))).toBe("solo");
@@ -71,5 +84,19 @@ describe("Sales pricing", () => {
     expect(mentionsAmount("Cena: 2 470 EUR netto", 2470)).toBe(true);
     expect(mentionsAmount("Cena: 2.470 EUR", 2470)).toBe(true);
     expect(mentionsAmount("Cena: 2 400 EUR", 2470)).toBe(false);
+  });
+});
+
+describe("leaksClientData", () => {
+  const client = { name: "Sudety Papier Sp. z o.o.", emailDomain: "sudetypapier.example" };
+  const people = [{ name: "Leszek Michalak", email: "l.michalak@sudetypapier.example", phone: "+48 999 200 701" }];
+  it("catches the company, a contact, a domain or a phone", () => {
+    expect(leaksClientData("Odbiór: Sudety, Jelenia Góra", client, people)).toBe(true);
+    expect(leaksClientData("kontakt: Michalak", client, people)).toBe(true);
+    expect(leaksClientData("pisz na sudetypapier.example", client, people)).toBe(true);
+    expect(leaksClientData("tel. 999-200-701", client, people)).toBe(true);
+  });
+  it("lets a clean RFQ through", () => {
+    expect(leaksClientData("Trasa: Gdańsk → Shanghai\nTowar: papier w rolach\nWaga: 24 000 kg", client, people)).toBe(false);
   });
 });
