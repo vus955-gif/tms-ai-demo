@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { forecastState, plannedDays } from "./recurring";
+import { forecastState, plannedDays, runOn, warsawDate } from "./recurring";
 
 // Wednesday 14.10.2026, 10:00 in Warsaw.
 const now = new Date("2026-10-14T08:00:00Z");
@@ -25,12 +25,24 @@ describe("recurring orders", () => {
     expect(sunday.pickupFrom.toISOString()).toBe("2026-10-26T05:00:00.000Z");
   });
 
+  it("finds the run of one date (used to create orders from keys)", () => {
+    expect(runOn(times, "2026-10-16")?.pickupFrom.toISOString()).toBe("2026-10-16T04:00:00.000Z");
+    expect(runOn(times, "2026-10-15")).toBeNull(); // Thursday: not a run day
+    expect(runOn(times, "2026-02-30")).toBeNull();
+    expect(runOn(times, "16.10.2026")).toBeNull();
+    // Just after midnight in Warsaw it is already the next day (22:30 UTC on the 14th).
+    expect(warsawDate(new Date("2026-10-14T22:30:00Z"))).toBe("2026-10-15");
+  });
+
   it("turns the best candidate into a forecast", () => {
-    expect(forecastState(undefined, 0)).toBe("brak_kierowcy");
-    expect(forecastState({ tier: "excluded", pickupEtaMs: null }, 0)).toBe("brak_kierowcy");
     const min = 60_000;
-    expect(forecastState({ tier: "high", pickupEtaMs: 0 }, 60 * min)).toBe("zdazy");
-    expect(forecastState({ tier: "low", pickupEtaMs: 0 }, 60 * min)).toBe("zdazy");
-    expect(forecastState({ tier: "medium", pickupEtaMs: 40 * min }, 60 * min)).toBe("ryzyko");
+    const w = { pickupToMs: 60 * min, deliveryToMs: 600 * min };
+    expect(forecastState(undefined, w)).toBe("brak_kierowcy");
+    expect(forecastState({ tier: "excluded", pickupEtaMs: null }, w)).toBe("brak_kierowcy");
+    expect(forecastState({ tier: "high", pickupEtaMs: 0, deliveryEtaMs: 300 * min }, w)).toBe("zdazy");
+    expect(forecastState({ tier: "low", pickupEtaMs: 0, deliveryEtaMs: 300 * min }, w)).toBe("zdazy");
+    expect(forecastState({ tier: "medium", pickupEtaMs: 40 * min, deliveryEtaMs: 300 * min }, w)).toBe("ryzyko");
+    // Plenty of time at loading, but unloading only 10 minutes before the window closes.
+    expect(forecastState({ tier: "high", pickupEtaMs: 0, deliveryEtaMs: 590 * min }, w)).toBe("ryzyko");
   });
 });

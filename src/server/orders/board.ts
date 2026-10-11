@@ -110,15 +110,27 @@ export async function ordersBoard(db: Executor, sandboxId: string): Promise<Orde
 
 export type MatchView = MatchResult & { plates: string; trailerPlates: string | null; driverName: string; kind: string };
 
-async function candidatesFor(db: Executor, fleet: FleetData, sandboxId: string, order: OrderRow, simNow: Date): Promise<MatchCandidate[]> {
-  const history = await db
-    .select()
-    .from(driverClientHistory)
-    .where(and(eq(driverClientHistory.sandboxId, sandboxId), eq(driverClientHistory.clientId, order.clientId)));
-  const [terms, absences] = await Promise.all([
+/** Everything the matching reads besides the order, loaded once (a weekly plan evaluates many orders). */
+export type MatchContext = {
+  fleet: FleetData;
+  terms: (typeof fleetTerms.$inferSelect)[];
+  absences: (typeof driverAbsences.$inferSelect)[];
+  history: (typeof driverClientHistory.$inferSelect)[];
+};
+
+export async function loadMatchContext(db: Executor, sandboxId: string, fleet?: FleetData): Promise<MatchContext> {
+  const [f, terms, absences, history] = await Promise.all([
+    fleet ?? loadFleet(db, sandboxId),
     db.select().from(fleetTerms).where(eq(fleetTerms.sandboxId, sandboxId)),
     db.select().from(driverAbsences).where(eq(driverAbsences.sandboxId, sandboxId)),
+    db.select().from(driverClientHistory).where(eq(driverClientHistory.sandboxId, sandboxId)),
   ]);
+  return { fleet: f, terms, absences, history };
+}
+
+async function candidatesFor(db: Executor, fleet: FleetData, sandboxId: string, order: OrderRow, simNow: Date, ctx?: MatchContext): Promise<MatchCandidate[]> {
+  const { terms, absences, history: allHistory } = ctx ?? (await loadMatchContext(db, sandboxId, fleet));
+  const history = allHistory.filter((h) => h.clientId === order.clientId);
   const day = (d: Date) => formatWarsaw(d, "d.MM");
   return fleet.vehicles.map((vehicle) => {
     const driver = fleet.driverByVehicle.get(vehicle.id)!;
@@ -199,10 +211,11 @@ export type VirtualOrder = Pick<
 >;
 
 /** "Klocki" for an order that does not exist yet (recurring orders forecast). */
-export async function matchVirtual(db: Executor, sandboxId: string, order: VirtualOrder, simNow: Date, fleet?: FleetData): Promise<MatchView[]> {
-  const f = fleet ?? (await loadFleet(db, sandboxId));
+export async function matchVirtual(db: Executor, sandboxId: string, order: VirtualOrder, simNow: Date, ctx?: MatchContext): Promise<MatchView[]> {
+  const c = ctx ?? (await loadMatchContext(db, sandboxId));
+  const f = c.fleet;
   const row = order as OrderRow;
-  const results = matchCandidates(toMatchOrder(f, row), await candidatesFor(db, f, sandboxId, row, simNow));
+  const results = matchCandidates(toMatchOrder(f, row), await candidatesFor(db, f, sandboxId, row, simNow, c));
   return results.map((r) => {
     const driver = f.drivers.get(r.driverId)!;
     const vehicle = f.vehicles.find((v) => v.id === r.vehicleId)!;

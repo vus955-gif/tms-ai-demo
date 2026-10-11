@@ -64,6 +64,13 @@
       "when": 1791686075605,
       "tag": "0008_stage4_templates",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791688674526,
+      "tag": "0009_stage4_templates_guard",
+      "breakpoints": true
     }
   ]
 }

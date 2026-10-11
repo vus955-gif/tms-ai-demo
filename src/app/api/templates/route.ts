@@ -8,8 +8,8 @@ import { z } from "zod";
 /** Templates and next week's plan with the timeliness forecast. */
 export async function GET(request: NextRequest) {
   return withSandbox(request, async ({ db, sandbox }) => {
-    const [templates, plan] = [await listTemplates(db, sandbox), await weekPlan(db, sandbox, sandbox.lastTickSim)];
-    return { templates, plan };
+    const templates = await listTemplates(db, sandbox);
+    return { templates, plan: await weekPlan(db, sandbox, sandbox.lastTickSim, templates) };
   });
 }
 

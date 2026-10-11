@@ -1,0 +1,2 @@
+ALTER TABLE "order_templates" ADD COLUMN "archived" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "orders_template_key_uq" ON "orders" USING btree ("sandbox_id","template_key") WHERE "orders"."status" <> 'ANULOWANE';

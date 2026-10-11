@@ -34,7 +34,7 @@ export async function createOrder(
   db: Executor,
   sandboxId: string,
   input: NewOrder,
-  opts: { simNow: Date; source: "manual" | "scenario" | "email" | "template"; status?: Extract<OrderStatus, "NOWE" | "SZKIC">; sourceMessageId?: string | null; actor?: "dispatcher" | "system" | "ai"; id?: string; reason?: string },
+  opts: { simNow: Date; source: "manual" | "scenario" | "email" | "template"; status?: Extract<OrderStatus, "NOWE" | "SZKIC">; sourceMessageId?: string | null; actor?: "dispatcher" | "system" | "ai"; id?: string; reason?: string; templateKey?: string },
 ) {
   const [client] = await db.select().from(clients).where(and(eq(clients.sandboxId, sandboxId), eq(clients.id, input.clientId)));
   if (!client) throw new HttpError(400, "Nie ma takiego klienta.");
@@ -68,6 +68,7 @@ export async function createOrder(
     etaAgreed: new Date(input.deliveryTo),
     source: opts.source,
     sourceMessageId: opts.sourceMessageId ?? null,
+    templateKey: opts.templateKey ?? null,
     createdSim: opts.simNow,
   });
   await db.insert(orderStatusChanges).values({

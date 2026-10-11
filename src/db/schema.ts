@@ -10,6 +10,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
@@ -214,7 +215,7 @@ export const orders = pgTable(
     etd: ts("etd"),
     etaAgreed: ts("eta_agreed"),
     source: text("source").$type<"scenario" | "manual" | "email" | "template">().notNull(),
-    /** Recurring orders (stage 4): `<templateId>:<yyyy-mm-dd>`, one order per template and day. */
+    /** Recurring orders (stage 4): `<templateId>:<yyyy-mm-dd>`, one live (not cancelled) order per template and day. */
     templateKey: text("template_key"),
     sourceMessageId: text("source_message_id"),
     createdSim: ts("created_sim").notNull(),
@@ -230,6 +231,7 @@ export const orders = pgTable(
     primaryKey({ columns: [t.sandboxId, t.id] }),
     index("orders_status_idx").on(t.sandboxId, t.status),
     index("orders_driver_idx").on(t.sandboxId, t.driverId),
+    uniqueIndex("orders_template_key_uq").on(t.sandboxId, t.templateKey).where(sql`${t.status} <> 'ANULOWANE'`),
   ],
 );
 
@@ -666,6 +668,8 @@ export const orderTemplates = pgTable(
     /** ISO weekdays 1 (Mon) … 7 (Sun). */
     weekdays: jsonb("weekdays").$type<number[]>().notNull(),
     active: boolean("active").notNull().default(true),
+    /** Deleted by the dispatcher: kept so an emptied list is not mistaken for a never-seeded world. */
+    archived: boolean("archived").notNull().default(false),
     createdSim: ts("created_sim").notNull(),
   },
   (t) => [primaryKey({ columns: [t.sandboxId, t.id] })],

@@ -54,6 +54,8 @@ export type MatchResult = {
   reasons: string[];
   pickupEtaMs: number | null;
   emptyKm: number | null;
+  /** Predicted arrival at the delivery point (set for candidates that make both windows). */
+  deliveryEtaMs?: number;
   /** Excluded for good (capacity, body, ADR) — not something a dispatcher can fix for this order. */
   hard?: true;
 };
@@ -130,7 +132,7 @@ export function evaluateCandidate(order: MatchOrder, c: MatchCandidate): MatchRe
   // A much bigger vehicle than needed ranks a little lower (no reason shown: it is rarely decisive).
   if (c.capacityPallets - order.cargoPallets >= 15) score -= 5;
   const tier: MatchTier = score >= 85 ? "high" : score >= 60 ? "medium" : "low";
-  return { vehicleId: c.vehicleId, driverId: c.driverId, tier, score: Math.round(score), reasons, pickupEtaMs: pickup.arrivalMs, emptyKm };
+  return { vehicleId: c.vehicleId, driverId: c.driverId, tier, score: Math.round(score), reasons, pickupEtaMs: pickup.arrivalMs, emptyKm, deliveryEtaMs: delivery.arrivalMs };
 }
 
 export function matchCandidates(order: MatchOrder, candidates: MatchCandidate[]): MatchResult[] {

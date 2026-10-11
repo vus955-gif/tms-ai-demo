@@ -10,7 +10,7 @@ import { getJson, postJson } from "@/lib/api";
 import { formatTime, formatWarsaw } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { WEEKDAY_SHORT, type ForecastState } from "@/domain/recurring";
-import type { PlannedOrder, TemplateView } from "@/server/templates/templates";
+import type { PlannedOrder, PlanSkip, TemplateView } from "@/server/templates/templates";
 import { TemplateDialog } from "./template-dialog";
 
 const FORECAST: Record<ForecastState, { label: string; className: string }> = {
@@ -19,15 +19,20 @@ const FORECAST: Record<ForecastState, { label: string; className: string }> = {
   brak_kierowcy: { label: "brak kierowcy", className: "bg-bad-soft text-bad" },
 };
 
+/** The plan is recomputed every 30 simulated minutes (and after a reset, which turns the clock back). */
+const PLAN_BUCKET_MS = 30 * 60_000;
+
 const hm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 
 export function TemplatesView() {
   const { data: snapshot } = useSnapshot();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<TemplateView | "new" | null>(null);
-  const [selected, setSelected] = useState<Set<string> | null>(null);
+  // Rows are selected by default; only the ones the dispatcher unticks are remembered.
+  const [unticked, setUnticked] = useState<Set<string>>(new Set());
+  const bucket = snapshot ? Math.floor(new Date(snapshot.simNow).getTime() / PLAN_BUCKET_MS) : null;
   const q = useQuery({
-    queryKey: ["templates", snapshot?.simNow],
+    queryKey: ["templates", bucket],
     queryFn: () => getJson<{ templates: TemplateView[]; plan: PlannedOrder[] }>("/api/templates"),
     enabled: Boolean(snapshot),
     placeholderData: (p) => p,
@@ -51,17 +56,19 @@ export function TemplatesView() {
     onError: (e) => toast.error(e.message),
   });
   const create = useMutation({
-    mutationFn: (keys: string[]) => postJson<{ created: string[] }>("/api/templates/plan", { keys }),
+    mutationFn: (keys: string[]) => postJson<{ created: string[]; skipped: PlanSkip[] }>("/api/templates/plan", { keys }),
     onSuccess: (r) => {
-      toast.success(r.created.length ? `Utworzono ${r.created.length}: ${r.created.join(", ")} — czekają w Zleceniach na przydział.` : "Nic nowego do utworzenia.");
-      setSelected(null);
+      if (r.created.length) toast.success(`Utworzono ${r.created.length}: ${r.created.join(", ")} — czekają w Zleceniach na przydział.`);
+      const why = [...new Set(r.skipped.map((s) => s.reason))];
+      if (r.skipped.length) toast.warning(`Pominięto ${r.skipped.length}: ${why.join("; ")}.`);
+      if (!r.created.length && !r.skipped.length) toast.info("Nic nowego do utworzenia.");
       refresh();
     },
     onError: (e) => toast.error(e.message),
   });
   const data = q.data;
   const open = (data?.plan ?? []).filter((p) => !p.orderNumber);
-  const chosen = selected ?? new Set(open.map((p) => p.key));
+  const chosen = new Set(open.map((p) => p.key).filter((k) => !unticked.has(k)));
 
   return (
     <div className="grid h-full min-h-0 grid-cols-[360px_minmax(0,1fr)]">
@@ -134,10 +141,10 @@ export function TemplatesView() {
                         checked={chosen.has(p.key)}
                         aria-label={`Utwórz ${p.templateName} ${p.date}`}
                         onChange={(e) => {
-                          const next = new Set(chosen);
-                          if (e.target.checked) next.add(p.key);
-                          else next.delete(p.key);
-                          setSelected(next);
+                          const next = new Set(unticked);
+                          if (e.target.checked) next.delete(p.key);
+                          else next.add(p.key);
+                          setUnticked(next);
                         }}
                       />
                     )}

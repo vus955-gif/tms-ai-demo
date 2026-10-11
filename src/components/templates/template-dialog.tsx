@@ -13,10 +13,13 @@ import type { TemplateView } from "@/server/templates/templates";
 
 const select = "h-9 w-full rounded-md border bg-background px-2 text-sm";
 const hm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+/** "HH:MM" → minutes; anything else becomes NaN, which the server rejects with a message. */
 const toMin = (v: string) => {
-  const [h, m] = v.split(":").map(Number);
-  return h * 60 + (m || 0);
+  const m = /^(\d{2}):(\d{2})$/.exec(v);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : NaN;
 };
+/** Whole numbers only ("10,5" or "" are refused by the server instead of turning into 10 or 0). */
+const toInt = (v: string) => (/^\s*\d+\s*$/.test(v) ? Number(v) : NaN);
 
 /** Create or edit a recurring order template; points come from the client's book. */
 export function TemplateDialog({ template, onClose, onSaved }: { template: TemplateView | null; onClose: () => void; onSaved: () => void }) {
@@ -36,6 +39,7 @@ export function TemplateDialog({ template, onClose, onSaved }: { template: Templ
   const [pallets, setPallets] = useState(String(template?.cargoPallets ?? 10));
   const [kg, setKg] = useState(String(template?.cargoKg ?? 4000));
   const [reefer, setReefer] = useState(template?.bodyRequired === "chlodnia");
+  const [adr, setAdr] = useState(template?.adrRequired ?? false);
   const [refs, setRefs] = useState(template?.references.join(", ") ?? "");
   const [error, setError] = useState<string | null>(null);
   const client = catalog.data?.clients.find((c) => c.id === clientId);
@@ -61,10 +65,10 @@ export function TemplateDialog({ template, onClose, onSaved }: { template: Templ
       deliveryDayOffset: offset,
       deliveryFromMin: toMin(times.df),
       deliveryToMin: toMin(times.dt),
-      cargoPallets: Number(pallets),
-      cargoKg: Number(kg),
-      bodyRequired: reefer ? "chlodnia" : null,
-      adrRequired: false,
+      cargoPallets: toInt(pallets),
+      cargoKg: toInt(kg),
+      bodyRequired: reefer ? "chlodnia" : template?.bodyRequired === "chlodnia" ? null : (template?.bodyRequired ?? null),
+      adrRequired: adr,
       references: refs
         .split(",")
         .map((r) => r.trim())
@@ -137,6 +141,7 @@ export function TemplateDialog({ template, onClose, onSaved }: { template: Templ
                 <option value={0}>tego dnia</option>
                 <option value={1}>następnego dnia</option>
                 <option value={2}>po 2 dniach</option>
+                <option value={3}>po 3 dniach</option>
               </select>
             </label>
           </div>
@@ -149,7 +154,7 @@ export function TemplateDialog({ template, onClose, onSaved }: { template: Templ
               </label>
             ))}
           </fieldset>
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-5">
             <label className="grid gap-1 text-xs">
               Palety
               <Input value={pallets} onChange={(e) => setPallets(e.target.value)} inputMode="numeric" aria-label="Palety" />
@@ -160,6 +165,9 @@ export function TemplateDialog({ template, onClose, onSaved }: { template: Templ
             </label>
             <label className="flex items-end gap-2 pb-2 text-xs">
               <input type="checkbox" checked={reefer} onChange={(e) => setReefer(e.target.checked)} className="size-4" /> Chłodnia
+            </label>
+            <label className="flex items-end gap-2 pb-2 text-xs">
+              <input type="checkbox" checked={adr} onChange={(e) => setAdr(e.target.checked)} className="size-4" /> ADR
             </label>
             <label className="grid gap-1 text-xs">
               Referencje
