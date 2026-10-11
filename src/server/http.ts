@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { NextResponse, type NextRequest } from "next/server";
 import type { ZodType } from "zod";
 import { getDb } from "@/db/client";
@@ -56,6 +57,8 @@ export async function withSandbox(
     if (created) response.cookies.set(SANDBOX_COOKIE, sandbox.id, sandboxCookieOptions());
     return response;
   } catch (error) {
+    // Next.js signals (e.g. "this route is dynamic" while prerendering) must reach the framework.
+    unstable_rethrow(error);
     if (error instanceof HttpError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (error instanceof TransitionError) return NextResponse.json({ error: error.message }, { status: 409 });
     console.error("[api]", error);

@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { NextResponse, type NextRequest } from "next/server";
 import { getDb } from "@/db/client";
 import "@/server/bootstrap";
@@ -11,6 +12,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/api/track/[
     const db = await getDb();
     return NextResponse.json(await publicTracking(db, token, new Date()), { headers: { "cache-control": "no-store" } });
   } catch (error) {
+    unstable_rethrow(error);
     if (error instanceof HttpError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error("[track]", error);
     return NextResponse.json({ error: "Nie udało się wczytać śledzenia. Spróbuj za chwilę." }, { status: 500 });
