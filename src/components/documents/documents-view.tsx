@@ -12,11 +12,12 @@ import { formatSimClock, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { DocumentView } from "@/server/documents/cmr";
 
-type Queue = "zamkniecie" | "weryfikacja" | "archiwum";
+type Queue = "zamkniecie" | "weryfikacja" | "nieczytelne" | "archiwum";
 
 const QUEUES: { id: Queue; label: string; statuses: string[] }[] = [
   { id: "zamkniecie", label: "Do zamknięcia", statuses: ["do_zamkniecia"] },
-  { id: "weryfikacja", label: "Do weryfikacji", statuses: ["do_weryfikacji", "nieczytelny"] },
+  { id: "weryfikacja", label: "Weryfikacja", statuses: ["do_weryfikacji"] },
+  { id: "nieczytelne", label: "Nieczytelne", statuses: ["nieczytelny"] },
   { id: "archiwum", label: "Archiwum", statuses: ["zatwierdzony", "odrzucony"] },
 ];
 
@@ -70,7 +71,7 @@ export function DocumentsView() {
   };
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-[320px_minmax(0,1fr)]">
+    <div className="grid h-full min-h-0 grid-cols-[340px_minmax(0,1fr)]">
       <aside className="flex min-h-0 flex-col border-r bg-background">
         <div className="flex gap-1 border-b p-2" role="tablist" aria-label="Kolejki dokumentów">
           {QUEUES.map((q) => {
@@ -83,7 +84,7 @@ export function DocumentsView() {
                 aria-selected={queue === q.id}
                 onClick={() => go({ q: q.id })}
                 data-testid={`queue-${q.id}`}
-                className={cn("flex-1 whitespace-nowrap rounded-md px-1.5 py-1 text-xs font-medium", queue === q.id ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60")}
+                className={cn("flex-1 whitespace-nowrap rounded-md px-1 py-1 text-[11px] font-medium", queue === q.id ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60")}
               >
                 {q.label}
                 {n > 0 && <span className="ml-1 text-[10px] text-muted-foreground">{n}</span>}

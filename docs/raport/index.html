@@ -71,7 +71,8 @@
         <tr><td>1 — monitoring</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>2 — zlecenia i komunikator</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
         <tr><td>3 — CMR</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
-        <tr><td>3b — skrzynka klientów</td><td><span class="tag todo">czeka</span></td><td>—</td></tr>
+        <tr><td>3b — skrzynka klientów</td><td><span class="tag done">gotowe</span></td><td>jednostkowe, integracyjne, e2e — zielone</td></tr>
+        <tr><td>Dodatki: „Cofnij” w Dzienniku AI, poprawki</td><td><span class="tag done">gotowe</span></td><td>integracyjne — zielone; build produkcyjny OK</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -152,12 +153,12 @@
     <li><strong>Reguły awaryjne też potwierdzają.</strong> Bez klucza API jednoznaczne krótkie odpowiedzi („ok”, „OK jadę”, „przyjmuję”, „nie dam rady”) dostają pewność 0,8, więc demo bez AI nadal zmienia status. Wszystko dwuznaczne idzie do spedytora.</li>
     <li><strong>Czekanie liczy się jako odpoczynek.</strong> Czekanie na okno albo postój po rozładunku dłuższy niż 45 min to przerwa, a dłuższy niż 11 h to odpoczynek dobowy. Bez tego kierowca czekający całą noc na poranny załadunek „wpadał” w limit.</li>
     <li><strong>Bez zdublowanych alertów.</strong> Zgłoszenie z trasy (np. „złapałem gumę”) nie tworzy drugiego alertu, gdy system już wie o awarii z incydentu.</li>
-    <li><strong>Szkice z maili czekają w skrzynce.</strong> Zlecenie ZL-1043 (Logistyka Wisła) pojawia się na razie jako zwykłe nowe zlecenie; w etapie 3b przyjdzie jako mail z szkicem AI.</li>
+    <li><strong>Szkice z maili czekają w skrzynce.</strong> Od etapu 3b zlecenie ZL-1043 (Logistyka Wisła) przychodzi mailem jako szkic — przed przydziałem trzeba je zatwierdzić.</li>
   </ul>
   <h3>Testy do przeklikania</h3>
   <ol class="checks">
     <li>Reset, tempo 60×. Ok. 09:05 pojawia się ZL-1042, ok. 09:20 system wysyła je kierowcy busa (Jakub Grabowski). <span class="expect">Ok. 09:26 odmowa: „Nie zdążę…”, alert „ZL-1042: kierowca odmówił”, zlecenie wraca do puli.</span></li>
-    <li>Ok. 09:10 pojawia się ZL-1043 (Gądki → Leipzig, 12 palet). Złap je i przeciągnij nad listą kierowców. <span class="expect">Przy każdym kierowcy klocek; busy „odpadają: za mała pojemność”; upuszczenie na nie daje komunikat błędu.</span></li>
+    <li>Ok. 09:10 pojawia się szkic ZL-1043 z maila (Gądki → Leipzig, 12 palet). Kliknij „Zatwierdź”, potem złap je i przeciągnij nad listą kierowców. <span class="expect">Przy każdym kierowcy klocek; busy „odpadają: za mała pojemność”; upuszczenie na nie daje komunikat błędu.</span></li>
     <li>Otwórz „Telefon kierowcy” i wybierz np. Michała Woźniaka, potem przydziel mu ZL-1043. <span class="expect">Na telefonie przychodzi pełny SMS ze zleceniem; na tablicy status „Wysłane do kierowcy”.</span></li>
     <li>Na telefonie odpisz „ok, ale będę 2 h później”. <span class="expect">Alert „odpowiedź z warunkiem lub pytaniem”, status bez zmian.</span></li>
     <li>Odpisz „OK jadę”. <span class="expect">Status „W realizacji”, informacja w powiadomieniach. Na mapie auto rusza na załadunek po potwierdzeniu.</span></li>
@@ -174,7 +175,7 @@
     <li><strong>Zdjęcia CMR od kierowców</strong> (MMS w demo): AI odczytuje pola 1–3, numer CMR, towar, wagę, referencje i pole 24 (pieczątka, podpis, adnotacje odbiorcy).</li>
     <li><strong>Kontrola jakości od razu:</strong> nieczytelne zdjęcie → kierowca w tej samej chwili dostaje SMS z prośbą o nowe, póki jest jeszcze na rozładunku.</li>
     <li><strong>Dopasowanie do zlecenia</strong> przez algorytm, nie przez AI: numer referencyjny, miasto dostawy, odbiorca, data. Pewne dopasowanie (≥ 85%) przenosi zlecenie do „Do zamknięcia”; reszta czeka w „Do weryfikacji”.</li>
-    <li><strong>Ekran Dokumenty:</strong> kolejki „Do zamknięcia”, „Do weryfikacji”, „Archiwum”; zdjęcie z powiększeniem, odczyt AI, kontrola jakości ✓/✗, kandydaci z procentem i powodami. Spedytor: „Zamknij zlecenie”, „Przypisz do zlecenia”, „Odrzuć”. Licznik w menu.</li>
+    <li><strong>Ekran Dokumenty:</strong> kolejki „Do zamknięcia”, „Weryfikacja”, „Nieczytelne”, „Archiwum”; zdjęcie z powiększeniem, odczyt AI, kontrola jakości ✓/✗, kandydaci z procentem i powodami. Spedytor: „Zamknij zlecenie”, „Przypisz do zlecenia”, „Odrzuć”. Licznik w menu.</li>
     <li><strong>Brak CMR:</strong> 2 h po wyjeździe z rozładunku przypomnienie SMS, po 4 h alert dla spedytora.</li>
     <li><strong>Boty</strong> wysyłają zdjęcia 5–12 min po rozładunku: ZL-1038 najpierw rozmazane (potem ostre, po prośbie), ZL-1033 ostre, reszta losowo — czasem bez pieczątki, z adnotacją albo wcale.</li>
     <li><strong>Telefon kierowcy → „Wyślij zdjęcie CMR (MMS)”:</strong> galeria zdjęć z zleceń tego kierowcy, „dokument obcy” i <em>własne zdjęcie</em> (JPEG/PNG/WebP do 4 MB — odczytywane i od razu wyrzucane, demo go nie zapisuje).</li>
@@ -193,16 +194,67 @@
   </ul>
   <h3>Testy do przeklikania</h3>
   <ol class="checks">
-    <li>Reset, tempo 60×. Ok. 11:20 symulacji (≈ 3 min) licznik przy „Dokumenty” pokazuje 1. <span class="expect"><strong>Bez klucza:</strong> dokument Marka Zielińskiego w „Do weryfikacji” z notką „Odczyt automatyczny niedostępny”. <strong>Z kluczem:</strong> w „Do zamknięcia”, kontrola jakości na zielono, dopasowanie ZL-1033 ≥ 85% z powodami (numer referencyjny, Dresden, odbiorca), alert „ZL-1033: CMR gotowy do zamknięcia” z przyciskiem „Otwórz dokument”.</span></li>
+    <li>Reset, tempo 60×. Ok. 11:20 symulacji (≈ 3 min) licznik przy „Dokumenty” pokazuje 1. <span class="expect"><strong>Bez klucza:</strong> dokument Marka Zielińskiego w zakładce „Weryfikacja” z notką „Odczyt automatyczny niedostępny”. <strong>Z kluczem:</strong> w „Do zamknięcia”, kontrola jakości na zielono, dopasowanie ZL-1033 ≥ 85% z powodami (numer referencyjny, Dresden, odbiorca), alert „ZL-1033: CMR gotowy do zamknięcia” z przyciskiem „Otwórz dokument”.</span></li>
     <li>Bez klucza: wybierz „ZL-1033 (ten kierowca)” → „Przypisz”, potem „Zamknij zlecenie ZL-1033”. <span class="expect">Dokument w „Archiwum” jako „zlecenie zamknięte”, ZL-1033 znika z aktywnych zleceń, licznik spada do 0.</span></li>
-    <li>Z kluczem, ok. 12:57: zdjęcie Michała Woźniaka (ZL-1038). <span class="expect">Status „nieczytelny”, w komunikatorze i na telefonie SMS „Zdjęcie CMR jest nieczytelne…”. Ok. 13:12 drugie zdjęcie — ostre — i ZL-1038 w „Do zamknięcia”.</span></li>
+    <li>Z kluczem, ok. 12:57: zdjęcie Michała Woźniaka (ZL-1038). <span class="expect">Dokument w zakładce „Nieczytelne”, w komunikatorze i na telefonie SMS „Zdjęcie CMR jest nieczytelne…”. Ok. 13:12 drugie zdjęcie — ostre — i ZL-1038 w „Do zamknięcia”.</span></li>
     <li>ZL-1040 (Rafał Mazur, bus) — kierowca milczy. <span class="expect">Ok. 11:46 SMS „Brakuje zdjęcia CMR…”, ok. 13:46 alert „ZL-1040: brak CMR” z „Napisz do kierowcy”.</span></li>
     <li>Telefon kierowcy → wybierz kierowcę → „Wyślij zdjęcie CMR (MMS)”. <span class="expect">Galeria jego zleceń; zlecenia po rozładunku mają wyróżnioną ramkę. Wysłanie zdjęcia: miniatura w SMS-ie, dokument w Dokumentach.</span></li>
-    <li>Z kluczem: wyślij „dokument obcy” od kierowcy po rozładunku. <span class="expect">„Do weryfikacji”, dopasowania z niskim procentem i „nic się nie zgadza” — AI nie przypisuje cudzego CMR.</span></li>
+    <li>Z kluczem: wyślij „dokument obcy” od kierowcy po rozładunku. <span class="expect">Zakładka „Weryfikacja”, dopasowania z niskim procentem i „nic się nie zgadza” — AI nie przypisuje cudzego CMR.</span></li>
     <li>Z kluczem: Kamińska (ZL-1035) po rozładunku → „ZL-1035 · z adnotacją”. <span class="expect">„Do zamknięcia”, ale alert „CMR z uwagami” i ✗ przy adnotacji z treścią.</span></li>
     <li>„Własne zdjęcie”: zrób zdjęcie dowolnego dokumentu lub wybierz plik z <code>public/cmr-samples</code>. <span class="expect">W SMS-ie „📎 nazwa (nie jest przechowywane)”, w Dokumentach ikona zamiast zdjęcia. Z kluczem AI odczytuje pola.</span></li>
     <li>Na dokumencie „Do zamknięcia” kliknij „Odrzuć dokument”. <span class="expect">Zlecenie wraca do „Rozładunek”, dokument w Archiwum jako odrzucony.</span></li>
     <li>Z kluczem: Dziennik AI. <span class="expect">Wpisy „Odczyt CMR” z kosztem rzędu ułamka centa za zdjęcie.</span></li>
+  </ol>
+
+  <h2 id="etap3b">Etap 3b — skrzynka klientów <span class="tag done">gotowe</span></h2>
+  <h3>Co powstało</h3>
+  <ul>
+    <li><strong>Skrzynka</strong> w programie: lista maili od klientów z kategorią (zamówienie, pytanie o status, reklamacja, zapytanie ofertowe, inne), priorytetem i licznikiem nieprzeczytanych. Obok treść maila, z prawej panel AI.</li>
+    <li><strong>Mail z zamówieniem → szkic zlecenia.</strong> AI (albo reguły bez klucza) wyciąga punkty — <em>tylko</em> z książki punktów tego klienta — okna, palety, wagę, referencje, ADR/chłodnię. Szkic widać w Skrzynce i na tablicy zleceń („Zatwierdź”, „Popraw”, „Odrzuć”). Niekompletny mail: lista braków, gotowy szkic prośby o uzupełnienie i „Załóż zlecenie z maila” (formularz wypełniony tym, co się dało odczytać).</li>
+    <li><strong>„Gdzie jest auto?” → szkic odpowiedzi</strong> wyłącznie z danych dla klienta (<code>clientView</code>): numer zlecenia i referencja, rejestracje, status, % trasy, ETA. Gdy klient nie poda numeru, a ma kilka aut w drodze — szkic opisuje wszystkie. Panel „To widzi klient” pokazuje te same dane.</li>
+    <li><strong>Ochrona danych kierowcy:</strong> szkic z AI, w którym pojawi się nazwisko (także odmienione) albo telefon kierowcy, jest automatycznie zastępowany szablonem. Pilnuje tego test.</li>
+    <li><strong>Reklamacja:</strong> wysoki priorytet i alert „Reklamacja: klient” z przyciskiem „Otwórz mail”. <strong>Zapytanie ofertowe:</strong> ramka „Sprzedaż – wkrótce” (moduł sprzedaży to następny etap).</li>
+    <li><strong>Szkice odpowiedzi:</strong> potwierdzenie przyjęcia zlecenia, status, prośba o brakujące dane, odpowiedź ogólna; edytowalne, „Wyślij” (w demo mail zostaje w aplikacji) albo „Odrzuć szkic”.</li>
+    <li><strong>„Powiadom klienta”</strong> w alercie o opóźnieniu otwiera Skrzynkę z gotowym szkicem „Zlecenie ZL-… — możliwe opóźnienie” do klienta tego zlecenia.</li>
+    <li><strong>Poczta klienta</strong> (górny pasek): piszesz jako dowolny fikcyjny klient, z gotowymi przykładami (zamówienie, status, reklamacja, wycena). Mail przechodzi tę samą ocenę co maile ze scenariusza.</li>
+    <li><strong>Scenariusz:</strong> 09:10 zamówienie Logistyki Wisła (szkic ZL-1043), 09:50 zamówienie Agro-Pol, 10:30 Mazovia pyta o ZL-1037, 13:30 reklamacja Mebli Wielkopolska, a co ok. 60 min kolejny mail (wycena kontenera, pytanie o status, korekta faktury, wycena lotnicza…).</li>
+  </ul>
+  <h3>Decyzje, które podjąłem sam (do Twojej oceny)</h3>
+  <ul>
+    <li><strong>ZL-1043 przychodzi teraz mailem jako szkic</strong> — zgodnie ze specyfikacją (T+40). Żeby przydzielić je kierowcy, trzeba je najpierw zatwierdzić (na tablicy albo w Skrzynce). Zmieniłem pod to testy etapu 2.</li>
+    <li><strong>Reguły awaryjne też robią szkic</strong> z dobrze ustrukturyzowanego maila (miasta także w odmianie: „z Gądek”, „do Lipska”; „jutro”, „16.10”, „od 8 do 10”, „2,5 t”). Wszystko, czego nie odczytają, trafia do listy braków — nic nie jest zgadywane.</li>
+    <li><strong>Odpowiedź na reklamację tylko na żądanie</strong> („Szkic odpowiedzi”), nie automatycznie — reklamacje lepiej, żeby spedytor prowadził świadomie. Szkic statusu, potwierdzenia i prośby o braki powstaje sam.</li>
+    <li><strong>Numer zlecenia nadawany od razu na szkicu.</strong> Odrzucony szkic zostawia lukę w numeracji — w zamian numer z maila jest stały od początku.</li>
+    <li><strong>Identyfikatory zleceń = numery</strong> (<code>zl-1043</code>), bez losowych ciągów — ten sam świat odtwarza się zawsze tak samo.</li>
+    <li><strong>Zapytania ofertowe bez szkicu</strong> — czekają na moduł sprzedaży; można ręcznie poprosić o ogólną odpowiedź.</li>
+  </ul>
+  <h3>Testy do przeklikania</h3>
+  <ol class="checks">
+    <li>Reset, tempo 10×. Ok. 09:10 licznik przy „Skrzynka” = 1. <span class="expect">Mail Marty Sobczak „Zlecenie transportu Gądki → Leipzig na jutro”, etykieta „zamówienie”, „ZL-1043 · szkic”. W panelu: Gądki → Leipzig, jutro 07:00–09:00 / 13:00–15:00, 12 palet · 4800 kg, LW-5501. Bez klucza dopisek „reguły (AI niedostępne)”, z kluczem „✦ ocena AI”.</span></li>
+    <li>„Popraw” → zmień palety na 14 → „Zatwierdź szkic”. <span class="expect">Komunikat „ZL-1043 zatwierdzone”; w Zleceniach ZL-1043 w „Nowe zlecenia” z 14 paletami i przyciskiem „Przydziel…”.</span></li>
+    <li>(Alternatywa) Na tablicy Zleceń przy szkicu kliknij „Zatwierdź” albo „Mail i poprawki”. <span class="expect">Zatwierdzenie bez poprawek albo przejście do maila.</span></li>
+    <li>W mailu z zamówieniem „Szkic odpowiedzi”. <span class="expect">Potwierdzenie przyjęcia zlecenia z numerem ZL-1043, oknami i informacją, że rejestracje przyjdą po przydziale. Zmień coś i „Wyślij” — w wątku pojawia się wysłana wiadomość z dopiskiem „demo — mail nie wychodzi poza aplikację”.</span></li>
+    <li>Ok. 09:50: mail Agro-Pol. <span class="expect">Szkic kolejnego zlecenia Kutno → Gdynia, 20 palet, 9600 kg.</span></li>
+    <li>Ok. 10:30: Mazovia „Gdzie jest auto z naszym towarem?”. <span class="expect">„pytanie o status”, gotowy szkic odpowiedzi: ZL-1037 (ref. ME-PO-33190), WB 6P77 z naczepą, „w drodze do odbiorcy”, % trasy, ETA. Nigdzie nazwiska ani telefonu kierowcy. Panel „To widzi klient” z paskiem postępu.</span></li>
+    <li>Poczta klienta → Mazovia Electronics → przykład „Gdzie jest auto?” → „Wyślij do spedycji”. <span class="expect">Komunikat z kategorią i „Otwórz”. Szkic opisuje oba auta klienta w drodze (ZL-1037 i ZL-1039).</span></li>
+    <li>Poczta klienta → Sudety Papier → przykład „Wycena”. <span class="expect">„zapytanie ofertowe”, ramka „Sprzedaż – wkrótce”, bez automatycznego szkicu.</span></li>
+    <li>Poczta klienta → Logistyka Wisła → treść „Prosimy o transport z Gądek do Lipska, 10 palet.”. <span class="expect">„Nie da się założyć szkicu automatycznie — brakuje: okno załadunku, okno rozładunku, waga”, gotowy szkic prośby o uzupełnienie; „Załóż zlecenie z maila” otwiera formularz z wybranymi punktami i 10 paletami.</span></li>
+    <li>Ok. 13:30 (przełącz na 60×): reklamacja Mebli Wielkopolska. <span class="expect">Czerwona kropka i „wysoki priorytet”; w dzwonku alert „Reklamacja: Meble Wielkopolska…” z „Otwórz mail”.</span></li>
+    <li>Ok. 08:50: alert o PO 4K21 (wypadek na A2) → „Powiadom klienta”. <span class="expect">Skrzynka otwiera nowy wątek „Do: …” ze szkicem „Zlecenie ZL-… — możliwe opóźnienie”, z ETA i oknem rozładunku.</span></li>
+    <li>Z kluczem: Dziennik AI. <span class="expect">Wpisy „Mail klienta” i „Szkic wiadomości” z kosztem ułamka centa.</span></li>
+  </ol>
+
+  <h2 id="dodatki">Dodatki i poprawki po drodze <span class="tag done">gotowe</span></h2>
+  <ul>
+    <li><strong>„Cofnij” w Dzienniku AI</strong> (było w specyfikacji MVP): przy wpisach, w których AI zmieniło status zlecenia, widać np. „ZL-1043: Wysłane do kierowcy → W realizacji” albo „Rozładunek → Do zamknięcia” i przycisk „Cofnij”. Cofnięcie potwierdzenia wraca do „Wysłane do kierowcy”, cofnięcie dopasowania CMR — do „Rozładunek”, a dokument do weryfikacji. Działa raz i tylko wtedy, gdy status się w międzyczasie nie zmienił.</li>
+    <li><strong>Poprawka symulacji:</strong> auto, któremu w trakcie jazdy zniknęło zlecenie (anulowanie zlecenia „W realizacji”, cofnięte potwierdzenie), po dojechaniu stawało „wolne” bez punktu i nie dało się mu dać kolejnego kursu. Teraz parkuje na końcu trasy i jest gotowe do następnego zlecenia.</li>
+    <li><strong>Dokumenty:</strong> osobna kolejka „Nieczytelne”, jak w specyfikacji.</li>
+    <li><strong>Build produkcyjny</strong> (<code>npm run build</code>) przechodzi — przygotowanie pod Vercel.</li>
+  </ul>
+  <h3>Testy do przeklikania</h3>
+  <ol class="checks">
+    <li>Przydziel zlecenie kierowcy, na „Telefonie kierowcy” odpisz „ok”, potem Dziennik AI. <span class="expect">Wpis „Wiadomość kierowcy” z akcją „ZL-…: Wysłane do kierowcy → W realizacji” i „Cofnij”. Po kliknięciu: komunikat, zlecenie z powrotem „Wysłane do kierowcy”, przy wpisie „cofnięte”. Bez klucza wpis ma etykietę „reguły awaryjne”, ale „Cofnij” też działa.</span></li>
+    <li>Na zleceniu „W realizacji” kliknij „Anuluj”. <span class="expect">Auto dojeżdża do punktu i staje jako wolne; można mu przydzielić nowe zlecenie i rusza.</span></li>
   </ol>
 
   <footer>
