@@ -1,12 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { resetWorld } from "./helpers";
 
 test.describe("etap 5 — panel klienta", () => {
   test("spedytor tworzy link, klient widzi jeden transport bez danych kierowcy", async ({ page, context }) => {
     test.setTimeout(90_000);
     await page.goto("/monitoring");
-    await page.getByTestId("reset-open").click();
-    await page.getByTestId("reset-confirm").click();
-    await expect(page.getByTestId("sim-clock")).toContainText(/08:3\d/);
+    await resetWorld(page);
 
     await page.getByTestId("vehicle-row-WB 6P77").click();
     const box = page.getByTestId("client-link");
