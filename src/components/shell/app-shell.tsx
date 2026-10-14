@@ -11,6 +11,7 @@ import { ClientMailButton } from "@/components/client-mail/client-mail-panel";
 import { ClientViewButton } from "@/components/tracking/client-view-panel";
 import { PhoneButton } from "@/components/phone/phone-panel";
 import { AiBadge } from "./ai-badge";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { ClockControls } from "./clock-controls";
 import { ResetDialog } from "./reset-dialog";
 import { useRole } from "./role";
@@ -52,6 +53,7 @@ export function AppShell({ children, toolbar }: { children: ReactNode; toolbar?:
         <ClientMailButton />
         <PhoneButton />
         <AlertsButton />
+        <ThemeToggle />
         <AiBadge status={snapshot?.ai} />
       </header>
       {isError && (

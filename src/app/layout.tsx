@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { THEME_INIT_SCRIPT } from "@/components/theme/theme-script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,7 +21,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pl" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    // The inline script sets the theme class before the first paint, so React must accept that attribute.
+    <html lang="pl" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-full">
         <Providers>{children}</Providers>
       </body>
