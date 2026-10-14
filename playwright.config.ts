@@ -21,5 +21,9 @@ export default defineConfig({
     port: PORT,
     reuseExistingServer: true,
     timeout: 180_000,
+    // The flows are written for the rule-based fallback; a key in .env.local must not make them depend on the model
+    // (or on network access). Next keeps variables already set in the environment, so empty values win over .env.local.
+    // AI quality is measured separately: npm run eval:ai.
+    env: { ANTHROPIC_API_KEY: "", ANTHROPIC_AUTH_TOKEN: "" },
   },
 });
