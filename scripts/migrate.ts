@@ -7,6 +7,7 @@ import { MIGRATIONS_FOLDER } from "../src/db/migrations-path";
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) {
+    if (process.env.VERCEL) throw new Error("DATABASE_URL is not set. Connect a Neon database to the Vercel project (Storage → Neon) before deploying.");
     // PGlite migrates itself on first connection.
     await getDb();
     console.log("Local PGlite database is up to date.");

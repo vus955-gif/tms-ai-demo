@@ -15,6 +15,8 @@ async function connect(): Promise<Db> {
     const pool = new Pool({ connectionString: url });
     return drizzleNeon({ client: pool, schema }) as unknown as Db;
   }
+  // Vercel's file system is read-only: without Neon there is nowhere to keep the data.
+  if (process.env.VERCEL) throw new Error("DATABASE_URL is not set. Connect a Neon database to the Vercel project (Storage → Neon).");
   // Local development: an embedded Postgres persisted to ./.pglite.
   const client = new PGlite(process.env.PGLITE_DIR ?? "./.pglite");
   const db = drizzlePglite({ client, schema });

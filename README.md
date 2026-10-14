@@ -6,6 +6,17 @@
 
 ---
 
+## Co jest w demo / What's inside
+
+- **Monitoring** — mapa floty (14 pojazdów), czas pracy kierowców według 561/2006, ETA, alerty, objazdy.
+- **Zlecenia** — „klocki” (dopasowanie kierowcy z powodami), przydział, SMS do kierowcy, komunikator.
+- **Dokumenty CMR** — zdjęcie z telefonu kierowcy, odczyt AI, dopasowanie do zlecenia, kolejki.
+- **Skrzynka klientów** — kategorie maili, szkice zleceń i odpowiedzi.
+- **Sprzedaż** — wyceny drogowe ze stawek i przez agentów (morskie, lotnicze, kolejowe), rola Handlowiec.
+- **Panel klienta** — link śledzenia jednego transportu, bez danych kierowcy.
+- **Flota i terminarz** — terminy pojazdów, naczep i kierowców, nieobecności; blokują przydział.
+- **Zlecenia stałe** — szablony i paczka na tydzień z prognozą terminowości.
+
 ## Uruchomienie lokalne / Running locally
 
 Wymagania / Requirements: **Node.js 24+**. Docker nie jest potrzebny / Docker is not needed.
@@ -41,6 +52,28 @@ npm test          # Vitest: logika, baza (PGlite), API
 npm run test:e2e  # Playwright: przepływy w przeglądarce
 npm run lint && npm run typecheck
 ```
+
+## Wdrożenie na Vercel / Deploying to Vercel
+
+1. Zaimportuj repozytorium w Vercel (Add New → Project). Next.js jest wykrywany automatycznie.
+   Import the repository in Vercel (Add New → Project). Next.js is detected automatically.
+2. Podłącz bazę: zakładka **Storage → Create Database → Neon**, połącz z projektem — integracja ustawia `DATABASE_URL`.
+   Connect a database: **Storage → Create Database → Neon**, link it to the project — the integration sets `DATABASE_URL`.
+3. Ustaw zmienne / set environment variables (Settings → Environment Variables):
+
+   | Zmienna / variable | Wartość / value |
+   |---|---|
+   | `ANTHROPIC_API_KEY` | klucz z / key from console.anthropic.com (bez niego tryb awaryjny / fallback mode without it) |
+   | `APP_URL` | `https://<projekt>.vercel.app` — adres w linkach śledzenia / address used in tracking links |
+   | `SANDBOX_IP_SALT` | długi losowy ciąg / long random string |
+   | `AI_DAILY_BUDGET_USD` | dzienny limit kosztu AI całego demo / daily AI cost cap for the whole demo (domyślnie / default 2) |
+   | `DEMO_PASSWORD` | opcjonalne hasło do demo / optional demo password |
+
+4. Deploy. Polecenie budowania z `vercel.json` (`npm run db:migrate && npm run build`) samo tworzy i aktualizuje tabele w Neon.
+   Deploy. The build command in `vercel.json` (`npm run db:migrate && npm run build`) creates and updates the Neon tables.
+
+Bez `DATABASE_URL` aplikacja na Vercelu zatrzyma się z czytelnym błędem (system plików jest tam tylko do odczytu).
+Without `DATABASE_URL` the app on Vercel stops with a clear error (the file system there is read-only).
 
 ## Jak to działa / How it works
 
