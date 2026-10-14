@@ -19,7 +19,7 @@
 
 ## Uruchomienie lokalne / Running locally
 
-Wymagania / Requirements: **Node.js 24+**. Docker nie jest potrzebny / Docker is not needed.
+Wymagania / Requirements: **Node.js 24**. Docker nie jest potrzebny / Docker is not needed.
 
 ```bash
 npm install
