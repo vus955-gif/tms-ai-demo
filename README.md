@@ -26,14 +26,14 @@ Demo pokazuje, jak mógłby wyglądać prosty TMS dla firmy z busami i ciągnika
 | Moduł | Co robi |
 |---|---|
 | **Monitoring** | Mapa 14 pojazdów, ETA z czasem pracy kierowcy według rozporządzenia 561/2006 (przerwy, odpoczynki), alerty o ryzyku spóźnienia, objazdy przy utrudnieniach. |
-| **Zlecenia i „klocki”** | Dopasowanie kierowcy do zlecenia z powodami (dojazd, okna czasowe, pojemność, chłodnia, ADR, terminy, nieobecności), przydział przeciągnięciem, SMS do kierowcy, komunikator. |
+| **Zlecenia i „klocki”** | Dopasowanie kierowcy do zlecenia z powodami (dojazd, okna czasowe, pojemność, chłodnia, ADR, terminy, nieobecności), przydział przeciągnięciem, SMS do kierowcy, komunikator; „Zadzwoń” z alertu lub komunikatora zostawia notatkę z rozmowy w wątku kierowcy. |
 | **Dokumenty CMR** | Zdjęcie z telefonu kierowcy, odczyt AI, dopasowanie do zlecenia, kolejki „do zamknięcia”, „weryfikacja”, „nieczytelne”. |
 | **Skrzynka klientów** | Kategorie maili, szkice zleceń z zamówień i szkice odpowiedzi na pytania o status. |
 | **Sprzedaż** | Wyceny drogowe ze stawek oraz zapytania do agentów (morski, lotniczy, kolejowy) bez ujawniania danych klienta; rola „Handlowiec”. |
 | **Przesyłki morskie, lotnicze, kolejowe** | Plan etapów, automatyczne prośby o status do agentów (z przypomnieniem), odczyt odpowiedzi przez AI, alert przy zmianie ETA, przypomnienia o statusie dla klienta i szkic statusu z faktów (lub wysyłka automatyczna) bez danych agenta. Pozycji na żywo nie podłączono ze względu na koszty dostawców — zob. [`docs/sledzenie-przesylek.md`](docs/sledzenie-przesylek.md). |
 | **Klienci i punkty** | Nowi klienci, osoby i punkty z mapą i wyszukiwaniem adresu (Nominatim); trasy do nowych punktów szacowane i oznaczone jako przybliżone. |
 | **Panel klienta** | Link śledzenia jednego transportu: status, ETA, postęp i mapa, bez danych kierowcy. |
-| **Flota i terminarz** | Terminy pojazdów, naczep i kierowców (badania, OC, tachograf, ATP, dokumenty) oraz nieobecności; terminy blokujące i nieobecności wykluczają z przydziału. |
+| **Flota i terminarz** | Terminy pojazdów, naczep i kierowców (badania, OC, tachograf, ATP, dokumenty) oraz nieobecności; terminy blokujące i nieobecności wykluczają z przydziału. Przepinanie naczep na placu z historią (która naczepa była pod którym ciągnikiem) i ostrzeżeniami o przydzielonych zleceniach. |
 | **Zlecenia stałe** | Szablony i paczka zleceń na tydzień z prognozą terminowości, tworzona jednym kliknięciem. |
 | **Tryb ciemny** | Jak system / jasny / ciemny; mapa ma własny przełącznik jasna/ciemna. |
 

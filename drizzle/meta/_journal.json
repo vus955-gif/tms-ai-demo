@@ -85,6 +85,13 @@
       "when": 1792524854093,
       "tag": "0011_shipments",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792529274259,
+      "tag": "0012_trailer_parking",
+      "breakpoints": true
     }
   ]
 }

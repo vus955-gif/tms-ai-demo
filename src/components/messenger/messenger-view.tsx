@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Send } from "lucide-react";
+import { Phone, Send } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { CallDialog } from "@/components/phone/call-dialog";
 import { Attachments } from "@/components/phone/phone-panel";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +29,7 @@ export function MessengerView() {
   const vehicleParam = params.get("v");
   const fromVehicle = vehicleParam ? snapshot?.fleet.find((v) => v.id === vehicleParam)?.driverId : undefined;
   const selected = params.get("d") ?? fromVehicle ?? null;
+  const [calling, setCalling] = useState(false);
 
   const threads = useQuery({
     queryKey: ["threads", snapshot?.simNow],
@@ -103,6 +105,10 @@ export function MessengerView() {
                 {thread.data.plates}
                 {thread.data.trailerPlates ? ` + ${thread.data.trailerPlates}` : ""} · {thread.data.phone}
               </div>
+              <Button size="sm" variant="outline" className="mt-2" onClick={() => setCalling(true)} data-testid="messenger-call">
+                <Phone /> Zadzwoń
+              </Button>
+              {calling && <CallDialog driverId={thread.data.driverId} onClose={() => setCalling(false)} />}
             </div>
             {thread.data.order ? (
               <div className="space-y-1 rounded-lg border p-2.5">
@@ -155,7 +161,17 @@ function Conversation({ detail }: { detail: ThreadDetail }) {
     <section className="flex min-h-0 flex-col bg-muted/20">
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4" data-testid="conversation">
         {detail.messages.length === 0 && <p className="text-center text-sm text-muted-foreground">Brak wiadomości z tym kierowcą.</p>}
-        {detail.messages.map((m) => (
+        {detail.messages.map((m) =>
+          m.channel === "phone" ? (
+            <div key={m.id} className="flex justify-center" data-testid="call-note">
+              <p className="flex max-w-[85%] items-start gap-1.5 rounded-lg border border-dashed bg-background px-3 py-1.5 text-xs text-muted-foreground">
+                <Phone className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                <span>
+                  <span className="whitespace-pre-wrap text-foreground">{m.body}</span> · {formatSimClock(m.atSim)}
+                </span>
+              </p>
+            </div>
+          ) : (
           <div key={m.id} className={cn("flex", m.direction === "out" ? "justify-end" : "justify-start")}>
             <div
               className={cn(
@@ -178,7 +194,8 @@ function Conversation({ detail }: { detail: ThreadDetail }) {
               </div>
             </div>
           </div>
-        ))}
+          ),
+        )}
         <div ref={bottom} />
       </div>
       <form

@@ -75,6 +75,7 @@ export type AlertView = {
   actions: AlertAction[];
   vehicleId: string | null;
   orderId: string | null;
+  driverId: string | null;
   createdSim: string;
   alternativeRouteKey: string | null;
   documentId: string | null;
@@ -169,6 +170,7 @@ export async function alertViews(db: Executor, sandboxId: string): Promise<Alert
       actions: a.actions,
       vehicleId: a.vehicleId,
       orderId: a.orderId,
+      driverId: a.driverId,
       createdSim: a.createdSim.toISOString(),
       alternativeRouteKey: alternativeRouteKey ?? null,
       documentId: a.dedupeKey.startsWith("cmr:") ? a.dedupeKey.slice(4) : null,

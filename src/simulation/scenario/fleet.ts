@@ -74,6 +74,8 @@ export const trailers: ScenarioTrailer[] = [
   curtain("tr-po90lk", "PO 90LK"),
   curtain("tr-po11rs", "PO 11RS", "pt-baza-poznan"),
   curtain("tr-dw55bt", "DW 55BT", "pt-baza-wroclaw"),
+  // A spare reefer at the Łódź base: EL 9K41 waits there and can take it for a chilled load.
+  { id: "tr-el40cz", plates: "EL 40CZ", body: "chlodnia", capacityPallets: 33, capacityKg: 22_000, adr: false, parkedAtPointId: "pt-baza-lodz" },
 ];
 
 export const couplings: ScenarioCoupling[] = [

@@ -1,27 +1,52 @@
 import { TZDate } from "@date-fns/tz";
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
-import { driverAbsences, drivers, fleetTerms, orders, trailers, vehicles, type AbsenceKind, type TermKind } from "@/db/schema";
+import { driverAbsences, drivers, fleetTerms, orders, points, trailers, vehicles, type AbsenceKind, type TermKind } from "@/db/schema";
 import type { Executor } from "@/db/types";
 import { ABSENCE_LABEL, renewTerm, TERM_LABEL, termStatus, type TermStatus } from "@/domain/fleet-terms";
 import { SERVICE_INTERVAL_KM } from "@/simulation/scenario/fleet-file";
 import { HttpError } from "../http";
 import { dayStart, ensureFleetFile } from "./seed";
+import { couplingHistory, type CouplingEntry } from "./trailers";
 
 export type TermView = { id: string; kind: TermKind; label: string; status: TermStatus; dueSim: string | null; dueKm: number | null; kmLeft: number | null; docNumber: string; blocking: boolean };
-export type SubjectView = { id: string; type: "vehicle" | "trailer" | "driver"; title: string; subtitle: string; odometerKm: number | null; terms: TermView[]; worst: TermStatus };
+export type SubjectView = {
+  id: string;
+  type: "vehicle" | "trailer" | "driver";
+  title: string;
+  subtitle: string;
+  odometerKm: number | null;
+  terms: TermView[];
+  worst: TermStatus;
+  /** Tractors: the trailer under it now. Trailers: under which tractor, or where it stands. */
+  coupling?: { now: string; since: string | null; canSwap: boolean; history: CouplingEntry[] };
+};
 export type FleetFileView = { vehicles: SubjectView[]; trailers: SubjectView[]; drivers: SubjectView[]; overdue: number; soon: number };
 
 const RANK: Record<TermStatus, number> = { po_terminie: 0, wkrotce: 1, ok: 2 };
 
 export async function fleetFile(db: Executor, sandbox: { id: string; simOrigin: Date; seed: number }, simNow: Date): Promise<FleetFileView> {
   await ensureFleetFile(db, sandbox);
-  const [terms, vs, ts, ds] = await Promise.all([
+  const [terms, vs, ts, ds, history, pointRows] = await Promise.all([
     db.select().from(fleetTerms).where(eq(fleetTerms.sandboxId, sandbox.id)),
     db.select().from(vehicles).where(eq(vehicles.sandboxId, sandbox.id)),
     db.select().from(trailers).where(eq(trailers.sandboxId, sandbox.id)),
     db.select().from(drivers).where(eq(drivers.sandboxId, sandbox.id)),
+    couplingHistory(db, sandbox.id),
+    db.select({ id: points.id, name: points.name }).from(points).where(eq(points.sandboxId, sandbox.id)),
   ]);
+  const HISTORY = 5;
+  const tractorCoupling = (vehicleId: string): SubjectView["coupling"] => {
+    const list = history.byVehicle.get(vehicleId) ?? [];
+    const now = list.find((e) => e.to === null);
+    return { now: now ? `naczepa ${now.trailerPlates}` : "bez naczepy", since: now?.from ?? null, canSwap: true, history: list.slice(0, HISTORY) };
+  };
+  const trailerCoupling = (t: (typeof ts)[number]): SubjectView["coupling"] => {
+    const list = history.byTrailer.get(t.id) ?? [];
+    const now = list.find((e) => e.to === null);
+    const where = now ? `pod ${now.vehiclePlates}` : t.parkedAtPointId ? `stoi: ${pointRows.find((p) => p.id === t.parkedAtPointId)?.name ?? t.parkedAtPointId}` : "miejsce nieznane";
+    return { now: where, since: now?.from ?? list[0]?.to ?? null, canSwap: false, history: list.slice(0, HISTORY) };
+  };
   const view = (type: SubjectView["type"], id: string, title: string, subtitle: string, odometerKm: number | null): SubjectView => {
     const own = terms
       .filter((t) => t.subjectId === id)
@@ -44,8 +69,11 @@ export async function fleetFile(db: Executor, sandbox: { id: string; simOrigin: 
   };
   const driverOf = (vehicleId: string) => ds.find((d) => d.vehicleId === vehicleId);
   const list = {
-    vehicles: vs.map((v) => view("vehicle", v.id, v.plates, `${v.kind === "bus" ? "bus" : v.kind === "solo" ? "solówka" : "ciągnik"} · ${driverOf(v.id) ? `${driverOf(v.id)!.firstName} ${driverOf(v.id)!.lastName}` : "bez kierowcy"}`, v.odometerKm)),
-    trailers: ts.map((t) => view("trailer", t.id, t.plates, `naczepa ${t.body === "chlodnia" ? "chłodnia" : t.body}${t.adr ? " · ADR" : ""}`, null)),
+    vehicles: vs.map((v) => ({
+      ...view("vehicle", v.id, v.plates, `${v.kind === "bus" ? "bus" : v.kind === "solo" ? "solówka" : "ciągnik"} · ${driverOf(v.id) ? `${driverOf(v.id)!.firstName} ${driverOf(v.id)!.lastName}` : "bez kierowcy"}`, v.odometerKm),
+      ...(v.kind === "tractor" && { coupling: tractorCoupling(v.id) }),
+    })),
+    trailers: ts.map((t) => ({ ...view("trailer", t.id, t.plates, `naczepa ${t.body === "chlodnia" ? "chłodnia" : t.body}${t.adr ? " · ADR" : ""}`, null), coupling: trailerCoupling(t) })),
     drivers: ds.map((d) => view("driver", d.id, `${d.firstName} ${d.lastName}`, vs.find((v) => v.id === d.vehicleId)?.plates ?? "", null)),
   };
   const all = [...list.vehicles, ...list.trailers, ...list.drivers].flatMap((s) => s.terms);

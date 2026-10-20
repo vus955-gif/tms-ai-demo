@@ -124,6 +124,8 @@ export const trailers = pgTable(
     capacityPallets: integer("capacity_pallets").notNull(),
     capacityKg: integer("capacity_kg").notNull(),
     adr: boolean("adr").notNull().default(false),
+    /** Where an uncoupled trailer stands (base or client point); null while coupled. */
+    parkedAtPointId: text("parked_at_point_id"),
   },
   (t) => [primaryKey({ columns: [t.sandboxId, t.id] })],
 );
@@ -138,7 +140,12 @@ export const couplings = pgTable(
     fromSim: ts("from_sim").notNull(),
     toSim: ts("to_sim"),
   },
-  (t) => [primaryKey({ columns: [t.sandboxId, t.id] })],
+  (t) => [
+    primaryKey({ columns: [t.sandboxId, t.id] }),
+    // One trailer per tractor and one tractor per trailer at a time, whatever two clicks do at once.
+    uniqueIndex("couplings_open_vehicle_uq").on(t.sandboxId, t.vehicleId).where(sql`${t.toSim} is null`),
+    uniqueIndex("couplings_open_trailer_uq").on(t.sandboxId, t.trailerId).where(sql`${t.toSim} is null`),
+  ],
 );
 
 export const drivers = pgTable(
@@ -438,7 +445,8 @@ export const messages = pgTable(
   {
     sandboxId: sandboxRef(),
     id: text("id").notNull(),
-    channel: text("channel").$type<"sms" | "mms" | "email">().notNull(),
+    /** "phone": the forwarder's note after a call (not a message the driver receives). */
+    channel: text("channel").$type<"sms" | "mms" | "email" | "phone">().notNull(),
     direction: text("direction").$type<"in" | "out">().notNull(),
     party: text("party").$type<"driver" | "client" | "agent">().notNull(),
     driverId: text("driver_id"),

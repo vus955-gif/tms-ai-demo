@@ -1,10 +1,11 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bell, Sparkles, X } from "lucide-react";
+import { Bell, Phone, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { CallDialog } from "@/components/phone/call-dialog";
 import { Button } from "@/components/ui/button";
 import { SNAPSHOT_KEY, useSnapshot, type ClientSnapshot } from "@/hooks/use-snapshot";
 import { postJson } from "@/lib/api";
@@ -84,6 +85,10 @@ function AlertsPanel({ alerts, onClose }: { alerts: AlertView[]; onClose: () => 
 
 export function AlertCard({ alert, onNavigate }: { alert: AlertView; onNavigate?: () => void }) {
   const router = useRouter();
+  const { data: snapshot } = useSnapshot();
+  const [calling, setCalling] = useState(false);
+  // The driver to call: named on the alert, or the one driving the alert's vehicle.
+  const driverId = alert.driverId ?? snapshot?.fleet.find((v) => v.id === alert.vehicleId)?.driverId ?? null;
   const queryClient = useQueryClient();
   const refresh = (snapshot?: Snapshot) => {
     if (snapshot) queryClient.setQueryData<ClientSnapshot>(SNAPSHOT_KEY, { ...snapshot, fetchedAt: Date.now() });
@@ -157,6 +162,11 @@ export function AlertCard({ alert, onNavigate }: { alert: AlertView; onNavigate?
             {ACTION_LABEL[a]}
           </Button>
         ))}
+        {driverId && actions.includes("napisz_do_kierowcy") && (
+          <Button size="xs" variant="outline" onClick={() => setCalling(true)} data-testid="alert-call">
+            <Phone /> Zadzwoń
+          </Button>
+        )}
         {alert.vehicleId && !actions.includes("pokaz_objazd") && (
           <Button
             size="xs"
@@ -173,6 +183,7 @@ export function AlertCard({ alert, onNavigate }: { alert: AlertView; onNavigate?
           Zamknij
         </Button>
       </div>
+      {calling && driverId && <CallDialog driverId={driverId} alertId={alert.id} context={alert.title} onClose={() => setCalling(false)} />}
       {alert.bodySource === "ai" && (
         <p className="mt-1.5 flex items-center gap-1 text-[11px] text-ai">
           <Sparkles className="size-3" aria-hidden /> wyjaśnienie AI

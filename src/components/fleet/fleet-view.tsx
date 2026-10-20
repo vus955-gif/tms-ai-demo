@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCheck, Lock } from "lucide-react";
+import { ArrowLeftRight, CheckCheck, Lock } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { formatWarsaw } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { FleetFileView, SubjectView, TermView } from "@/server/fleet/views";
 import type { TermStatus } from "@/domain/fleet-terms";
+import { SwapTrailerDialog } from "./swap-trailer-dialog";
 import { groupThousands } from "@/domain/sales-pricing";
 
 const STATUS: Record<TermStatus, { label: string; className: string }> = {
@@ -80,6 +81,7 @@ function due(t: TermView) {
 
 function SubjectCard({ subject }: { subject: SubjectView }) {
   const queryClient = useQueryClient();
+  const [swapping, setSwapping] = useState(false);
   const renew = useMutation({
     mutationFn: (id: string) => postJson(`/api/fleet/terms/${encodeURIComponent(id)}`, { action: "renew" }),
     onSuccess: () => {
@@ -98,6 +100,8 @@ function SubjectCard({ subject }: { subject: SubjectView }) {
         </div>
         {subject.odometerKm !== null && <div className="text-xs tabular-nums text-muted-foreground">{groupThousands(subject.odometerKm)} km</div>}
       </div>
+      {subject.coupling && <CouplingLine subject={subject} onSwap={() => setSwapping(true)} />}
+      {swapping && <SwapTrailerDialog vehicleId={subject.id} onClose={() => setSwapping(false)} />}
       <ul className="space-y-1">
         {subject.terms.map((t) => (
           <li key={t.id} className={cn("flex items-center justify-between gap-2 rounded-md border px-2 py-1 text-xs", STATUS[t.status].className)}>
@@ -117,5 +121,38 @@ function SubjectCard({ subject }: { subject: SubjectView }) {
         ))}
       </ul>
     </article>
+  );
+}
+
+/** Which trailer is under the tractor (or where the trailer stands), with the recent history of swaps. */
+function CouplingLine({ subject, onSwap }: { subject: SubjectView; onSwap: () => void }) {
+  const c = subject.coupling!;
+  const when = (iso: string) => formatWarsaw(iso, "d.MM HH:mm");
+  return (
+    <div className="mb-2 rounded-md bg-muted/40 px-2 py-1.5 text-xs" data-testid={`coupling-${subject.title}`}>
+      <div className="flex items-center justify-between gap-2">
+        <span>
+          <strong>{c.now}</strong>
+          {c.since && <span className="text-muted-foreground"> · od {when(c.since)}</span>}
+        </span>
+        {c.canSwap && (
+          <Button size="xs" variant="outline" onClick={onSwap} data-testid={`swap-${subject.title}`}>
+            <ArrowLeftRight /> Przepnij
+          </Button>
+        )}
+      </div>
+      {c.history.length > 1 && (
+        <details className="mt-1">
+          <summary className="cursor-pointer text-muted-foreground">Historia przepięć</summary>
+          <ul className="mt-1 space-y-0.5">
+            {c.history.map((h) => (
+              <li key={`${h.from}${h.vehiclePlates}${h.trailerPlates}`} className="tabular-nums">
+                {subject.type === "trailer" ? h.vehiclePlates : h.trailerPlates}: {when(h.from)} – {h.to ? when(h.to) : "teraz"}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
   );
 }

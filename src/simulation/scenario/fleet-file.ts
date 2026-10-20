@@ -13,7 +13,7 @@ export const TERM_OVERRIDES: TermOverride[] = [
   { subjectId: "v-po2c19", kind: "oc", days: 9 },
   { subjectId: "v-wb6p77", kind: "serwis", kmLeft: 1800 },
   { subjectId: "v-el5r30", kind: "serwis", kmLeft: -1200 },
-  { subjectId: "tr-gd15pl", kind: "atp", days: 6 }, // the only reefer: the weekly plan of standing orders hits it at the end of next week
+  { subjectId: "tr-gd15pl", kind: "atp", days: 6 }, // the only reefer under a tractor at the start (EL 40CZ waits in Łódź): the weekly plan of standing orders hits it at the end of next week
   { subjectId: "d-krawczyk", kind: "karta_kierowcy", days: 20 },
   { subjectId: "d-mazur", kind: "badania", days: 12 },
 ];

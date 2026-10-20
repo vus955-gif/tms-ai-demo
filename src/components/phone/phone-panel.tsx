@@ -56,7 +56,9 @@ function PhonePanel({ driverId, onSelect, onClose }: { driverId: string | null; 
     enabled: Boolean(driverId && snapshot),
     placeholderData: (prev) => (prev?.driverId === driverId ? prev : undefined),
   });
-  const count = thread.data?.messages.length ?? 0;
+  // Call notes are the forwarder's own record, not SMS on the driver's phone.
+  const sms = (thread.data?.messages ?? []).filter((m) => m.channel !== "phone");
+  const count = sms.length;
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "end" });
   }, [count]);
@@ -105,7 +107,7 @@ function PhonePanel({ driverId, onSelect, onClose }: { driverId: string | null; 
       ) : (
         <>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-muted/30 p-3" data-testid="phone-thread">
-            {thread.data?.messages.map((m) => (
+            {sms.map((m) => (
               <div key={m.id} className={cn("flex", m.direction === "in" ? "justify-end" : "justify-start")}>
                 <div className={cn("max-w-[85%] rounded-2xl px-3 py-1.5 text-[13px]", m.direction === "in" ? "rounded-br-sm bg-ok text-white" : "rounded-bl-sm border bg-background")}>
                   <Attachments message={m} />
@@ -114,7 +116,7 @@ function PhonePanel({ driverId, onSelect, onClose }: { driverId: string | null; 
                 </div>
               </div>
             ))}
-            {thread.data?.messages.length === 0 && <p className="text-center text-xs text-muted-foreground">Brak SMS-ów.</p>}
+            {thread.data && sms.length === 0 && <p className="text-center text-xs text-muted-foreground">Brak SMS-ów.</p>}
             <div ref={bottom} />
           </div>
           <CmrTray driverId={driverId} onSent={refresh} />

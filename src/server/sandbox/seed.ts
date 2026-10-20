@@ -42,6 +42,7 @@ export async function seedScenario(db: Executor, sandboxId: string, simOrigin: D
       capacityPallets: tr.capacityPallets,
       capacityKg: tr.capacityKg,
       adr: tr.adr,
+      parkedAtPointId: tr.parkedAtPointId,
     })),
   );
   await db.insert(couplings).values(

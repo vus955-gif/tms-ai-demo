@@ -63,3 +63,28 @@ export async function storeDriverInbound(
   });
   return id;
 }
+
+/**
+ * "Zadzwoń": the forwarder called the driver (demo: the number is fictional, nothing is dialled)
+ * and leaves a note in the driver's thread, so the next person on shift sees what was agreed.
+ */
+export async function logCall(db: Executor, sandboxId: string, call: { driverId: string; note: string; atSim: Date }): Promise<string> {
+  const id = randomUUID();
+  const note = call.note.trim();
+  await db.insert(messages).values({
+    sandboxId,
+    id,
+    channel: "phone",
+    direction: "out",
+    party: "driver",
+    driverId: call.driverId,
+    threadKey: driverThread(call.driverId),
+    body: note ? `Rozmowa telefoniczna: ${note}` : "Rozmowa telefoniczna (bez notatki).",
+    state: "sent",
+    sentBy: "dispatcher",
+    atSim: call.atSim,
+    readAtSim: call.atSim,
+    kind: "call_note",
+  });
+  return id;
+}

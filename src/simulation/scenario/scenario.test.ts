@@ -24,8 +24,8 @@ describe("scenario data", () => {
     expect(scenario.vehicles.filter((v) => v.kind === "bus")).toHaveLength(5);
     expect(scenario.vehicles.filter((v) => v.kind === "bus" && v.international)).toHaveLength(2);
     expect(scenario.vehicles.filter((v) => v.kind === "tractor")).toHaveLength(9);
-    expect(scenario.trailers).toHaveLength(11);
-    expect(scenario.trailers.filter((t) => t.body === "chlodnia")).toHaveLength(1);
+    expect(scenario.trailers).toHaveLength(12);
+    expect(scenario.trailers.filter((t) => t.body === "chlodnia")).toHaveLength(2);
     expect(scenario.trailers.filter((t) => t.adr)).toHaveLength(1);
     expect(scenario.couplings).toHaveLength(9);
     expect(scenario.drivers).toHaveLength(14);
