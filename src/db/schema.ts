@@ -387,6 +387,7 @@ export const ALERT_ACTIONS = [
   "przydziel_innego",
   "otworz_dokument",
   "otworz_mail",
+  "otworz_przesylke",
   "brak",
 ] as const;
 export type AlertAction = (typeof ALERT_ACTIONS)[number];
@@ -676,6 +677,86 @@ export const orderTemplates = pgTable(
     createdSim: ts("created_sim").notNull(),
   },
   (t) => [primaryKey({ columns: [t.sandboxId, t.id] })],
+);
+
+export type ShipmentStatus = "planowana" | "w_drodze" | "dostarczona" | "anulowana";
+
+/**
+ * Sea, air and rail shipments handled by partner agents (module C). What the forwarder
+ * knows comes from agent replies (milestones, ETA); live positions are not connected
+ * in the demo (see docs/sledzenie-przesylek.md).
+ */
+export const shipments = pgTable(
+  "shipments",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    number: text("number").notNull(),
+    mode: text("mode").$type<"sea" | "air" | "rail">().notNull(),
+    status: text("status").$type<ShipmentStatus>().notNull(),
+    clientId: text("client_id").notNull(),
+    contactId: text("contact_id"),
+    agentId: text("agent_id").notNull(),
+    quoteId: text("quote_id"),
+    originId: text("origin_id").notNull(),
+    destinationId: text("destination_id").notNull(),
+    /** Optional middle stop: sea/air transshipment or rail border crossing. */
+    middleName: text("middle_name"),
+    middleFraction: doublePrecision("middle_fraction"),
+    path: jsonb("path").$type<[number, number][]>().notNull(),
+    incoterms: text("incoterms").notNull().default(""),
+    cargo: text("cargo").notNull().default(""),
+    pieces: integer("pieces"),
+    weightKg: integer("weight_kg"),
+    volumeCbm: doublePrecision("volume_cbm"),
+    /** Booking, B/L or AWB, containers, vessel/flight/train, client reference. */
+    refs: jsonb("refs").$type<Record<string, string>>().notNull().default(sql`'{}'::jsonb`),
+    etdPlanned: ts("etd_planned").notNull(),
+    etaPlanned: ts("eta_planned").notNull(),
+    /** Latest ETA as known from the agent. */
+    etaCurrent: ts("eta_current").notNull(),
+    /** Latest explanation from the agent (delay reason, remarks), shown to the forwarder. */
+    statusNote: text("status_note").notNull().default(""),
+    /** Demo only: how reality differs from the plan (hours of delay per stage, and why). Agent bots report it. */
+    truth: jsonb("truth").$type<{ departureDelayH: number; middleDelayH: number; arrivalDelayH: number; reason: string; reasonEn?: string }>().notNull(),
+    agentEveryHours: integer("agent_every_hours").notNull(),
+    lastAgentRequestSim: ts("last_agent_request_sim"),
+    agentAwaitingReply: boolean("agent_awaiting_reply").notNull().default(false),
+    /** When the unanswered request was followed by a reminder (null: no reminder yet). */
+    agentRemindedSim: ts("agent_reminded_sim"),
+    clientEveryHours: integer("client_every_hours").notNull(),
+    nextClientUpdateSim: ts("next_client_update_sim"),
+    lastClientUpdateSim: ts("last_client_update_sim"),
+    /** Opt-in per shipment: the AI draft goes to the client without a click (if it passes the leak guard). */
+    autoClientUpdates: boolean("auto_client_updates").notNull().default(false),
+    createdSim: ts("created_sim").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sandboxId, t.id] }),
+    index("shipments_status_idx").on(t.sandboxId, t.status),
+    uniqueIndex("shipments_number_uq").on(t.sandboxId, t.number),
+    // One shipment per won quote (NULLs — shipments made by hand — do not collide).
+    uniqueIndex("shipments_quote_uq").on(t.sandboxId, t.quoteId),
+  ],
+);
+
+export const shipmentMilestones = pgTable(
+  "shipment_milestones",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    shipmentId: text("shipment_id").notNull(),
+    seq: integer("seq").notNull(),
+    kind: text("kind").$type<"booking" | "terminal_in" | "departed" | "transshipment" | "border" | "arrived" | "customs" | "delivered">().notNull(),
+    label: text("label").notNull(),
+    location: text("location").notNull(),
+    plannedSim: ts("planned_sim").notNull(),
+    actualSim: ts("actual_sim"),
+    /** Who confirmed it: the plan only, an agent reply (read by AI or rules) or the forwarder. */
+    source: text("source").$type<"plan" | "agent_ai" | "agent_rules" | "dispatcher">().notNull().default("plan"),
+    sourceMessageId: text("source_message_id"),
+  },
+  (t) => [primaryKey({ columns: [t.sandboxId, t.id] }), index("shipment_milestones_shipment_idx").on(t.sandboxId, t.shipmentId)],
 );
 
 /** Global (not per world) daily AI spend, used for the daily budget cap. */

@@ -1,5 +1,5 @@
 import { and, asc, desc, eq } from "drizzle-orm";
-import { agentQuotes, agents, clientContacts, clients, messages, quoteRequests, type AgentQuoteStatus, type QuoteMode, type QuoteStatus, type RoadRate } from "@/db/schema";
+import { agentQuotes, agents, clientContacts, clients, messages, quoteRequests, shipments, type AgentQuoteStatus, type QuoteMode, type QuoteStatus, type RoadRate } from "@/db/schema";
 import type { Executor } from "@/db/types";
 import { EMPTY_DETAILS, type QuoteDetails } from "@/domain/quote-rules";
 import { offerPrice, type RoadCalculation } from "@/domain/sales-pricing";
@@ -56,6 +56,8 @@ export type QuoteDetailView = {
   offer: { purchase: number; price: number; currency: string } | null;
   calculation: (RoadCalculation & { kmLabel?: string; kmOverride?: number | null }) | null;
   clientThread: ThreadEntry[];
+  /** The sea/air/rail shipment created from this won quote, if any. */
+  shipment: { id: string; number: string } | null;
 };
 
 const entry = (m: typeof messages.$inferSelect): ThreadEntry => ({
@@ -107,7 +109,9 @@ export async function quoteDetail(db: Executor, sandboxId: string, id: string): 
   const agentMsgs = await db.select().from(messages).where(and(eq(messages.sandboxId, sandboxId), eq(messages.party, "agent"))).orderBy(asc(messages.atSim));
   const settings = await loadSettings(db, sandboxId);
   const selected = aqs.find((a) => a.id === q.selectedQuoteId);
+  const [shipment] = await db.select({ id: shipments.id, number: shipments.number }).from(shipments).where(and(eq(shipments.sandboxId, sandboxId), eq(shipments.quoteId, q.id)));
   return {
+    shipment: shipment ?? null,
     id: q.id,
     number: q.number,
     mode: q.mode,

@@ -115,7 +115,7 @@ describe("Sales: quotes via agents and road quotes", () => {
     expect(view.status).toBe("zbieranie");
     expect(view.clientThread.some((m) => m.kind === "draft_quote_missing")).toBe(false);
     expect(view.clientThread.some((m) => m.kind === "quote_ack")).toBe(true);
-    expect(view.agents.map((a) => a.agentId).sort()).toEqual(["ag-aerocargo", "ag-multi", "ag-skyline"]);
+    expect(view.agents.map((a) => a.agentId).sort()).toEqual(["ag-aerocargo", "ag-fra-hub", "ag-multi", "ag-skyline", "ag-waw-cargo"]);
     expect(view.agents[0].thread[0].body).toContain("Waga płatna: 267 kg");
   });
 
@@ -164,6 +164,6 @@ describe("Sales: quotes via agents and road quotes", () => {
     await Promise.all([approveSending(db, sandbox.id, q.id, at(641)), approveSending(db, sandbox.id, q.id, at(641)).catch(() => null)]);
     const view = await quoteDetail(db, sandbox.id, q.id);
     expect(view.status).toBe("zbieranie");
-    expect(view.agents.map((a) => a.agentId).sort()).toEqual(["ag-eurasia", "ag-gdansk-cargo", "ag-multi", "ag-silk-rail"]);
+    expect(view.agents.map((a) => a.agentId).sort()).toEqual(["ag-eurasia", "ag-gdansk-cargo", "ag-middle-corridor", "ag-polrail", "ag-silk-rail"]);
   });
 });

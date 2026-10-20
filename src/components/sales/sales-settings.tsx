@@ -17,7 +17,7 @@ export function SalesSettingsDialog({ onClose }: { onClose: () => void }) {
   const settings = useQuery({ queryKey: SETTINGS_KEY, queryFn: () => getJson<SalesSettingsView>("/api/sales/settings") });
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90dvh] max-w-3xl overflow-y-auto">
+      <DialogContent className="max-h-[90dvh] sm:max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Ustawienia Sprzedaży</DialogTitle>
           <DialogDescription>Automat potwierdzeń i zapytań, marża domyślna, stawki drogowe i lista zaufanych agentów (fikcyjnych).</DialogDescription>

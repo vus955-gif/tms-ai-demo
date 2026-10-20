@@ -264,7 +264,7 @@ function PickDriverDialog({
 }) {
   return (
     <Dialog open={Boolean(order)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Przydziel {order?.number}</DialogTitle>
           <DialogDescription>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Calculator, ChevronDown, ChevronRight, HandCoins, Mail, PenLine, Send, Sparkles, Trash2, Trophy, X } from "lucide-react";
+import { Calculator, ChevronDown, ChevronRight, HandCoins, Mail, PenLine, Send, Ship, Sparkles, Trash2, Trophy, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -63,6 +63,13 @@ export function QuoteDetail({ id }: { id: string }) {
           <span className={cn("rounded px-2 py-0.5 text-xs font-medium", QUOTE_STATUS[d.status].className)} data-testid="quote-status">
             {QUOTE_STATUS[d.status].label}
           </span>
+          {d.status === "wygrana" && d.mode !== "road" && (
+            <Button size="sm" variant="outline" asChild data-testid="quote-shipment">
+              <Link href={d.shipment ? `/przesylki?s=${d.shipment.id}` : `/przesylki?fromQuote=${d.id}`}>
+                <Ship /> {d.shipment ? `Przesyłka ${d.shipment.number}` : "Utwórz przesyłkę"}
+              </Link>
+            </Button>
+          )}
           {!closed && (
             <>
               <Button size="sm" variant="outline" onClick={() => act.mutate({ action: "outcome", value: "wygrana" })}>

@@ -26,6 +26,14 @@ export const agentsSeed: ScenarioAgent[] = [
   { id: "ag-silk-rail", company: "Silk Rail Logistics", contactName: "Li Wei", email: "booking@silkrail.example", modes: ["rail"], regions: "Chiny – Europa", replyRate: 0.8, priceFactor: 0.97, language: "en" },
   { id: "ag-eurasia", company: "Eurasia Rail Bridge", contactName: "Olga Petrenko", email: "sales@eurasia-bridge.example", modes: ["rail"], regions: "Chiny, Kazachstan", replyRate: 0.65, priceFactor: 1.04, language: "en" },
   { id: "ag-multi", company: "MultiModal Partners", contactName: "Tomasz Wrona", email: "rfq@multimodal.example", modes: ["sea", "air", "rail"], regions: "cały świat", replyRate: 0.6, priceFactor: 1.12, language: "pl" },
+  // Module C: six agents per mode, each with its own lanes.
+  { id: "ag-hanseatic", company: "Hanseatic Box Agency", contactName: "Lena Vogt", email: "ops@hanseatic-box.example", modes: ["sea"], regions: "Europa Płn., Ameryka Płn., Skandynawia", replyRate: 0.8, priceFactor: 1.02, language: "en" },
+  { id: "ag-adriatic", company: "Adriatic & Med Shipping", contactName: "Marco Bellini", email: "booking@adriatic-med.example", modes: ["sea"], regions: "Morze Śródziemne, Afryka Płn., Bliski Wschód", replyRate: 0.7, priceFactor: 0.98, language: "en" },
+  { id: "ag-waw-cargo", company: "Warsaw Air Cargo Services", contactName: "Agnieszka Kurek", email: "cargo@waw-aircargo.example", modes: ["air"], regions: "Europa, Ameryka Płn.", replyRate: 0.85, priceFactor: 1.03, language: "pl" },
+  { id: "ag-fra-hub", company: "FRA Hub Logistics", contactName: "Stefan Krüger", email: "rates@fra-hub.example", modes: ["air"], regions: "cały świat", replyRate: 0.75, priceFactor: 0.99, language: "en" },
+  { id: "ag-gulf-air", company: "Gulf Air Cargo Partners", contactName: "Omar Haddad", email: "sales@gulf-aircargo.example", modes: ["air"], regions: "Bliski Wschód, Azja, Afryka", replyRate: 0.7, priceFactor: 0.96, language: "en" },
+  { id: "ag-polrail", company: "Polrail Intermodal", contactName: "Krzysztof Bielak", email: "intermodal@polrail.example", modes: ["rail"], regions: "Europa, Chiny (kolej)", replyRate: 0.8, priceFactor: 1.0, language: "pl" },
+  { id: "ag-middle-corridor", company: "Middle Corridor Express", contactName: "Aigerim Sadykova", email: "desk@middle-corridor.example", modes: ["rail"], regions: "Kazachstan, Kaukaz, Turcja", replyRate: 0.6, priceFactor: 1.07, language: "en" },
 ];
 
 /** Demo road rates (fictional). PLN for domestic transport, EUR abroad. */

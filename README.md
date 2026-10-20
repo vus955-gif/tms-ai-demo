@@ -30,6 +30,8 @@ Demo pokazuje, jak mógłby wyglądać prosty TMS dla firmy z busami i ciągnika
 | **Dokumenty CMR** | Zdjęcie z telefonu kierowcy, odczyt AI, dopasowanie do zlecenia, kolejki „do zamknięcia”, „weryfikacja”, „nieczytelne”. |
 | **Skrzynka klientów** | Kategorie maili, szkice zleceń z zamówień i szkice odpowiedzi na pytania o status. |
 | **Sprzedaż** | Wyceny drogowe ze stawek oraz zapytania do agentów (morski, lotniczy, kolejowy) bez ujawniania danych klienta; rola „Handlowiec”. |
+| **Przesyłki morskie, lotnicze, kolejowe** | Plan etapów, automatyczne prośby o status do agentów (z przypomnieniem), odczyt odpowiedzi przez AI, alert przy zmianie ETA, przypomnienia o statusie dla klienta i szkic statusu z faktów (lub wysyłka automatyczna) bez danych agenta. Pozycji na żywo nie podłączono ze względu na koszty dostawców — zob. [`docs/sledzenie-przesylek.md`](docs/sledzenie-przesylek.md). |
+| **Klienci i punkty** | Nowi klienci, osoby i punkty z mapą i wyszukiwaniem adresu (Nominatim); trasy do nowych punktów szacowane i oznaczone jako przybliżone. |
 | **Panel klienta** | Link śledzenia jednego transportu: status, ETA, postęp i mapa, bez danych kierowcy. |
 | **Flota i terminarz** | Terminy pojazdów, naczep i kierowców (badania, OC, tachograf, ATP, dokumenty) oraz nieobecności; terminy blokujące i nieobecności wykluczają z przydziału. |
 | **Zlecenia stałe** | Szablony i paczka zleceń na tydzień z prognozą terminowości, tworzona jednym kliknięciem. |
@@ -59,7 +61,7 @@ Demo pokazuje, jak mógłby wyglądać prosty TMS dla firmy z busami i ciągnika
 
 - **Własny świat dla każdego odwiedzającego** (ciasteczko), z resetem i wygasaniem po 24 h.
 - **Czas symulacji liczony z zegara** (tempo 1× / 10× / 60×, pauza). Zdarzenia są przetwarzane przy kolejnych odświeżeniach, więc całość działa na serverless.
-- **Scenariusz:** 14 pojazdów, 11 naczep, 14 kierowców, 8 klientów, 24 punkty w Polsce, Niemczech i Czechach oraz 553 trasy policzone wcześniej przez OSRM.
+- **Scenariusz:** 14 pojazdów, 11 naczep, 14 kierowców, 8 klientów, 24 punkty w Polsce, Niemczech i Czechach, 553 trasy policzone wcześniej przez OSRM, 15 agentów (morskich, lotniczych, kolejowych) i 4 przesyłki w drodze z różnymi kłopotami.
 - **Nic nie wychodzi na zewnątrz:** „Telefon kierowcy” i „Poczta klienta” to symulatory; demo nie wysyła prawdziwych SMS-ów ani maili.
 
 ## Architektura
@@ -150,7 +152,7 @@ src/app/          strony i API (Next.js App Router)
 src/components/   interfejs: moduły, mapa, motyw
 src/domain/       czysta logika: dopasowanie, ryzyko, terminy, zlecenia stałe
 src/simulation/   symulacja pojazdów i scenariusz demo
-src/server/       logika serwera: ticki, zlecenia, skrzynka, sprzedaż, flota
+src/server/       logika serwera: ticki, zlecenia, skrzynka, sprzedaż, flota, przesyłki
 src/ai/           wywołania AI, schematy odpowiedzi, reguły awaryjne
 drizzle/          migracje bazy danych
 data/routes/      trasy policzone przez OSRM (ODbL)
@@ -168,12 +170,15 @@ scripts/          migracje, ocena AI, generatory danych
 - dokumenty CMR z odczytem AI, skrzynka klientów,
 - sprzedaż (wyceny drogowe i przez agentów), panel klienta,
 - kartoteka floty i terminarz, zlecenia stałe,
+- klienci i punkty z mapą (trasy do nowych punktów szacowane),
+- przesyłki morskie, lotnicze i kolejowe ze statusami od agentów,
 - tryb ciemny, wdrożenie na Vercel + Neon.
 
 **Następne kroki:**
 
 - pełne testy użytkowe i poprawki po nich,
-- nowi klienci i punkty — wymaga liczenia tras w locie (decyzja o dostawcy tras),
+- dokładne trasy do nowych punktów — wymaga liczenia tras w locie (decyzja o dostawcy tras),
+- śledzenie przesyłek na żywo (AIS, trackery lotów, API armatorów) — niewdrożone w demo ze względu na koszty dostawców; sposób podłączenia opisuje [`docs/sledzenie-przesylek.md`](docs/sledzenie-przesylek.md),
 - integracje produkcyjne: telematyka GPS, bramka SMS/MMS, poczta firmowa, system ERP — opisane w dokumencie wdrożeniowym w `docs/wdrozenie/`.
 
 ## Licencje
@@ -193,6 +198,7 @@ Firmy, osoby, numery telefonów i rejestracyjne są zmyślone. Demo nie wysyła 
 > **Work in progress:** features are covered by automated tests but still await full user testing; things may change.
 
 - **Live demo:** <https://tms-ai-demo.vercel.app>
+- **Sea/air/rail shipments:** the system asks partner agents for status on a schedule, AI reads their replies (new ETA, delay reason) and drafts client updates from confirmed facts only. Live positions (AIS, flight trackers) are deliberately not connected — the providers are paid and the demo is self-funded; see `docs/sledzenie-przesylek.md` (Polish) for how to plug them in.
 - **Principle:** deterministic code computes (driving times under EU Regulation 561/2006, ETAs, driver matching, prices); the model only reads, explains and drafts, always schema-validated, with rule-based fallbacks and cost limits.
 - **Stack:** Next.js 16, React 19, TypeScript, Tailwind CSS 4, Drizzle ORM, Postgres (Neon / PGlite), MapLibre + OpenFreeMap, Anthropic SDK, Vitest, Playwright; hosted on Vercel + Neon.
 - **Run locally:** `npm install && npm run dev` (Node.js 24; no database setup needed, an optional `ANTHROPIC_API_KEY` goes in `.env.local`).

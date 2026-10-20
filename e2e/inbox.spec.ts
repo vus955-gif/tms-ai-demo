@@ -12,7 +12,7 @@ test.describe("etap 3b — skrzynka klientów", () => {
     const list = page.getByTestId("inbox-list");
     await expect(list).toContainText("Zlecenie transportu Gądki", { timeout: 90_000 });
     await page.getByRole("button", { name: "1×" }).click();
-    await list.getByRole("button", { name: /Marta Sobczak/ }).click();
+    await list.getByRole("button", { name: /Marta Sobczak.*Zlecenie transportu Gądki|Zlecenie transportu Gądki.*Marta Sobczak/ }).click();
 
     const draft = page.getByTestId("draft-order");
     await expect(draft).toContainText("Szkic zlecenia ZL-1043");

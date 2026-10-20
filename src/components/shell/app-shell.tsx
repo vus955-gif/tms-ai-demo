@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, BriefcaseBusiness, Building2, CalendarDays, ClipboardList, FileText, Mail, Map, MessageSquare, Repeat, Truck, Wrench } from "lucide-react";
+import { Bot, BriefcaseBusiness, Building2, CalendarDays, ClipboardList, FileText, Mail, Map, MessageSquare, Repeat, Ship, Truck, Wrench } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -22,6 +22,7 @@ export const NAV = [
   { href: "/monitoring", label: "Monitoring", icon: Map, roles: ["spedytor"] },
   { href: "/zlecenia", label: "Zlecenia", icon: ClipboardList, roles: ["spedytor", "handlowiec"] },
   { href: "/szablony", label: "Zlecenia stałe", icon: Repeat, roles: ["spedytor"] },
+  { href: "/przesylki", label: "Przesyłki", icon: Ship, roles: ["spedytor", "handlowiec"] },
   { href: "/komunikator", label: "Komunikator", icon: MessageSquare, roles: ["spedytor"] },
   { href: "/skrzynka", label: "Skrzynka", icon: Mail, roles: ["spedytor", "handlowiec"] },
   { href: "/klienci", label: "Klienci", icon: Building2, roles: ["spedytor", "handlowiec"] },
@@ -86,6 +87,7 @@ export function AppShell({ children, toolbar }: { children: ReactNode; toolbar?:
               "/dokumenty": snapshot?.badges.dokumenty,
               "/sprzedaz": snapshot?.badges.sprzedaz,
               "/flota": snapshot?.badges.flota,
+              "/przesylki": snapshot?.badges.przesylki,
             };
             const badge = badges[href] ?? 0;
             return (

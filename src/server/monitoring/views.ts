@@ -79,6 +79,8 @@ export type AlertView = {
   alternativeRouteKey: string | null;
   documentId: string | null;
   messageId: string | null;
+  /** Sea/air/rail shipment the alert is about (module C). */
+  shipmentId: string | null;
 };
 
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
@@ -171,6 +173,7 @@ export async function alertViews(db: Executor, sandboxId: string): Promise<Alert
       alternativeRouteKey: alternativeRouteKey ?? null,
       documentId: a.dedupeKey.startsWith("cmr:") ? a.dedupeKey.slice(4) : null,
       messageId: a.messageId,
+      shipmentId: typeof a.facts?.shipmentId === "string" ? a.facts.shipmentId : null,
     }))
     .sort((a, b) => rank[a.severity] - rank[b.severity] || b.createdSim.localeCompare(a.createdSim));
 }

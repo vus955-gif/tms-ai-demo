@@ -8,6 +8,7 @@ import { fleetAttentionCount } from "./fleet/views";
 import { openQuotesCount } from "./sales/quotes";
 import { unreadDriverMessages } from "./messages/threads";
 import { monitoringSnapshot, type AlertView, type VehicleView } from "./monitoring/views";
+import { shipmentsAttentionCount } from "./shipments/views";
 import type { SandboxRow } from "./sandbox/repository";
 import type { TickResult } from "./tick/engine";
 
@@ -23,7 +24,7 @@ export type Snapshot = {
   tick: { processed: number; remaining: number; conflict: boolean };
   fleet: VehicleView[];
   alerts: AlertView[];
-  badges: { komunikator: number; skrzynka: number; dokumenty: number; sprzedaz: number; flota: number };
+  badges: { komunikator: number; skrzynka: number; dokumenty: number; sprzedaz: number; flota: number; przesylki: number };
   phoneDriverId: string | null;
 };
 
@@ -55,7 +56,7 @@ export async function buildSnapshot(
     counts: { vehicles: vehicleCount, activeOrders },
     tick: { processed: tick.processed, remaining: tick.remaining, conflict: tick.conflict },
     ...(await monitoringSnapshot(db, sandbox.id)),
-    badges: { komunikator: await unreadDriverMessages(db, sandbox.id), skrzynka: await unreadClientEmails(db, sandbox.id), dokumenty: await openDocumentsCount(db, sandbox.id), sprzedaz: await openQuotesCount(db, sandbox.id), flota: await fleetAttentionCount(db, sandbox, simNow) },
+    badges: { komunikator: await unreadDriverMessages(db, sandbox.id), skrzynka: await unreadClientEmails(db, sandbox.id), dokumenty: await openDocumentsCount(db, sandbox.id), sprzedaz: await openQuotesCount(db, sandbox.id), flota: await fleetAttentionCount(db, sandbox, simNow), przesylki: await shipmentsAttentionCount(db, sandbox.id, simNow) },
     phoneDriverId: sandbox.phoneDriverId,
   };
 }

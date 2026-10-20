@@ -20,10 +20,18 @@ export function onDraftSent(listener: SentListener) {
   sentListeners.push(listener);
 }
 
+type BeforeSendCheck = (db: Executor, info: { sandboxId: string; message: typeof messages.$inferSelect; edit: { subject: string; body: string } }) => Promise<void>;
+const beforeSendChecks: BeforeSendCheck[] = [];
+/** A module can stop a draft from going out (throw an HttpError), e.g. a shipment update naming the agent. */
+export function onBeforeDraftSend(check: BeforeSendCheck) {
+  beforeSendChecks.push(check);
+}
+
 /** "Sends" a draft: in the demo it is only marked as sent — no e-mail leaves the app. */
 export async function sendDraft(db: Executor, sandboxId: string, draftId: string, edit: { subject: string; body: string }, simNow: Date) {
   const m = await loadMessage(db, sandboxId, draftId);
   if (m.state !== "draft") throw new HttpError(409, "Ta wiadomość została już wysłana.");
+  for (const check of beforeSendChecks) await check(db, { sandboxId, message: m, edit });
   await db
     .update(messages)
     .set({ state: "sent", sentBy: "dispatcher", subject: edit.subject.slice(0, 200), body: edit.body.slice(0, 4000), atSim: simNow })

@@ -22,6 +22,7 @@ const ACTION_LABEL: Record<AlertAction, string> = {
   przydziel_innego: "Przydziel innego",
   otworz_dokument: "Otwórz dokument",
   otworz_mail: "Otwórz mail",
+  otworz_przesylke: "Otwórz przesyłkę",
   brak: "",
 };
 
@@ -127,6 +128,10 @@ export function AlertCard({ alert, onNavigate }: { alert: AlertView; onNavigate?
         router.push(`/skrzynka?m=${alert.messageId}`);
         onNavigate?.();
         break;
+      case "otworz_przesylke":
+        router.push(`/przesylki?s=${alert.shipmentId}`);
+        onNavigate?.();
+        break;
       case "powiadom_klienta":
         router.push(`/skrzynka${alert.orderId ? `?order=${alert.orderId}` : ""}`);
         onNavigate?.();
@@ -137,7 +142,7 @@ export function AlertCard({ alert, onNavigate }: { alert: AlertView; onNavigate?
   };
 
   const actions = alert.actions.filter(
-    (a) => a !== "brak" && (a !== "zastosuj_objazd" || alert.alternativeRouteKey) && (a !== "otworz_dokument" || alert.documentId) && (a !== "otworz_mail" || alert.messageId),
+    (a) => a !== "brak" && (a !== "zastosuj_objazd" || alert.alternativeRouteKey) && (a !== "otworz_dokument" || alert.documentId) && (a !== "otworz_mail" || alert.messageId) && (a !== "otworz_przesylke" || alert.shipmentId),
   );
   return (
     <article className={cn("rounded-md border border-l-4 bg-background p-3", SEVERITY_STYLE[alert.severity])} data-testid="alert-card">

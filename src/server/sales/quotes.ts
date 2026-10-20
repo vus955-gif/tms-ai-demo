@@ -6,6 +6,7 @@ import { extractQuoteRequest, readAgentReply } from "@/ai/functions/sales";
 import { canRouteKey, getRouteByKey, registerPointCoords } from "@/adapters/routing/static-routes";
 import { isApproxRoute } from "@/simulation/approx-route";
 import { CARRIER_SIGNATURE } from "@/domain/carrier";
+import { laneRegion, pickRfqAgents } from "@/domain/agent-regions";
 import { findPlace, greatCircleKm, ROAD_DETOUR_FACTOR } from "@/domain/gazetteer";
 import { normalize } from "@/domain/email-rules";
 import { leaksClientData } from "@/domain/client-leak";
@@ -29,12 +30,11 @@ export const CLOSED: QuoteStatus[] = ["wygrana", "przegrana", "anulowana"];
 
 /** Demo agents and default road rates for a world (also for worlds older than the Sales module). */
 export async function seedSales(db: Executor, sandboxId: string) {
-  const existing = await db.select({ id: agents.id }).from(agents).where(eq(agents.sandboxId, sandboxId));
-  if (existing.length === 0) {
-    await db.insert(agents).values(
-      agentsSeed.map((a) => ({ sandboxId, id: a.id, company: a.company, contactName: a.contactName, email: a.email, modes: a.modes, regions: a.regions, replyRate: a.replyRate, priceFactor: a.priceFactor })),
-    );
-  }
+  // Missing demo agents are added to older worlds too; existing ones (and their on/off switch) stay as they are.
+  await db
+    .insert(agents)
+    .values(agentsSeed.map((a) => ({ sandboxId, id: a.id, company: a.company, contactName: a.contactName, email: a.email, modes: a.modes, regions: a.regions, replyRate: a.replyRate, priceFactor: a.priceFactor })))
+    .onConflictDoNothing();
   await db.insert(salesSettings).values({ sandboxId, roadRates: roadRatesSeed }).onConflictDoNothing();
 }
 
@@ -144,7 +144,7 @@ export async function progress(db: Db, sandboxId: string, quoteId: string, simNo
 
 const ACK_TEXT = "Dziękujemy za przesłanie zapytania — powrócimy z wyceną jak najszybciej.";
 
-/** Thanks the client and sends the RFQ to every active agent for this mode — without client data. */
+/** Thanks the client and sends the RFQ to the active agents covering the lane (up to five) — without client data. */
 export async function sendAckAndRfqs(db: Executor, sandboxId: string, quoteId: string, simNow: Date) {
   const quote = await loadQuote(db, sandboxId, quoteId);
   const details = { ...EMPTY_DETAILS, ...(quote.details as Partial<QuoteDetails>) };
@@ -179,7 +179,8 @@ export async function sendAckAndRfqs(db: Executor, sandboxId: string, quoteId: s
       kind: "quote_ack",
     });
   }
-  const list = (await db.select().from(agents).where(and(eq(agents.sandboxId, sandboxId), eq(agents.active, true)))).filter((a) => a.modes.includes(quote.mode));
+  const forMode = (await db.select().from(agents).where(and(eq(agents.sandboxId, sandboxId), eq(agents.active, true)))).filter((a) => a.modes.includes(quote.mode));
+  const list = pickRfqAgents(forMode, laneRegion(findPlace(details.origin)?.country ?? null, findPlace(details.destination)?.country ?? null));
   for (const agent of list) {
     const aqId = randomUUID();
     await db.insert(agentQuotes).values({ sandboxId, id: aqId, requestId: quoteId, agentId: agent.id, status: "wyslane", sentSim: simNow });

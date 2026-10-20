@@ -100,7 +100,7 @@ export function PointDialog({ client, point, geocoder, onClose, onSaved }: { cli
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[92dvh] max-w-3xl overflow-y-auto">
+      <DialogContent className="max-h-[92dvh] sm:max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{point ? `Punkt: ${point.name}` : `Nowy punkt — ${client.name}`}</DialogTitle>
           <DialogDescription>Godziny, wymagania i notatki trafiają do SMS-a dla kierowcy. Dane w demo są fikcyjne — nie wpisuj prawdziwych danych osobowych.</DialogDescription>

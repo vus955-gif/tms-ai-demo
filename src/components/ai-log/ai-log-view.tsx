@@ -22,6 +22,8 @@ export const AI_FUNCTION_LABEL: Record<string, string> = {
   triageClientEmail: "Mail klienta",
   extractQuoteRequest: "Zapytanie ofertowe",
   readAgentQuote: "Stawka agenta",
+  readShipmentStatus: "Status od agenta",
+  draftShipmentUpdate: "Status dla klienta",
   diagnostics: "Diagnostyka",
 };
 

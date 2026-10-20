@@ -81,7 +81,7 @@ export function TemplateDialog({ template, onClose, onSaved }: { template: Templ
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{template ? "Edycja szablonu" : "Nowy szablon zlecenia stałego"}</DialogTitle>
           <DialogDescription>

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Przesyłki multimodalne</title>
+<style>
+  :root { --bg: #faf9f6; --surface: #fff; --surface-2: #f3f1ec; --ink: #1c1f24; --muted: #5d6471; --line: #e3e0d8; --accent: #0f5c8c; --good: #1f7a4d; --radius: 12px; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139; --accent: #6db4e3; --good: #6fcf9a; } }
+  :root[data-theme="dark"] { --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139; --accent: #6db4e3; --good: #6fcf9a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 16.5px; line-height: 1.65; }
+  .page { max-width: 52rem; margin: 0 auto; padding: 56px 24px 96px; }
+  @media (max-width: 600px) { .page { padding: 32px 16px 64px; } }
+  h1 { font-size: 2.1rem; margin: .2em 0 .3em; line-height: 1.2; }
+  h2 { font-size: 1.45rem; margin: 3rem 0 1rem; padding-top: 1.3rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.1rem; margin: 1.6rem 0 .5rem; }
+  p { margin: 0 0 1em; } ul, ol { margin: 0 0 1em; padding-left: 1.3em; } li { margin: .3em 0; }
+  code { font-family: "Cascadia Code", Consolas, Menlo, monospace; font-size: .86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .eyebrow { font-size: .82rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 650; }
+  .lead { font-size: 1.12rem; color: var(--muted); }
+  .decision { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 20px; margin: 1rem 0; }
+  .decision h3 { margin-top: .2rem; }
+  .rec { color: var(--good); font-weight: 600; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  footer { margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); font-size: .86rem; color: var(--muted); }
+  .tag { display: inline-block; font-size: .68rem; font-weight: 650; padding: 0 6px; border-radius: 4px; vertical-align: 1px; white-space: nowrap; }
+  .tag.v { background: #e6f3eb; color: #1f7a4d; } .tag.s { background: #fbf0dc; color: #8f5600; } .tag.u { background: #f3f1ec; color: #5d6471; border: 1px solid #e3e0d8; }
+  @media (prefers-color-scheme: dark) { .tag.v { background: #15281e; color: #6fcf9a; } .tag.s { background: #2c2314; color: #f0b45a; } .tag.u { background: #20242a; color: #a1a8b3; border-color: #2d3139; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="eyebrow">Specyfikacja · moduł C · 20 października 2026 · decyzje podjęte samodzielnie, do Twojego wglądu</div>
+  <h1>Przesyłki morskie, lotnicze i kolejowe</h1>
+  <p class="lead">Z Twojego opisu: śledzenie przesyłek w pozostałych gałęziach transportu (lot po numerze, statek przez AIS, kolej bez podglądu na żywo), baza agentów osobno dla każdej gałęzi, automatyczne prośby o status do agentów oraz przypomnienia dla spedytora, że zbliża się pora statusu dla klienta — do wysłania ręcznie albo przez AI.</p>
+
+  <h2>1. Zakres</h2>
+  <ul>
+    <li><strong>Przesyłka</strong> (morska, lotnicza, kolejowa): klient, agent, trasa, ładunek, numery (booking, B/L lub AWB, kontener, statek lub lot, pociąg), planowane i rzeczywiste daty, kamienie milowe.</li>
+    <li><strong>Powstaje z wygranej wyceny</strong> („Utwórz przesyłkę” — dane przepisane z wyceny) albo ręcznie.</li>
+    <li><strong>Mapa</strong>: orientacyjna trasa i ostatnie miejsce potwierdzone przez agenta lub spedytora — bez pozycji na żywo (decyzja 3.1).</li>
+    <li><strong>Prośby o status do agenta</strong> wysyłane automatycznie według rytmu i terminów kamieni milowych; odpowiedź agenta czyta AI i proponuje aktualizację przesyłki.</li>
+    <li><strong>Statusy dla klienta</strong>: rytm ustawiany na przesyłce, przypomnienie przed terminem, szkic AI z faktów; wysyłka ręczna albo automatyczna (włączana świadomie, przesyłka po przesyłce).</li>
+    <li><strong>Baza agentów</strong>: po sześciu na gałąź (fikcyjni), używana i do wycen, i do obsługi przesyłek.</li>
+  </ul>
+
+  <h2>2. Skąd brać pozycję — stan na 20.10.2026</h2>
+  <p>Sprawdzone na stronach dostawców (cenniki, regulaminy, dokumentacja API). Oznaczenia: <span class="tag v">sprawdzone</span> na stronie dostawcy, <span class="tag s">wtórne</span> z artykułu lub opisu osoby trzeciej, <span class="tag u">niepotwierdzone</span>.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Gałąź</th><th>Dostawca</th><th>Darmowo</th><th>Płatnie</th><th>Użycie komercyjne</th></tr></thead>
+    <tbody>
+      <tr><td>Lot</td><td>Flightradar24 API</td><td>brak planu darmowego; klucz testowy (sandbox) z danymi statycznymi <span class="tag v">sprawdzone</span></td><td>od 9 USD/mies. (Explorer, 30 tys. kredytów); podsumowanie lotu 1 kredyt <span class="tag v">sprawdzone</span></td><td>tak, z zakazem odsprzedaży surowych danych i z oznaczeniem źródła <span class="tag v">sprawdzone</span></td></tr>
+      <tr><td>Lot</td><td>OpenSky Network</td><td>limity dzienne; od 18.03.2026 tylko OAuth2; brak wyszukiwania po znaku wywoławczym <span class="tag v">sprawdzone</span></td><td>licencja na wniosek</td><td><strong>nie</strong> bez pisemnej licencji, także dla „operacyjnego” użycia niekomercyjnego <span class="tag v">sprawdzone</span></td></tr>
+      <tr><td>Lot</td><td>AviationStack, AirLabs, AeroDataBox, FlightAware</td><td>małe progi tylko do użytku osobistego lub niekomercyjnego <span class="tag v">sprawdzone</span></td><td>od kilku do kilkuset USD/mies.</td><td>tylko w planach płatnych</td></tr>
+      <tr><td>Morze</td><td>aisstream.io</td><td>tak, ale wyłącznie WebSocket, bez gwarancji działania <span class="tag v">sprawdzone</span></td><td>—</td><td>regulaminu nie znaleziono <span class="tag u">niepotwierdzone</span></td></tr>
+      <tr><td>Morze</td><td>VesselFinder, Datalastic, MyShipTracking</td><td>najwyżej krótkie wersje próbne</td><td>np. 330 EUR za 10 tys. kredytów (VesselFinder), od 199 EUR/mies. (Datalastic) <span class="tag v">sprawdzone</span></td><td>warunków nie czytano <span class="tag u">niepotwierdzone</span></td></tr>
+      <tr><td>Kontener</td><td>Armatorzy (standard DCSA Track &amp; Trace), agregatory (np. ShipsGo)</td><td>u armatorów zwykle dla ich klientów po rejestracji <span class="tag v">sprawdzone</span> (Maersk, Hapag-Lloyd, MSC)</td><td>ShipsGo ok. 2 USD za przesyłkę przy większym pakiecie, plus roczna opłata za API <span class="tag v">sprawdzone</span></td><td>tak (umowa)</td></tr>
+      <tr><td>Kolej</td><td>DB Cargo link2rail, Rail Cargo Group</td><td>dla klientów przewoźnika, statusy zdarzeń (odjazd, przejście, przyjazd), nie pozycja ciągła <span class="tag v">sprawdzone</span></td><td>GPS na wagonie lub kontenerze: sprzęt plus abonament, ceny na zapytanie <span class="tag s">wtórne</span></td><td>umowa</td></tr>
+    </tbody>
+  </table></div>
+  <p>Wniosek: Twoja intuicja co do kolei się potwierdza — publicznego podglądu na żywo nie ma, normą są statusy od przewoźnika lub agenta. Darmowe API lotnicze nie nadają się do produktu (licencje), a Flightradar24 jest płatny, choć tani na start.</p>
+
+  <h2>3. Decyzje (z alternatywami)</h2>
+  <div class="decision">
+    <h3>3.1 Pozycja w demo</h3>
+    <ul>
+      <li><strong>A. Symulacja z wymiennym „adapterem dostawcy”.</strong> Pozycja liczona z planowanych dat i trasy (lot po łuku wielkiego koła, statek po szlaku). Plusy: efektowna mapa bez kosztów. Minusy: wygląda jak prawdziwe śledzenie, choć nim nie jest; więcej kodu do utrzymania.</li>
+      <li><strong>B. Prawdziwe API już w demo.</strong> Minusy: fikcyjne przesyłki nie mają prawdziwych lotów i statków; darmowe progi zabraniają użycia w produkcie; Vercel Hobby nie utrzyma stałego połączenia WebSocket (AIS); koszt.</li>
+      <li><strong>C. Bez pozycji: statusy od agentów, trasa orientacyjna i ostatnie potwierdzone miejsce.</strong> Plusy: prosto i uczciwie — to, co spedytor i tak ma na co dzień; mapa nie udaje śledzenia. Minusy: mniej efektowne niż kropka w ruchu.</li>
+    </ul>
+    <p class="rec">Wybór (Twoja decyzja z 20.10.2026): C. W aplikacji i w README jest jawna informacja, że śledzenia na żywo nie wdrożono w demo ze względu na koszty dostawców; sposób podłączenia opisuje <code>docs/sledzenie-przesylek.md</code>.</p>
+  </div>
+  <div class="decision">
+    <h3>3.2 Status od agenta</h3>
+    <ul>
+      <li><strong>A. Prośba z szablonu, odpowiedź czyta AI.</strong> System sam wysyła prośbę o status (treść z szablonu: numer przesyłki, numery referencyjne — bez danych klienta i cen). Odpowiedź agenta, pisana swobodnie, AI zamienia na kamień milowy i daty; przy niskiej pewności zostaje do potwierdzenia przez człowieka. Brak odpowiedzi — przypomnienie, potem alert.</li>
+      <li><strong>B. Wszystko ręcznie.</strong> Minusy: przy kilkunastu przesyłkach spedytor traci dzień na pisanie „any update?”.</li>
+    </ul>
+    <p class="rec">Wybór: A. Rytm próśb zależy od gałęzi (lot częściej niż statek) i od tego, czy zbliża się kamień milowy.</p>
+  </div>
+  <div class="decision">
+    <h3>3.3 Status dla klienta</h3>
+    <ul>
+      <li><strong>A. Rytm na przesyłce + przypomnienie + szkic AI; wysyłka automatyczna tylko po włączeniu.</strong> Przypomnienie pojawia się przed terminem; szkic powstaje wyłącznie z faktów przesyłki (bez nazwy agenta, bez cen). Automat, gdy włączony, wysyła sam, ale gdy szkic nie przejdzie blokady danych — czeka na człowieka.</li>
+      <li><strong>B. Zawsze automatycznie.</strong> Minusy: przy pierwszym błędzie klient dostaje coś, czego nikt nie widział.</li>
+    </ul>
+    <p class="rec">Wybór: A — zgodnie z zasadą „system proponuje, człowiek decyduje”; automat jest świadomą decyzją dla konkretnej przesyłki.</p>
+  </div>
+
+  <h2>4. Kamienie milowe</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Gałąź</th><th>Kolejno</th><th>Pozycja</th></tr></thead>
+    <tbody>
+      <tr><td>Morze</td><td>booking → kontener w porcie załadunku → wypłynięcie → przeładunek (opcjonalnie) → zawinięcie do portu docelowego → odprawa → wydanie</td><td>ostatni potwierdzony port (przeładunek, port docelowy)</td></tr>
+      <tr><td>Lot</td><td>booking → przyjęcie w terminalu → odlot → przesiadka (opcjonalnie) → przylot → odprawa → wydanie</td><td>ostatnie potwierdzone lotnisko</td></tr>
+      <tr><td>Kolej</td><td>booking → załadunek na terminalu → odjazd → przejście graniczne → przyjazd na terminal → odprawa → dostawa</td><td>ostatni potwierdzony terminal lub przejście graniczne</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>5. Kryteria akceptacji</h2>
+  <ul>
+    <li>Z wygranej wyceny morskiej, lotniczej lub kolejowej da się jednym kliknięciem założyć przesyłkę z przepisanymi danymi.</li>
+    <li>Każda przesyłka pokazuje na mapie trasę orientacyjną i ostatnie potwierdzone miejsce, z jawną informacją, że pozycji na żywo nie podłączono (koszty).</li>
+    <li>Prośby o status wychodzą same; odpowiedź agenta zmienia etap i ETA albo — gdy odczyt jest niepewny — trafia do przeczytania przez człowieka (alert). Odczyt widać w Dzienniku AI; błędny etap spedytor poprawia ręcznie, a jego potwierdzenie ma pierwszeństwo.</li>
+    <li>Przed terminem statusu dla klienta spedytor widzi przypomnienie; szkic nie zawiera nazwy agenta ani cen; automat działa tylko po włączeniu.</li>
+  </ul>
+  <footer>Specyfikacja modułu C · przygotowana samodzielnie na podstawie Twojego opisu z 20.10.2026 i badania dostawców z tego dnia.</footer>
+</main>
+</body>
+</html>

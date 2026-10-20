@@ -78,6 +78,13 @@
       "when": 1792517536403,
       "tag": "0010_points_manual_source",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792524854093,
+      "tag": "0011_shipments",
+      "breakpoints": true
     }
   ]
 }

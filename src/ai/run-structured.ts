@@ -15,6 +15,8 @@ export type AiFunctionName =
   | "triageClientEmail"
   | "extractQuoteRequest"
   | "readAgentQuote"
+  | "readShipmentStatus"
+  | "draftShipmentUpdate"
   | "diagnostics";
 
 export type AiFallbackReason = "no_api_key" | "sandbox_limit" | "daily_budget" | "ai_error" | "refusal" | "catch_up";

@@ -67,7 +67,7 @@ export async function saveDraft(
 export async function storeClientOutbound(
   db: Executor,
   sandboxId: string,
-  mail: { threadKey: string; contactId: string; subject: string; body: string; atSim: Date; kind: string },
+  mail: { threadKey: string; contactId: string; subject: string; body: string; atSim: Date; kind: string; classifiedBy?: "ai" | "rules" | null },
 ): Promise<string> {
   const id = randomUUID();
   await db.insert(messages).values({
@@ -85,6 +85,7 @@ export async function storeClientOutbound(
     atSim: mail.atSim,
     readAtSim: mail.atSim,
     kind: mail.kind,
+    classifiedBy: mail.classifiedBy ?? null,
   });
   return id;
 }
