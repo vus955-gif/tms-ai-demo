@@ -1,3 +1,6 @@
+import { and, eq } from "drizzle-orm";
+import { orders } from "@/db/schema";
+import type { Executor } from "@/db/types";
 import { addTimelineEntries } from "@/simulation/scenario/timeline";
 import type { BotReplyKind } from "@/simulation/bots/driver-replies";
 import { atMin } from "../sandbox/seed";
@@ -20,6 +23,11 @@ type ScenarioOrderPayload = {
   notes?: string;
 };
 
+async function orderExists(db: Executor, sandboxId: string, id: string) {
+  const [row] = await db.select({ id: orders.id }).from(orders).where(and(eq(orders.sandboxId, sandboxId), eq(orders.id, id)));
+  return Boolean(row);
+}
+
 registerEventHandler("order.create", async (ctx, event) => {
   const p = event.payload as unknown as ScenarioOrderPayload;
   const t = (m: number) => atMin(ctx.sandbox.simOrigin, m).toISOString();
@@ -41,7 +49,8 @@ registerEventHandler("order.create", async (ctx, event) => {
       references: p.references,
       notes: p.notes ?? "",
     },
-    { simNow: ctx.simNow, source: "scenario", id: p.id },
+    // Worlds where a person took this id first (before the fix in createOrder) still get the scripted order.
+    { simNow: ctx.simNow, source: "scenario", id: (await orderExists(ctx.tx, ctx.sandbox.id, p.id)) ? `${p.id}-s` : p.id },
   );
 });
 

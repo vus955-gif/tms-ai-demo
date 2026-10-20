@@ -85,7 +85,7 @@ export function TrackingView({ token }: { token: string }) {
           {t.state === "aktywny" ? (
             <>
               <TrackingMap position={t.position} route={t.route} />
-              {t.approximateRoute && <p className="text-xs text-muted-foreground">Przebieg trasy na mapie jest orientacyjny; pozycja i przewidywany przyjazd są aktualne.</p>}
+              {t.approximateRoute && <p className="text-xs text-muted-foreground">Przebieg trasy na mapie jest orientacyjny, a przewidywany przyjazd szacowany — punkt nie ma jeszcze trasy drogowej w systemie.</p>}
             </>
           ) : (
             <p className="rounded-xl border p-4 text-sm text-muted-foreground">

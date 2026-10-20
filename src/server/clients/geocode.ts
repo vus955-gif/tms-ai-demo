@@ -42,10 +42,13 @@ export async function geocode(
   const recent = (perWorld.get(sandboxId) ?? []).filter((t) => now - t < PER_WORLD.windowMs);
   if (recent.length >= PER_WORLD.max) throw new HttpError(429, "Za dużo wyszukiwań adresów — odczekaj chwilę albo wskaż punkt na mapie.");
   perWorld.set(sandboxId, [...recent, now]);
+  if (perWorld.size > 1000) for (const [k, v] of perWorld) if (v.every((t) => now - t >= PER_WORLD.windowMs)) perWorld.delete(k);
 
-  const wait = lastCallMs + gapMs - now;
-  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-  lastCallMs = Date.now();
+  // Reserve the slot before waiting, so simultaneous searches queue one second apart instead of firing together.
+  // (Per server instance; for a hard app-wide limit use your own Nominatim via GEOCODER_URL.)
+  const slot = Math.max(now, lastCallMs + gapMs);
+  lastCallMs = slot;
+  if (slot > now) await new Promise((r) => setTimeout(r, slot - now));
 
   const url = new URL(process.env.GEOCODER_URL || DEFAULT_URL);
   url.searchParams.set("format", "jsonv2");

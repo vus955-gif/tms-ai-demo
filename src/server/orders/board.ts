@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { driverAbsences, driverClientHistory, fleetTerms, orders, type OrderStatus } from "@/db/schema";
 import type { Executor } from "@/db/types";
 import { getRoute } from "@/adapters/routing/static-routes";
+import { isApproxRoute } from "@/simulation/approx-route";
 import { STATUS_LABEL } from "@/domain/order-lifecycle";
 import { absenceReasons, blockingReasons } from "@/domain/fleet-terms";
 import { evaluateCandidate, matchCandidates, type MatchCandidate, type MatchOrder, type MatchResult } from "@/domain/matching";
@@ -159,6 +160,7 @@ async function candidatesFor(db: Executor, fleet: FleetData, sandboxId: string, 
       freePointId: stops.length > 0 ? stops[stops.length - 1].pointId : state.pointId,
       historyWithClient: history.find((h) => h.driverId === driver.id)?.completedOrders ?? 0,
       distanceM: (from, to) => (from === to ? 0 : getRoute(from, to).distanceM),
+      approxDistance: (from, to) => from !== to && isApproxRoute(getRoute(from, to)),
     };
   });
 }

@@ -45,6 +45,8 @@ export type MatchCandidate = {
   historyWithClient: number;
   /** Road distance between two points in metres. */
   distanceM: (from: string, to: string) => number;
+  /** True when that distance is an estimate (a point added in the app, no road route yet). */
+  approxDistance?: (from: string, to: string) => boolean;
   /** Fleet file and calendar (stage 6): lapsed blocking deadlines, absences during the order. */
   blockers?: string[];
 };
@@ -115,7 +117,8 @@ export function evaluateCandidate(order: MatchOrder, c: MatchCandidate): MatchRe
   const emptyKm = c.freePointId ? Math.round(c.distanceM(c.freePointId, order.pickupPointId) / 1000) : null;
   if (emptyKm !== null) {
     score -= Math.min(emptyKm / 4, 50);
-    reasons.push(emptyKm === 0 ? "stoi na miejscu załadunku" : `${emptyKm} km od załadunku`);
+    const estimate = emptyKm > 0 && c.approxDistance?.(c.freePointId!, order.pickupPointId) ? " (szacunek)" : "";
+    reasons.push(emptyKm === 0 ? "stoi na miejscu załadunku" : `${emptyKm} km od załadunku${estimate}`);
   }
   const idle = c.sim.stops.length === 0;
   reasons.push(idle ? "wolny teraz" : "po bieżącym zleceniu");

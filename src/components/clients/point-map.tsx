@@ -14,7 +14,7 @@ type Props = {
   pins: MapPin[];
   /** When given, clicking the map places the pin being edited. */
   onPick?: (lng: number, lat: number) => void;
-  /** Fly here when it changes (e.g. after an address search). */
+  /** Fly here when it changes: after an address search, not after a click (the user is already looking there). */
   focus?: { lng: number; lat: number } | null;
   className?: string;
 };
@@ -26,6 +26,7 @@ function markerElement(label: string, color: string, muted: boolean) {
   el.style.borderColor = "#ffffff";
   el.style.opacity = muted ? "0.55" : "1";
   el.title = label;
+  el.setAttribute("role", "img");
   el.setAttribute("aria-label", label);
   return el;
 }
@@ -35,7 +36,8 @@ export function PointMap({ pins, onPick, focus, className }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const markers = useRef<Marker[]>([]);
-  const fitted = useRef(false);
+  // Re-fit when the set of points changes (e.g. a new point outside the current view), not on every render.
+  const fittedFor = useRef("");
   const onPickRef = useRef(onPick);
   const { theme } = useMapStyle();
   const appliedTheme = useRef(theme);
@@ -70,11 +72,15 @@ export function PointMap({ pins, onPick, focus, className }: Props) {
     for (const mk of markers.current) mk.remove();
     const color = mapOverlayColors(theme).tracking;
     markers.current = pins.map((p) => new Marker({ element: markerElement(p.label, color, Boolean(p.muted)) }).setLngLat([p.lng, p.lat]).addTo(m));
-    if (!fitted.current && pins.length > 0) {
+    const signature = pins
+      .map((p) => p.id)
+      .filter((id) => id !== "edited")
+      .join(",");
+    if (signature && fittedFor.current !== signature) {
       const bounds = new LngLatBounds();
       for (const p of pins) bounds.extend([p.lng, p.lat]);
       m.fitBounds(bounds, { padding: 40, maxZoom: 9, duration: 0 });
-      fitted.current = true;
+      fittedFor.current = signature;
     }
   }, [pins, theme]);
 

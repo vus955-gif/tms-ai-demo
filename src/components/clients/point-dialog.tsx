@@ -3,13 +3,13 @@
 import { useMutation } from "@tanstack/react-query";
 import { MapPin, Search } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { COUNTRY_CODES, COUNTRY_NAMES, type Country } from "@/domain/countries";
+import { COUNTRY_CODES, COUNTRY_NAMES, countriesAt, inCountry, type Country } from "@/domain/countries";
 import { getJson, postJson } from "@/lib/api";
 import type { ClientOverview } from "@/server/clients/clients";
 import type { GeoHit } from "@/server/clients/geocode";
@@ -34,13 +34,36 @@ export function PointDialog({ client, point, geocoder, onClose, onSaved }: { cli
   const [handling, setHandling] = useState(String(point?.handlingMinutes ?? 45));
   const [location, setLocation] = useState<{ lng: number; lat: number } | null>(point ? { lng: point.lng, lat: point.lat } : null);
   const [hits, setHits] = useState<GeoHit[] | null>(null);
+  const [focus, setFocus] = useState<{ lng: number; lat: number } | null>(null);
+  const [countryHint, setCountryHint] = useState<string | null>(null);
+
+  // Text of the coordinate fields, kept apart from the numbers so "51." can be typed on the way to "51.21".
+  const [coordText, setCoordText] = useState({ lat: point ? String(point.lat) : "", lng: point ? String(point.lng) : "" });
+
+  /** A pin set by click, search or typing; the country follows the map when it clearly lies elsewhere. */
+  const place = (lng: number, lat: number, opts: { fly?: boolean; typed?: boolean } = {}) => {
+    setLocation({ lng, lat });
+    if (opts.fly) setFocus({ lng, lat });
+    if (!opts.typed) setCoordText({ lat: String(lat), lng: String(lng) });
+    // Rough country boxes overlap near borders: switch only when the chosen country is clearly wrong, and always ask to check near a border.
+    const found = countriesAt(lng, lat);
+    if (point || found.length === 0) return setCountryHint(null);
+    if (!inCountry(country, lng, lat)) {
+      setCountry(found[0]);
+      const others = found.slice(1).map((c) => COUNTRY_NAMES[c]);
+      setCountryHint(`Kraj ustawiony według mapy: ${COUNTRY_NAMES[found[0]]}.${others.length ? ` Blisko granicy — sprawdź (może też: ${others.join(", ")}).` : ""}`);
+    } else if (found.length > 1) {
+      const others = found.filter((c) => c !== country).map((c) => COUNTRY_NAMES[c]);
+      setCountryHint(`Punkt blisko granicy — sprawdź, czy kraj „${COUNTRY_NAMES[country]}” jest właściwy (może też: ${others.join(", ")}).`);
+    } else setCountryHint(null);
+  };
   const [error, setError] = useState<string | null>(null);
 
   const search = useMutation({
     mutationFn: () => getJson<{ hits: GeoHit[] }>(`/api/geocode?q=${encodeURIComponent([address, city].filter(Boolean).join(", "))}&country=${country}`),
     onSuccess: (r) => {
       setHits(r.hits);
-      if (r.hits.length === 1) setLocation({ lng: r.hits[0].lng, lat: r.hits[0].lat });
+      if (r.hits.length === 1) place(r.hits[0].lng, r.hits[0].lat, { fly: true });
       if (r.hits.length === 0) setError("Nie znaleziono adresu — wskaż punkt, klikając w mapę.");
     },
     onError: (e) => setError(e.message),
@@ -67,10 +90,13 @@ export function PointDialog({ client, point, geocoder, onClose, onSaved }: { cli
     save.mutate();
   };
 
-  const pins = [
-    ...client.points.filter((p) => p.id !== point?.id).map((p) => ({ id: p.id, lng: p.lng, lat: p.lat, label: p.name, muted: true })),
-    ...(location ? [{ id: "edited", lng: location.lng, lat: location.lat, label: name || "Nowy punkt" }] : []),
-  ];
+  const pins = useMemo(
+    () => [
+      ...client.points.filter((p) => p.id !== point?.id).map((p) => ({ id: p.id, lng: p.lng, lat: p.lat, label: p.name, muted: true })),
+      ...(location ? [{ id: "edited", lng: location.lng, lat: location.lat, label: name || "Nowy punkt" }] : []),
+    ],
+    [client.points, point?.id, location, name],
+  );
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -83,11 +109,11 @@ export function PointDialog({ client, point, geocoder, onClose, onSaved }: { cli
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1">
               Nazwa punktu
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="np. Magazyn centralny" aria-label="Nazwa punktu" />
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="np. Magazyn centralny" />
             </label>
             <label className="grid gap-1">
               Kraj
-              <select className={select} value={country} onChange={(e) => setCountry(e.target.value as Country)} disabled={Boolean(point)} aria-label="Kraj">
+              <select className={select} value={country} onChange={(e) => (setCountry(e.target.value as Country), setCountryHint(null))} disabled={Boolean(point)}>
                 {COUNTRY_CODES.map((c) => (
                   <option key={c} value={c}>
                     {COUNTRY_NAMES[c]}
@@ -97,11 +123,11 @@ export function PointDialog({ client, point, geocoder, onClose, onSaved }: { cli
             </label>
             <label className="grid gap-1">
               Adres
-              <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="ul. Przemysłowa 12" aria-label="Adres" />
+              <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="ul. Przemysłowa 12" />
             </label>
             <label className="grid gap-1">
               Miejscowość
-              <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Oleśnica" aria-label="Miejscowość" />
+              <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Oleśnica" />
             </label>
           </div>
 
@@ -127,16 +153,40 @@ export function PointDialog({ client, point, geocoder, onClose, onSaved }: { cli
                 <ul className="grid gap-1" aria-label="Znalezione miejsca">
                   {hits.map((h) => (
                     <li key={`${h.lat},${h.lng}`}>
-                      <button type="button" className="w-full rounded px-2 py-1 text-left text-xs hover:bg-muted" onClick={() => setLocation({ lng: h.lng, lat: h.lat })}>
+                      <button type="button" className="w-full rounded px-2 py-1 text-left text-xs hover:bg-muted" onClick={() => place(h.lng, h.lat, { fly: true })}>
                         {h.label}
                       </button>
                     </li>
                   ))}
                 </ul>
               )}
-              <PointMap pins={pins} onPick={(lng, lat) => setLocation({ lng, lat })} focus={location} />
+              <PointMap pins={pins} onPick={(lng, lat) => place(lng, lat)} focus={focus} />
+              <div className="grid gap-2 sm:grid-cols-2">
+                {(
+                  [
+                    ["lat", "Szerokość geograficzna", "np. 51.21"],
+                    ["lng", "Długość geograficzna", "np. 17.38"],
+                  ] as const
+                ).map(([key, label, hint]) => (
+                  <label key={key} className="grid gap-1 text-xs">
+                    {label}
+                    <Input
+                      inputMode="decimal"
+                      value={coordText[key]}
+                      placeholder={hint}
+                      onChange={(e) => {
+                        const next = { ...coordText, [key]: e.target.value };
+                        setCoordText(next);
+                        const [lat, lng] = [Number(next.lat.replace(",", ".")), Number(next.lng.replace(",", "."))];
+                        if (next.lat.trim() && next.lng.trim() && Number.isFinite(lat) && Number.isFinite(lng)) place(lng, lat, { typed: true });
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+              {countryHint && <p className="text-xs text-warn">{countryHint}</p>}
               <p className="text-[11px] text-muted-foreground">
-                Kliknij w mapę, żeby ustawić lub poprawić punkt. Lokalizacji nie zmienisz po zapisaniu. Trasy do nowego punktu system szacuje (linia prosta × 1,26, ok. 94 km/h) i oznacza jako przybliżone.
+                Kliknij w mapę albo wpisz współrzędne, żeby ustawić lub poprawić punkt. Lokalizacji nie zmienisz po zapisaniu. Trasy do nowego punktu system szacuje (linia prosta × 1,26, prędkość zależna od odległości — średnie z naszych tras OSRM) i oznacza jako przybliżone.
                 {geocoder && " Wyszukiwanie: Nominatim, © OpenStreetMap contributors."}
               </p>
             </div>
@@ -145,20 +195,20 @@ export function PointDialog({ client, point, geocoder, onClose, onSaved }: { cli
           <div className="grid gap-3 sm:grid-cols-[1fr_1fr_120px]">
             <label className="grid gap-1">
               Godziny pracy
-              <Input value={hours} onChange={(e) => setHours(e.target.value)} aria-label="Godziny pracy" />
+              <Input value={hours} onChange={(e) => setHours(e.target.value)} />
             </label>
             <label className="grid gap-1">
               Wymagania
-              <Input value={requirements} onChange={(e) => setRequirements(e.target.value)} placeholder="awizacja 24 h, rampa" aria-label="Wymagania" />
+              <Input value={requirements} onChange={(e) => setRequirements(e.target.value)} placeholder="awizacja 24 h, rampa" />
             </label>
             <label className="grid gap-1">
               Obsługa (min)
-              <Input value={handling} onChange={(e) => setHandling(e.target.value)} inputMode="numeric" aria-label="Czas obsługi w minutach" />
+              <Input value={handling} onChange={(e) => setHandling(e.target.value)} inputMode="numeric" />
             </label>
           </div>
           <label className="grid gap-1">
             Notatki dla kierowcy
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="np. wjazd od ul. Polnej, ochrona prosi o dowód" aria-label="Notatki dla kierowcy" />
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="np. wjazd od ul. Polnej, ochrona prosi o dowód" />
           </label>
           {error && (
             <p role="alert" className="text-sm text-destructive">

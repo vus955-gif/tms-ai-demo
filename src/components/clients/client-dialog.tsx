@@ -39,11 +39,11 @@ export function ClientDialog({ onClose, onSaved }: { onClose: () => void; onSave
         <form onSubmit={submit} className="grid gap-3 text-sm" data-testid="client-form">
           <label className="grid gap-1">
             Nazwa firmy
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="np. Brioche Polska Sp. z o.o." aria-label="Nazwa firmy" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="np. Brioche Polska Sp. z o.o." />
           </label>
           <label className="grid gap-1">
             NIP lub numer VAT UE (opcjonalnie)
-            <Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="np. 123-456-78-83 albo DE123456789" aria-label="NIP" />
+            <Input value={taxId} onChange={(e) => setTaxId(e.target.value)} placeholder="np. 123-456-78-83 albo DE123456789" />
           </label>
           <label className="flex items-center gap-2 text-xs">
             <input type="checkbox" checked={isKey} onChange={(e) => setIsKey(e.target.checked)} className="size-4" /> Klient kluczowy

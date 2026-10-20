@@ -11,12 +11,12 @@ const round5 = (v: number) => Math.round(v * 1e5) / 1e5;
 /**
  * Straight line between two points (interpolated every ~2 km so vehicles move
  * smoothly on the map), with road distance and time estimated from the
- * calibrated circuity and speed. Deterministic: the same points give the same route.
+ * calibrated circuity and distance-dependent speed. Deterministic: the same points give the same route.
  */
 export function approximateRoute(fromId: string, toId: string, from: [number, number], to: [number, number]): ApproxRoute {
   const straight = haversineM(from[0], from[1], to[0], to[1]);
   const distanceM = Math.max(Math.round(roadDistanceM(straight)), 1);
-  const durationS = Math.max(Math.round(roadDurationS(distanceM)), 1);
+  const durationS = Math.max(Math.round(roadDurationS(straight)), 1);
   const steps = Math.max(1, Math.ceil(straight / STEP_M));
   const points: RoutePoint[] = [];
   for (let i = 0; i <= steps; i++) {

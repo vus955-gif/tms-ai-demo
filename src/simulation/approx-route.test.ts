@@ -12,7 +12,8 @@ describe("approximate routes for points without a road route", () => {
     const straight = haversineM(...poznan, ...lyon);
     expect(r.key).toBe("pt-a__pt-b");
     expect(r.distanceM / straight).toBeCloseTo(1.26, 2);
-    expect(r.durationS / 3600).toBeCloseTo(r.distanceM / 1000 / 94, 2);
+    // Over 600 km in a straight line: the long-distance band, 99 km/h.
+    expect(r.durationS / 3600).toBeCloseTo(r.distanceM / 1000 / 99.2, 2);
     expect(isApproxRoute(r)).toBe(true);
   });
 
@@ -30,6 +31,8 @@ describe("approximate routes for points without a road route", () => {
     const short = approximateRoute("pt-a", "pt-b", [16.93, 52.41], [16.98, 52.42]);
     const straight = haversineM(16.93, 52.41, 16.98, 52.42);
     expect(short.distanceM / straight).toBeCloseTo(1.32, 1);
+    // A short city transfer runs at about 49 km/h, not motorway speed.
+    expect(short.distanceM / 1000 / (short.durationS / 3600)).toBeCloseTo(48.7, 0);
     const same = approximateRoute("pt-a", "pt-b", poznan, poznan);
     expect(same.distanceM).toBeGreaterThan(0);
     expect(same.points).toHaveLength(2);

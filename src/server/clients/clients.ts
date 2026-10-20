@@ -4,7 +4,7 @@ import { z } from "zod";
 import { registerPointCoords } from "@/adapters/routing/static-routes";
 import { clientContacts, clients, orders, orderTemplates, points } from "@/db/schema";
 import type { Executor } from "@/db/types";
-import { COUNTRY_CODES } from "@/domain/countries";
+import { COUNTRY_CODES, COUNTRY_NAMES, inCountry } from "@/domain/countries";
 import { checkTaxId } from "@/domain/tax-id";
 import { HttpError } from "../http";
 
@@ -25,34 +25,31 @@ const newId = (prefix: string) => `${prefix}-x-${randomUUID().replace(/-/g, "").
 
 const ContactSchema = z.object({
   name: z.string().trim().min(2, "Osoba: co najmniej 2 znaki").max(80, "Osoba: najwyżej 80 znaków"),
-  email: z.email("Podaj poprawny adres e-mail").max(120),
+  email: z.email("Podaj poprawny adres e-mail").max(120, "E-mail: najwyżej 120 znaków"),
   phone: z.string().trim().max(30, "Telefon: najwyżej 30 znaków").default(""),
 });
 
 export const ClientInputSchema = z.object({
   name: z.string().trim().min(2, "Nazwa: co najmniej 2 znaki").max(120, "Nazwa: najwyżej 120 znaków"),
-  taxId: z.string().trim().max(24).default(""),
+  taxId: z.string().trim().max(24, "NIP/VAT: najwyżej 24 znaki").default(""),
   isKey: z.boolean().default(false),
   contact: ContactSchema,
 });
 
 export const ClientUpdateSchema = z.object({
-  name: z.string().trim().min(2, "Nazwa: co najmniej 2 znaki").max(120).optional(),
+  name: z.string().trim().min(2, "Nazwa: co najmniej 2 znaki").max(120, "Nazwa: najwyżej 120 znaków").optional(),
   isKey: z.boolean().optional(),
 });
 
 export const ContactInputSchema = ContactSchema;
 
-/** Europe, roughly: from the Canaries to the Urals' foothills. */
-const inEurope = (p: { lat: number; lng: number }) => p.lat >= 27 && p.lat <= 72 && p.lng >= -25 && p.lng <= 45;
-
 const PointFields = {
-  name: z.string().trim().min(2, "Nazwa punktu: co najmniej 2 znaki").max(120),
-  address: z.string().trim().min(3, "Podaj adres").max(200),
-  city: z.string().trim().min(2, "Podaj miejscowość").max(80),
-  openingHours: z.string().trim().max(120).default(""),
-  requirements: z.string().trim().max(300).default(""),
-  notes: z.string().trim().max(500).default(""),
+  name: z.string().trim().min(2, "Nazwa punktu: co najmniej 2 znaki").max(120, "Nazwa punktu: najwyżej 120 znaków"),
+  address: z.string().trim().min(3, "Podaj adres").max(200, "Adres: najwyżej 200 znaków"),
+  city: z.string().trim().min(2, "Podaj miejscowość").max(80, "Miejscowość: najwyżej 80 znaków"),
+  openingHours: z.string().trim().max(120, "Godziny: najwyżej 120 znaków").default(""),
+  requirements: z.string().trim().max(300, "Wymagania: najwyżej 300 znaków").default(""),
+  notes: z.string().trim().max(500, "Notatki: najwyżej 500 znaków").default(""),
   handlingMinutes: z.number({ error: "Czas załadunku/rozładunku: podaj minuty" }).int().min(10, "Czas obsługi: co najmniej 10 min").max(240, "Czas obsługi: najwyżej 240 min").default(45),
 };
 
@@ -63,16 +60,19 @@ export const PointInputSchema = z
     lat: z.number({ error: "Wskaż punkt na mapie" }).min(-90).max(90),
     lng: z.number({ error: "Wskaż punkt na mapie" }).min(-180).max(180),
   })
-  .refine(inEurope, { message: "Punkt musi leżeć w Europie — wskaż go na mapie" });
+  .superRefine((p, ctx) => {
+    // The country drives the domestic/international rules, so it must match the pin.
+    if (!inCountry(p.country, p.lng, p.lat)) ctx.addIssue({ code: "custom", message: `Punkt na mapie leży poza krajem ${COUNTRY_NAMES[p.country]} — sprawdź kraj albo miejsce na mapie` });
+  });
 
 /** Text fields only: the location is fixed once saved (routes and orders already use it). */
 export const PointUpdateSchema = z.object({
   name: PointFields.name.optional(),
   address: PointFields.address.optional(),
   city: PointFields.city.optional(),
-  openingHours: z.string().trim().max(120).optional(),
-  requirements: z.string().trim().max(300).optional(),
-  notes: z.string().trim().max(500).optional(),
+  openingHours: z.string().trim().max(120, "Godziny: najwyżej 120 znaków").optional(),
+  requirements: z.string().trim().max(300, "Wymagania: najwyżej 300 znaków").optional(),
+  notes: z.string().trim().max(500, "Notatki: najwyżej 500 znaków").optional(),
   handlingMinutes: z.number().int().min(10).max(240).optional(),
 });
 
@@ -96,14 +96,22 @@ export async function createClient(db: Executor, sandboxId: string, raw: z.input
   const same = existing.find((c) => c.name.toLocaleLowerCase("pl") === input.name.toLocaleLowerCase("pl"));
   if (same) throw new HttpError(409, `Klient „${same.name}” już jest na liście.`);
   const id = newId("cl");
-  await db.insert(clients).values({ sandboxId, id, name: input.name, taxId: tax.normalized, emailDomain: domainOf(input.contact.email), isKey: input.isKey });
-  await db.insert(clientContacts).values({ sandboxId, id: newId("ct"), clientId: id, ...input.contact });
+  // Client and first contact together, or neither.
+  await db.transaction(async (tx) => {
+    await tx.insert(clients).values({ sandboxId, id, name: input.name, taxId: tax.normalized, emailDomain: domainOf(input.contact.email), isKey: input.isKey });
+    await tx.insert(clientContacts).values({ sandboxId, id: newId("ct"), clientId: id, ...input.contact });
+  });
   return id;
 }
 
 export async function updateClient(db: Executor, sandboxId: string, clientId: string, raw: z.input<typeof ClientUpdateSchema>) {
   const input = parse(ClientUpdateSchema, raw);
   await requireClient(db, sandboxId, clientId);
+  if (input.name) {
+    const others = await db.select({ id: clients.id, name: clients.name }).from(clients).where(eq(clients.sandboxId, sandboxId));
+    const same = others.find((c) => c.id !== clientId && c.name.toLocaleLowerCase("pl") === input.name!.toLocaleLowerCase("pl"));
+    if (same) throw new HttpError(409, `Klient „${same.name}” już jest na liście.`);
+  }
   const values = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined));
   if (Object.keys(values).length === 0) return;
   await db.update(clients).set(values).where(and(eq(clients.sandboxId, sandboxId), eq(clients.id, clientId)));

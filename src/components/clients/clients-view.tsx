@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, MapPinned, Plus, Star, Trash2, UserPlus } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,6 +138,7 @@ function ClientCard({
     },
     onError: (e) => toast.error(e.message),
   });
+  const pins = useMemo(() => client.points.map((p) => ({ id: p.id, lng: p.lng, lat: p.lat, label: p.name })), [client.points]);
   const submitContact = (e: FormEvent) => {
     e.preventDefault();
     addContact.mutate();
@@ -224,7 +225,7 @@ function ClientCard({
             ))}
             {client.points.length === 0 && <li className="text-sm text-muted-foreground">Brak punktów — dodaj pierwszy, żeby zakładać zlecenia dla tego klienta.</li>}
           </ul>
-          {client.points.length > 0 && <PointMap pins={client.points.map((p) => ({ id: p.id, lng: p.lng, lat: p.lat, label: p.name }))} className="h-72 w-full overflow-hidden rounded-lg border" />}
+          {client.points.length > 0 && <PointMap pins={pins} className="h-72 w-full overflow-hidden rounded-lg border" />}
         </div>
       </section>
     </div>

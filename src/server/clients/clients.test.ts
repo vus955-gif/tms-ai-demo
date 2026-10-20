@@ -59,7 +59,9 @@ describe("stage 4b: new clients and points", () => {
   });
 
   it("adds points by map location; routes to them are approximate, never missing", async () => {
-    await expect(createPoint(db, sandbox.id, clientId, point("Poza Europą", "Nowy Jork", "PL", 40.7, -74))).rejects.toThrow(/Europie/);
+    await expect(createPoint(db, sandbox.id, clientId, point("Poza Europą", "Nowy Jork", "PL", 40.7, -74))).rejects.toThrow(/poza krajem Polska/);
+    // Berlin with the country left at "Polska": the check catches it (the domestic-van rule depends on it).
+    await expect(createPoint(db, sandbox.id, clientId, point("Berlin", "Berlin", "PL", 52.52, 13.4))).rejects.toThrow(/poza krajem Polska/);
     pickupId = await createPoint(db, sandbox.id, clientId, point("Magazyn Oleśnica", "Oleśnica", "PL", 51.21, 17.38));
     deliveryId = await createPoint(db, sandbox.id, clientId, point("Piekarnia Lyon", "Lyon", "FR", 45.76, 4.84));
     expect(pickupId).toMatch(/^pt-x-[0-9a-f]{10}$/);
@@ -100,7 +102,8 @@ describe("stage 4b: new clients and points", () => {
     // Every tractor is busy, on leave or blocked at this hour; the free international van from Wrocław takes the light load.
     expect(best?.plates).toBe("DW 1T07");
     expect(matches.find((m) => m.plates === "DW 3H56")!.reasons[0]).toMatch(/nie zdąży na załadunek \(ETA/);
-    expect(best!.reasons.join(" ")).toMatch(/km od załadunku/);
+    // The van stands in Wrocław, a scenario point; the pickup was added in the app — the km are an estimate.
+    expect(best!.reasons.join(" ")).toMatch(/km od załadunku \(szacunek\)/);
 
     await db.transaction((tx) => assignOrder(tx, sandbox.id, order.id, best!.driverId, { actor: "dispatcher", simNow: at(10) }));
     await confirmOrder(db, sandbox.id, order.id, at(10));

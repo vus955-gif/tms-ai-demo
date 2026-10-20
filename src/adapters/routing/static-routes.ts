@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { approximateRoute, isApproxRoute } from "@/simulation/approx-route";
+import { approximateRoute } from "@/simulation/approx-route";
 import { routeKey, type StoredRoute } from "@/simulation/route-geometry";
 
 /** Precomputed routes (© OpenStreetMap contributors, ODbL; routing by OSRM). */
@@ -10,6 +10,9 @@ export const ROUTES_DIR = path.join(process.cwd(), "data", "routes");
 export const ROUTE_KEY_RE = /^[a-z0-9-]+__[a-z0-9-]+$/i;
 
 const cache = new Map<string, StoredRoute>();
+/** Approximate routes are cheap to rebuild but used in tight simulation loops: keep the most recent ones only. */
+const approxCache = new Map<string, StoredRoute>();
+const MAX_APPROX = 3000;
 
 export class MissingRouteError extends Error {
   constructor(readonly key: string) {
@@ -49,15 +52,19 @@ function approximateFor(key: string): StoredRoute | null {
 }
 
 export function getRouteByKey(key: string, dir = ROUTES_DIR): StoredRoute {
-  const cached = cache.get(key);
+  const cached = cache.get(key) ?? approxCache.get(key);
   if (cached) return cached;
   const file = fileFor(key, dir);
-  let route: StoredRoute | null = null;
-  if (file && existsSync(/*turbopackIgnore: true*/ file)) route = JSON.parse(readFileSync(/*turbopackIgnore: true*/ file, "utf8")) as StoredRoute;
-  else route = approximateFor(key);
-  if (!route) throw new MissingRouteError(key);
-  cache.set(key, route);
-  return route;
+  if (file && existsSync(/*turbopackIgnore: true*/ file)) {
+    const route = JSON.parse(readFileSync(/*turbopackIgnore: true*/ file, "utf8")) as StoredRoute;
+    cache.set(key, route);
+    return route;
+  }
+  const approx = approximateFor(key);
+  if (!approx) throw new MissingRouteError(key);
+  if (approxCache.size >= MAX_APPROX) approxCache.delete(approxCache.keys().next().value!);
+  approxCache.set(key, approx);
+  return approx;
 }
 
 /** A road route or, for points added in the app, an approximate one (see `isApproxRoute`). */
@@ -73,8 +80,7 @@ export function getRoute(from: string, to: string, dir = ROUTES_DIR): StoredRout
 
 /** A precomputed road route exists (approximate routes do not count). */
 export function hasRouteKey(key: string, dir = ROUTES_DIR): boolean {
-  const cached = cache.get(key);
-  if (cached) return !isApproxRoute(cached);
+  if (cache.has(key)) return true;
   const file = fileFor(key, dir);
   return file !== null && existsSync(/*turbopackIgnore: true*/ file);
 }

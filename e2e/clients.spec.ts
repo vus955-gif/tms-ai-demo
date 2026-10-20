@@ -39,6 +39,18 @@ test.describe("etap 4b — nowi klienci i punkty", () => {
     await expect(points).toContainText("trasy przybliżone");
     await expect(points).toContainText("Wjazd od ul. Polnej");
 
+    // Keyboard path: coordinates typed in; a point in Germany switches the country from "Polska".
+    await page.getByTestId("add-point").click();
+    await pf.getByLabel("Nazwa punktu").fill("Hala w Kolonii");
+    await pf.getByLabel("Adres").fill("Industriestraße 5");
+    await pf.getByLabel("Miejscowość").fill("Köln");
+    await pf.getByLabel("Szerokość geograficzna").fill("50.94");
+    await pf.getByLabel("Długość geograficzna").fill("6.96");
+    await expect(pf).toContainText("Kraj ustawiony według mapy: Niemcy");
+    await page.getByTestId("save-point").click();
+    await expect(points).toContainText("Hala w Kolonii");
+    await expect(points).toContainText("Niemcy");
+
     // The new client and point show up in the order form.
     await page.goto("/zlecenia");
     await page.getByTestId("new-order").click();

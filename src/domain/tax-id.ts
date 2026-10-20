@@ -21,6 +21,7 @@ export function checkTaxId(raw: string): TaxIdCheck {
   if (/^\d+$/.test(nip)) {
     return isValidNip(nip) ? { ok: true, normalized: nip } : { ok: false, error: "NIP: 10 cyfr z poprawną cyfrą kontrolną" };
   }
-  if (/^[A-Z]{2}[A-Z0-9]{2,13}$/.test(compact)) return { ok: true, normalized: compact };
+  // A Polish number with letters is a typo, not a foreign VAT number.
+  if (/^[A-Z]{2}[A-Z0-9]{2,13}$/.test(compact) && !compact.startsWith("PL")) return { ok: true, normalized: compact };
   return { ok: false, error: "NIP albo numer VAT UE (np. DE123456789)" };
 }
