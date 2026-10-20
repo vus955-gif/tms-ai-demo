@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { clients, orders, trackingLinks } from "@/db/schema";
 import type { Db, Executor } from "@/db/types";
 import { getRouteByKey } from "@/adapters/routing/static-routes";
+import { isApproxRoute } from "@/simulation/approx-route";
 import { CARRIER_NAME } from "@/domain/carrier";
 import { type ClientView } from "@/domain/client-view";
 import { sliceCoordinates } from "@/simulation/geo";
@@ -109,6 +110,8 @@ export type PublicTracking = {
   view: ClientView | null;
   position: { lng: number; lat: number; at: string } | null;
   route: [number, number][] | null;
+  /** The leg runs to a point added in the app: the line on the map is indicative, not the road. */
+  approximateRoute: boolean;
   simNow: string;
 };
 
@@ -127,7 +130,7 @@ export async function publicTracking(db: Db, token: string, realNow: Date): Prom
   const state = trackingState(link, order, simNow);
   const w = trackingWindow(order, link.extendedMinutes);
   const base = { carrier: CARRIER_NAME, clientName: client?.name ?? "", state, window: { from: w.from.toISOString(), to: w.to.toISOString() }, simNow: simNow.toISOString() };
-  if (state !== "aktywny") return { ...base, view: state === "wylaczony" ? null : await buildClientView(db, sandbox.id, order.id), position: null, route: null };
+  if (state !== "aktywny") return { ...base, view: state === "wylaczony" ? null : await buildClientView(db, sandbox.id, order.id), position: null, route: null, approximateRoute: false };
 
   const fleet = await loadFleet(db, sandbox.id);
   const vehicleState = order.vehicleId ? fleet.states.get(order.vehicleId) : undefined;
@@ -136,14 +139,9 @@ export async function publicTracking(db: Db, token: string, realNow: Date): Prom
     onThisOrder && vehicleState.lastReportLng !== null && vehicleState.lastReportLat !== null
       ? { lng: vehicleState.lastReportLng, lat: vehicleState.lastReportLat, at: (vehicleState.lastReportAt ?? simNow).toISOString() }
       : null;
-  const route =
-    onThisOrder && vehicleState.routeKey && vehicleState.legPurpose === "to_delivery"
-      ? (() => {
-          const r = getRouteByKey(vehicleState.routeKey!);
-          return sliceCoordinates(r, vehicleState.lastReportProgressS ?? vehicleState.progressS, r.durationS);
-        })()
-      : null;
-  return { ...base, view: await buildClientView(db, sandbox.id, order.id), position, route };
+  const leg = onThisOrder && vehicleState.routeKey && vehicleState.legPurpose === "to_delivery" ? getRouteByKey(vehicleState.routeKey) : null;
+  const route = leg ? sliceCoordinates(leg, vehicleState!.lastReportProgressS ?? vehicleState!.progressS, leg.durationS) : null;
+  return { ...base, view: await buildClientView(db, sandbox.id, order.id), position, route, approximateRoute: leg ? isApproxRoute(leg) : false };
 }
 
 /** Demo "client account": transports shared with one client (never the whole fleet). */

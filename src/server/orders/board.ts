@@ -152,6 +152,8 @@ async function candidatesFor(db: Executor, fleet: FleetData, sandboxId: string, 
       body: trailer?.body ?? vehicle.body,
       adr: vehicle.adr || Boolean(trailer?.adr),
       driverAdr: driver.adrCertificate,
+      // Heavy vehicles always carry a tachograph; for vans the fleet file says whether they go abroad.
+      international: vehicle.kind === "bus" ? vehicle.international : true,
       sim,
       env: buildEnv(vehicle, fleet),
       freePointId: stops.length > 0 ? stops[stops.length - 1].pointId : state.pointId,
@@ -178,6 +180,7 @@ function toMatchOrder(fleet: FleetData, o: OrderRow): MatchOrder {
     adrRequired: o.adrRequired,
     pickupHandlingMin: handling(o.pickupPointId),
     deliveryHandlingMin: handling(o.deliveryPointId),
+    international: [o.pickupPointId, o.deliveryPointId].some((id) => (fleet.points.get(id)?.country ?? "PL") !== "PL"),
   };
 }
 

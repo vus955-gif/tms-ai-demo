@@ -12,6 +12,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import type { Country } from "@/domain/countries";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 
@@ -52,13 +53,15 @@ export const points = pgTable(
     name: text("name").notNull(),
     address: text("address").notNull(),
     city: text("city").notNull(),
-    country: text("country").$type<"PL" | "DE" | "CZ">().notNull(),
+    country: text("country").$type<Country>().notNull(),
     lat: doublePrecision("lat").notNull(),
     lng: doublePrecision("lng").notNull(),
     openingHours: text("opening_hours").notNull(),
     requirements: text("requirements").notNull().default(""),
     notes: text("notes").notNull().default(""),
     handlingMinutes: integer("handling_minutes").notNull().default(45),
+    /** "manual": added in the app — no precomputed road routes, the system uses approximate ones. */
+    source: text("source").$type<"scenario" | "manual">().notNull().default("scenario"),
   },
   (t) => [primaryKey({ columns: [t.sandboxId, t.id] })],
 );

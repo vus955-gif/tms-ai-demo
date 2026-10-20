@@ -83,7 +83,10 @@ export function TrackingView({ token }: { token: string }) {
           </section>
 
           {t.state === "aktywny" ? (
-            <TrackingMap position={t.position} route={t.route} />
+            <>
+              <TrackingMap position={t.position} route={t.route} />
+              {t.approximateRoute && <p className="text-xs text-muted-foreground">Przebieg trasy na mapie jest orientacyjny; pozycja i przewidywany przyjazd są aktualne.</p>}
+            </>
           ) : (
             <p className="rounded-xl border p-4 text-sm text-muted-foreground">
               {t.state === "przed" && <>Śledzenie ruszy {formatSimClock(t.window.from)} — wtedy zobaczysz pozycję auta i przewidywany przyjazd.</>}

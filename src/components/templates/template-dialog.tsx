@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -83,7 +84,13 @@ export function TemplateDialog({ template, onClose, onSaved }: { template: Templ
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{template ? "Edycja szablonu" : "Nowy szablon zlecenia stałego"}</DialogTitle>
-          <DialogDescription>Punkty z książki punktów klienta. Paczka na tydzień tworzy z szablonu zlecenia na wybrane dni.</DialogDescription>
+          <DialogDescription>
+            Punkty z książki punktów klienta (nowe dodasz w module{" "}
+            <Link href="/klienci" className="underline">
+              Klienci
+            </Link>
+            ). Paczka na tydzień tworzy z szablonu zlecenia na wybrane dni.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-3 text-sm" data-testid="template-form">
           <label className="grid gap-1">

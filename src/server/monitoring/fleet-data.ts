@@ -11,6 +11,7 @@ import {
   vehicleStates,
 } from "@/db/schema";
 import type { Executor } from "@/db/types";
+import { registerPointCoords } from "@/adapters/routing/static-routes";
 import type { FleetEnvData, IncidentRow, PointRow, VehicleRow } from "./env";
 import type { OrderRow, VehicleStateRow } from "./state";
 
@@ -45,6 +46,7 @@ export async function loadFleet(db: Executor, sandboxId: string): Promise<FleetD
         .where(and(eq(orders.sandboxId, sandboxId), notInArray(orders.status, ["ZAMKNIETE", "ANULOWANE"]))),
       db.select().from(incidents).where(eq(incidents.sandboxId, sandboxId)),
     ]);
+  registerPointCoords(pointRows);
   const trailerById = new Map(trailerRows.map((t) => [t.id, t]));
   const driverByVehicle = new Map<string, DriverRow>();
   for (const d of driverRows) if (d.vehicleId) driverByVehicle.set(d.vehicleId, d);

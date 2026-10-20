@@ -1,6 +1,7 @@
 import type { BodyType, DriverActivityType, OrderStatus } from "@/db/schema";
 
-export type Country = "PL" | "DE" | "CZ";
+export type { Country } from "@/domain/countries";
+import type { Country } from "@/domain/countries";
 
 export type ScenarioPoint = {
   id: string;

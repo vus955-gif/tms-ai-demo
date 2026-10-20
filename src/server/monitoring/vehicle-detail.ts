@@ -2,6 +2,7 @@ import { and, desc, eq, gte } from "drizzle-orm";
 import { driverActivities, vehicleStates } from "@/db/schema";
 import type { Db, Executor } from "@/db/types";
 import { getRouteByKey, hasRouteKey } from "@/adapters/routing/static-routes";
+import { isApproxRoute } from "@/simulation/approx-route";
 import { nearestProgressS, positionAt, sliceCoordinates } from "@/simulation/geo";
 import { predictArrival } from "@/simulation/vehicle-sim";
 import { resolveAlerts } from "../alerts/repository";
@@ -24,7 +25,8 @@ export type Breakdown = {
 
 export type VehicleDetail = {
   vehicle: VehicleView;
-  route: { driven: [number, number][]; remaining: [number, number][]; destinationCity: string | null } | null;
+  /** `approximate`: the leg goes to or from a point added in the app — straight line, estimated km and time. */
+  route: { driven: [number, number][]; remaining: [number, number][]; destinationCity: string | null; approximate: boolean } | null;
   alternatives: { key: string; label: string; coordinates: [number, number][]; eta: string | null }[];
   breakdown: Breakdown | null;
   activities: { type: string; start: string; end: string | null }[];
@@ -48,6 +50,7 @@ export async function vehicleDetail(db: Executor, sandboxId: string, vehicleId: 
       driven: sliceCoordinates(r, 0, state.progressS),
       remaining: sliceCoordinates(r, state.progressS, r.durationS),
       destinationCity: fleet.points.get(r.to)?.city ?? null,
+      approximate: isApproxRoute(r),
     };
   }
 

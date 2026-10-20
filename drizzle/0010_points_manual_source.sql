@@ -1,0 +1,1 @@
+ALTER TABLE "points" ADD COLUMN "source" text DEFAULT 'scenario' NOT NULL;

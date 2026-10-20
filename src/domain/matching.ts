@@ -23,6 +23,8 @@ export type MatchOrder = {
   adrRequired: boolean;
   pickupHandlingMin: number;
   deliveryHandlingMin: number;
+  /** Crosses a border (a point outside Poland): vans then need a tachograph (Regulation 561/2006 since 1 July 2026). */
+  international?: boolean;
 };
 
 export type MatchCandidate = {
@@ -33,6 +35,8 @@ export type MatchCandidate = {
   body: "plandeka" | "chlodnia" | "skrzynia" | null;
   adr: boolean;
   driverAdr: boolean;
+  /** Equipped and allowed for international transport (tachograph); domestic-only vans are not. */
+  international?: boolean;
   /** State at "now" including already confirmed stops. */
   sim: SimState;
   env: SimEnv;
@@ -72,6 +76,7 @@ export function evaluateCandidate(order: MatchOrder, c: MatchCandidate): MatchRe
   if (order.bodyRequired === "chlodnia" && c.body !== "chlodnia") return excluded(c, "wymagana chłodnia", true);
   if (order.adrRequired && !c.adr) return excluded(c, "pojazd bez wyposażenia ADR", true);
   if (order.adrRequired && !c.driverAdr) return excluded(c, "kierowca bez zaświadczenia ADR", true);
+  if (order.international && c.international === false) return excluded(c, "pojazd tylko do przewozów krajowych (bez tachografu)", true);
   if (c.blockers && c.blockers.length > 0) return excluded(c, c.blockers[0]);
 
   const stops: Stop[] = [

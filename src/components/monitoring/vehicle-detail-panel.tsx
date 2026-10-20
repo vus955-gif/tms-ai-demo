@@ -93,6 +93,11 @@ export function VehicleDetailPanel({
             <Row label="Przerwy po drodze" value={b.breaks > 0 ? `${b.breaks} × 45 min` : "brak"} tone={b.firstBreakAfterDrivingMin !== null && b.firstBreakAfterDrivingMin <= 60 ? "warn" : undefined} />
             {b.restRequired && <Row label="Odpoczynek dobowy" value={formatHm(b.restMin)} tone="bad" />}
             {b.otherWorkMin > 0 && <Row label="Załadunek, oczekiwanie" value={formatHm(b.otherWorkMin)} />}
+            {detail?.route?.approximate && (
+              <p className="mt-1 text-[11px] text-warn" data-testid="approximate-route">
+                Trasa przybliżona: punkt dodany w aplikacji nie ma jeszcze trasy drogowej — na mapie linia prosta, km i czas szacowane.
+              </p>
+            )}
           </section>
         )}
 

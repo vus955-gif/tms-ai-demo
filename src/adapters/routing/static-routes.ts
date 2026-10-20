@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { approximateRoute, isApproxRoute } from "@/simulation/approx-route";
 import { routeKey, type StoredRoute } from "@/simulation/route-geometry";
 
 /** Precomputed routes (© OpenStreetMap contributors, ODbL; routing by OSRM). */
@@ -23,22 +24,57 @@ function fileFor(key: string, dir: string): string | null {
   return file.startsWith(base + path.sep) ? file : null;
 }
 
+/**
+ * Coordinates of points, registered whenever a world's points are loaded. Points added in the app
+ * have ids unique across all worlds, so a route cached for them never belongs to another world.
+ */
+const coords = new Map<string, [number, number]>();
+const MAX_COORDS = 20_000;
+
+export function registerPointCoords(list: { id: string; lng: number; lat: number }[]) {
+  for (const p of list) {
+    if (coords.size >= MAX_COORDS && !coords.has(p.id)) coords.clear();
+    coords.set(p.id, [p.lng, p.lat]);
+  }
+}
+
+/** A straight-line estimate when no road route was precomputed, e.g. for a point added in the app. */
+function approximateFor(key: string): StoredRoute | null {
+  if (!ROUTE_KEY_RE.test(key)) return null;
+  const [from, to] = key.split("__");
+  const a = coords.get(from);
+  const b = coords.get(to);
+  if (!a || !b) return null;
+  return approximateRoute(from, to, a, b);
+}
+
 export function getRouteByKey(key: string, dir = ROUTES_DIR): StoredRoute {
   const cached = cache.get(key);
   if (cached) return cached;
   const file = fileFor(key, dir);
-  if (!file || !existsSync(/*turbopackIgnore: true*/ file)) throw new MissingRouteError(key);
-  const route = JSON.parse(readFileSync(/*turbopackIgnore: true*/ file, "utf8")) as StoredRoute;
+  let route: StoredRoute | null = null;
+  if (file && existsSync(/*turbopackIgnore: true*/ file)) route = JSON.parse(readFileSync(/*turbopackIgnore: true*/ file, "utf8")) as StoredRoute;
+  else route = approximateFor(key);
+  if (!route) throw new MissingRouteError(key);
   cache.set(key, route);
   return route;
+}
+
+/** A road route or, for points added in the app, an approximate one (see `isApproxRoute`). */
+export function canRouteKey(key: string, dir = ROUTES_DIR): boolean {
+  if (hasRouteKey(key, dir)) return true;
+  const [from, to] = key.split("__");
+  return ROUTE_KEY_RE.test(key) && coords.has(from) && coords.has(to);
 }
 
 export function getRoute(from: string, to: string, dir = ROUTES_DIR): StoredRoute {
   return getRouteByKey(routeKey(from, to), dir);
 }
 
+/** A precomputed road route exists (approximate routes do not count). */
 export function hasRouteKey(key: string, dir = ROUTES_DIR): boolean {
-  if (cache.has(key)) return true;
+  const cached = cache.get(key);
+  if (cached) return !isApproxRoute(cached);
   const file = fileFor(key, dir);
   return file !== null && existsSync(/*turbopackIgnore: true*/ file);
 }

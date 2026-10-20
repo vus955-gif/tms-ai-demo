@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, BriefcaseBusiness, CalendarDays, ClipboardList, FileText, Mail, Map, MessageSquare, Repeat, Truck, Wrench } from "lucide-react";
+import { Bot, BriefcaseBusiness, Building2, CalendarDays, ClipboardList, FileText, Mail, Map, MessageSquare, Repeat, Truck, Wrench } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -24,6 +24,7 @@ export const NAV = [
   { href: "/szablony", label: "Zlecenia stałe", icon: Repeat, roles: ["spedytor"] },
   { href: "/komunikator", label: "Komunikator", icon: MessageSquare, roles: ["spedytor"] },
   { href: "/skrzynka", label: "Skrzynka", icon: Mail, roles: ["spedytor", "handlowiec"] },
+  { href: "/klienci", label: "Klienci", icon: Building2, roles: ["spedytor", "handlowiec"] },
   { href: "/dokumenty", label: "Dokumenty", icon: FileText, roles: ["spedytor"] },
   { href: "/flota", label: "Flota", icon: Wrench, roles: ["spedytor"] },
   { href: "/terminarz", label: "Terminarz", icon: CalendarDays, roles: ["spedytor"] },

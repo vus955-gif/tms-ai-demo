@@ -1,3 +1,4 @@
+import { ROAD_CIRCUITY } from "./road-estimate";
 import { normalize } from "./email-rules";
 
 /**
@@ -156,4 +157,5 @@ export function greatCircleKm(a: Place, b: Place): number {
 }
 
 /** Typical road circuity in Europe; the estimate is labelled as such in the UI. */
-export const ROAD_DETOUR_FACTOR = 1.3;
+/** Road km ≈ straight line × this (median of the precomputed OSRM routes, see road-estimate.ts). */
+export const ROAD_DETOUR_FACTOR = ROAD_CIRCUITY;

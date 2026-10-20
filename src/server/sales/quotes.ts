@@ -3,7 +3,8 @@ import { and, eq, inArray } from "drizzle-orm";
 import { agentQuotes, agents, clientContacts, clients, messages, points, quoteRequests, salesSettings, type QuoteMode, type QuoteStatus } from "@/db/schema";
 import type { Db, Executor } from "@/db/types";
 import { extractQuoteRequest, readAgentReply } from "@/ai/functions/sales";
-import { getRouteByKey, hasRouteKey } from "@/adapters/routing/static-routes";
+import { canRouteKey, getRouteByKey, registerPointCoords } from "@/adapters/routing/static-routes";
+import { isApproxRoute } from "@/simulation/approx-route";
 import { CARRIER_SIGNATURE } from "@/domain/carrier";
 import { findPlace, greatCircleKm, ROAD_DETOUR_FACTOR } from "@/domain/gazetteer";
 import { normalize } from "@/domain/email-rules";
@@ -214,8 +215,11 @@ async function roadKm(db: Executor, sandboxId: string, clientId: string, d: Quot
   const match = (name: string | null) => (name ? own.find((p) => normalize(p.city) === normalize(name) || normalize(name).includes(normalize(p.city))) : undefined);
   const a = match(d.origin);
   const b = match(d.destination);
-  if (a && b && a.id !== b.id && hasRouteKey(routeKey(a.id, b.id))) {
-    return { km: getRouteByKey(routeKey(a.id, b.id)).distanceM / 1000, source: "trasa", domestic: a.country === "PL" && b.country === "PL" };
+  registerPointCoords(own);
+  if (a && b && a.id !== b.id && canRouteKey(routeKey(a.id, b.id))) {
+    // Points added in the app have no road route yet: the same estimate as below, from their exact location.
+    const route = getRouteByKey(routeKey(a.id, b.id));
+    return { km: route.distanceM / 1000, source: isApproxRoute(route) ? "szacunek" : "trasa", domestic: a.country === "PL" && b.country === "PL" };
   }
   const pa = findPlace(d.origin);
   const pb = findPlace(d.destination);
@@ -260,7 +264,7 @@ export async function calculateRoad(
     reeferPct: settings.reeferSurchargePct,
     marginPct: opts.marginPct ?? quote.marginPct ?? settings.defaultMarginPct,
   });
-  const stored = { ...calc, kmOverride: override, kmLabel: override ? "wpisane ręcznie" : km!.source === "trasa" ? "trasa z bazy punktów (OSRM)" : `szacunek: linia prosta × ${ROAD_DETOUR_FACTOR}` };
+  const stored = { ...calc, kmOverride: override, kmLabel: override ? "wpisane ręcznie" : km!.source === "trasa" ? "trasa z bazy punktów (OSRM)" : `szacunek: linia prosta × ${String(ROAD_DETOUR_FACTOR).replace(".", ",")}` };
   await db
     .update(quoteRequests)
     .set({

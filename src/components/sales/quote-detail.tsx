@@ -429,7 +429,7 @@ function RoadCalculator({ quote }: { quote: QuoteDetailView }) {
           <Calculator /> Przelicz
         </Button>
       </div>
-      <p className="mt-2 text-[11px] text-muted-foreground">Stawki i marża z ustawień Sprzedaży. Kilometry z tras OSRM dla punktów klienta; dla innych miast — szacunek (linia prosta × 1,3).</p>
+      <p className="mt-2 text-[11px] text-muted-foreground">Stawki i marża z ustawień Sprzedaży. Kilometry z tras OSRM dla punktów klienta; dla punktów dodanych ręcznie i innych miast — szacunek (linia prosta × 1,26, średnia krętość naszych tras OSRM).</p>
     </section>
   );
 }

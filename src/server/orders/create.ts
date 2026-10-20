@@ -4,6 +4,7 @@ import { z } from "zod";
 import { clients, orders, orderStatusChanges, points, type OrderStatus } from "@/db/schema";
 import type { Executor } from "@/db/types";
 import { HttpError } from "../http";
+import { timeline } from "@/simulation/scenario/timeline";
 import { nextOrderNumber } from "./numbering";
 
 export const NewOrderSchema = z
@@ -29,6 +30,22 @@ export const NewOrderSchema = z
 
 export type NewOrder = z.infer<typeof NewOrderSchema>;
 
+/** Ids the scripted demo day will create later (e.g. zl-1042 at 09:05): nobody else may take them first. */
+function scenarioOrderIds(): Set<string> {
+  return new Set(timeline().filter((e) => e.type === "order.create" && typeof e.payload.id === "string").map((e) => e.payload.id as string));
+}
+
+/**
+ * Ids follow numbers (ZL-1043 → zl-1043), which keeps worlds reproducible. An order made by a person
+ * before a scripted one would otherwise take the scripted id and break the scenario's insert later.
+ */
+async function freeOrderId(db: Executor, sandboxId: string, number: string): Promise<string> {
+  const base = number.toLowerCase();
+  const [taken] = await db.select({ id: orders.id }).from(orders).where(and(eq(orders.sandboxId, sandboxId), eq(orders.id, base)));
+  if (!taken && !scenarioOrderIds().has(base)) return base;
+  return `${base}-${randomUUID().replace(/-/g, "").slice(0, 6)}`;
+}
+
 /** Creates an order (NOWE, or SZKIC for AI drafts) after checking the points belong to the client. */
 export async function createOrder(
   db: Executor,
@@ -44,7 +61,7 @@ export async function createOrder(
   }
   const number = await nextOrderNumber(db, sandboxId);
   // Ids follow numbers (ZL-1043 → zl-1043): stable across replays of the same world.
-  const id = opts.id ?? number.toLowerCase();
+  const id = opts.id ?? (await freeOrderId(db, sandboxId, number));
   const status = opts.status ?? "NOWE";
   await db.insert(orders).values({
     sandboxId,

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { TZDate } from "@date-fns/tz";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
@@ -195,7 +196,13 @@ export function NewOrderDialog({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{draft ? `Szkic ${draft.number} z maila — popraw i zatwierdź` : fromEmail ? "Zlecenie z maila klienta" : "Nowe zlecenie"}</DialogTitle>
-          <DialogDescription>Punkty pochodzą z książki punktów klienta — razem z godzinami i uwagami trafią do SMS-a dla kierowcy.</DialogDescription>
+          <DialogDescription>
+            Punkty pochodzą z książki punktów klienta — razem z godzinami i uwagami trafią do SMS-a dla kierowcy. Nowego klienta albo punkt dodasz w module{" "}
+            <Link href="/klienci" className="underline">
+              Klienci
+            </Link>
+            .
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-3" data-testid="new-order-form">
           <div className="grid gap-1.5">
