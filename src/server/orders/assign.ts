@@ -8,6 +8,7 @@ import { botReplyDelayMin, type BotReplyKind } from "@/simulation/bots/driver-re
 import { HttpError } from "../http";
 import { sendToDriver } from "../messages/gateway";
 import { scheduleEvent } from "../tick/engine";
+import { registerEventHandler } from "../tick/registry";
 import { transitionOrder } from "./transition";
 
 type OrderRow = typeof orders.$inferSelect;
@@ -19,16 +20,16 @@ async function loadOrder(db: Executor, sandboxId: string, orderId: string): Prom
 }
 
 /**
- * Assigns a NOWE order to a driver: PRZYPISANE → WYSLANE, the order SMS (from
- * the template), escalation steps and — unless the visitor plays this driver —
- * the simulated driver's reply.
+ * Assigns a NOWE order to a driver: PRZYPISANE, then the order SMS (from the template)
+ * — now, or at `smsAt` (e.g. the day before a recurring run) — with escalation steps and,
+ * unless the visitor plays this driver, the simulated driver's reply.
  */
 export async function assignOrder(
   db: Executor,
   sandboxId: string,
   orderId: string,
   driverId: string,
-  opts: { actor: StatusActor; simNow: Date; forcedReply?: BotReplyKind; replyAfterMin?: number },
+  opts: { actor: StatusActor; simNow: Date; forcedReply?: BotReplyKind; replyAfterMin?: number; smsAt?: Date },
 ) {
   const order = await loadOrder(db, sandboxId, orderId);
   if (order.status !== "NOWE") throw new HttpError(409, "Przydzielić można tylko nowe zlecenie.");
@@ -40,12 +41,25 @@ export async function assignOrder(
     .where(and(eq(couplings.sandboxId, sandboxId), eq(couplings.vehicleId, driver.vehicleId), isNull(couplings.toSim)));
 
   const at = opts.simNow;
+  const later = opts.smsAt && opts.smsAt.getTime() > at.getTime() ? opts.smsAt : null;
   await transitionOrder(db, sandboxId, order, "PRZYPISANE", opts.actor, opts.actor === "system" ? "Przydział ze scenariusza" : "Przydział przez spedytora", at, {
     driverId,
     vehicleId: driver.vehicleId,
     trailerId: coupling?.trailerId ?? null,
+    smsDueSim: later,
   });
-  await transitionOrder(db, sandboxId, { id: order.id, status: "PRZYPISANE" }, "WYSLANE", "system", "Wysłano SMS ze zleceniem", at);
+  if (later) {
+    await scheduleEvent(db, sandboxId, { dueSim: later, type: "order.send_sms", payload: { orderId, driverId } });
+    return;
+  }
+  await sendOrderSms(db, sandboxId, orderId, driverId, { simNow: at, forcedReply: opts.forcedReply, replyAfterMin: opts.replyAfterMin });
+}
+
+/** PRZYPISANE → WYSLANE: the order SMS, escalation steps and the bot's reply. */
+export async function sendOrderSms(db: Executor, sandboxId: string, orderId: string, driverId: string, opts: { simNow: Date; forcedReply?: BotReplyKind; replyAfterMin?: number }) {
+  const order = await loadOrder(db, sandboxId, orderId);
+  const at = opts.simNow;
+  await transitionOrder(db, sandboxId, { id: order.id, status: "PRZYPISANE" }, "WYSLANE", "system", "Wysłano SMS ze zleceniem", at, { smsDueSim: null });
 
   const pts = await db.select().from(points).where(eq(points.sandboxId, sandboxId));
   const pickup = pts.find((p) => p.id === order.pickupPointId)!;
@@ -77,14 +91,23 @@ export async function assignOrder(
   }
 }
 
+/** The scheduled order SMS (day before the run): only if the order still waits for it with the same driver. */
+registerEventHandler("order.send_sms", async (ctx, event) => {
+  const p = event.payload as { orderId: string; driverId: string };
+  const [order] = await ctx.tx.select().from(orders).where(and(eq(orders.sandboxId, ctx.sandbox.id), eq(orders.id, p.orderId)));
+  if (!order || order.status !== "PRZYPISANE" || order.driverId !== p.driverId) return;
+  await sendOrderSms(ctx.tx, ctx.sandbox.id, order.id, p.driverId, { simNow: ctx.simNow });
+});
+
 /** Takes an order back from a driver (cancellation SMS) and returns it to the pool. */
 export async function unassignOrder(db: Executor, sandboxId: string, orderId: string, simNow: Date) {
   const order = await loadOrder(db, sandboxId, orderId);
   if (!order.driverId || !["PRZYPISANE", "WYSLANE"].includes(order.status)) {
     throw new HttpError(409, "Cofnąć można tylko przydział niepotwierdzonego zlecenia.");
   }
-  await transitionOrder(db, sandboxId, order, "NOWE", "dispatcher", "Cofnięcie przydziału", simNow, { driverId: null, vehicleId: null, trailerId: null });
-  await sendToDriver(db, sandboxId, { driverId: order.driverId, body: cancellationSms(order), kind: "cancellation", orderId, sentBy: "system", atSim: simNow });
+  await transitionOrder(db, sandboxId, order, "NOWE", "dispatcher", "Cofnięcie przydziału", simNow, { driverId: null, vehicleId: null, trailerId: null, smsDueSim: null });
+  // The driver only hears about it if the order SMS has gone out.
+  if (order.status === "WYSLANE") await sendToDriver(db, sandboxId, { driverId: order.driverId, body: cancellationSms(order), kind: "cancellation", orderId, sentBy: "system", atSim: simNow });
 }
 
 /** Dispatcher confirms on the driver's behalf (e.g. after a phone call). */
@@ -96,7 +119,7 @@ export async function confirmOrder(db: Executor, sandboxId: string, orderId: str
 export async function cancelOrder(db: Executor, sandboxId: string, orderId: string, simNow: Date) {
   const order = await loadOrder(db, sandboxId, orderId);
   await transitionOrder(db, sandboxId, order, "ANULOWANE", "dispatcher", "Anulowane przez spedytora", simNow);
-  if (order.driverId && ["PRZYPISANE", "WYSLANE", "POTWIERDZONE"].includes(order.status)) {
+  if (order.driverId && ["WYSLANE", "POTWIERDZONE"].includes(order.status)) {
     await sendToDriver(db, sandboxId, { driverId: order.driverId, body: cancellationSms(order), kind: "cancellation", orderId, sentBy: "system", atSim: simNow });
   }
 }

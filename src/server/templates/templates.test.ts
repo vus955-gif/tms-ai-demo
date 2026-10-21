@@ -61,7 +61,7 @@ describe("stage 4: templates and recurring orders", () => {
     expect(rows.find((o) => o.templateKey === "tpl-baltic-chlodnia:2026-10-15")).toMatchObject({ bodyRequired: "chlodnia", cargoPallets: 18 });
     const again = await createPlanned(db, sandbox, keys, at(12));
     expect(again.created).toEqual([]);
-    expect(again.skipped.map((x) => x.reason)).toEqual([`już utworzone (${created[0]})`, `już utworzone (${created[1]})`]);
+    expect(again.skipped.map((x) => x.reason)).toEqual([`już utworzone (${created[0].number})`, `już utworzone (${created[1].number})`]);
     const plan = await weekPlan(db, sandbox, at(12));
     expect(plan.find((p) => p.key === keys[0])!.orderNumber).toMatch(/^ZL-\d+/);
   });

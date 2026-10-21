@@ -50,6 +50,15 @@ export function runOn(t: TemplateTimes, date: string): PlannedDay | null {
   };
 }
 
+/** Order SMS for a recurring run: 16:00 (Warsaw) the day before the loading date. */
+export const SMS_DAY_BEFORE_MIN = 16 * 60;
+
+export function smsTimeFor(date: string): Date | null {
+  const m = DATE_RE.exec(date);
+  if (!m) return null;
+  return at(Number(m[1]), Number(m[2]) - 1, Number(m[3]) - 1, SMS_DAY_BEFORE_MIN);
+}
+
 /** Runs of a template in the `days` days starting the day after `now` (Warsaw calendar). */
 export function plannedDays(t: TemplateTimes, now: Date, days = 7): PlannedDay[] {
   const out: PlannedDay[] = [];

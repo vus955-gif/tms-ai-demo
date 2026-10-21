@@ -34,7 +34,7 @@ Demo pokazuje, jak mógłby wyglądać prosty TMS dla firmy z busami i ciągnika
 | **Klienci i punkty** | Nowi klienci, osoby i punkty z mapą i wyszukiwaniem adresu (Nominatim); trasy do nowych punktów szacowane i oznaczone jako przybliżone. |
 | **Panel klienta** | Link śledzenia jednego transportu: status, ETA, postęp i mapa, bez danych kierowcy. |
 | **Flota i terminarz** | Terminy pojazdów, naczep i kierowców (badania, OC, tachograf, ATP, dokumenty) oraz nieobecności; terminy blokujące i nieobecności wykluczają z przydziału. Przepinanie naczep na placu z historią (która naczepa była pod którym ciągnikiem) i ostrzeżeniami o przydzielonych zleceniach. |
-| **Zlecenia stałe** | Szablony i paczka zleceń na tydzień z prognozą terminowości, tworzona jednym kliknięciem. |
+| **Zlecenia stałe** | Szablony i paczka zleceń na tydzień z prognozą terminowości, tworzona jednym kliknięciem; zwykły kierowca szablonu dostaje zlecenie, jeśli da radę, a SMS idzie dzień przed kursem o 16:00. Przy zagrożonym dniu „Doradź”: AI tłumaczy ryzyko z wyliczeń algorytmu i proponuje innego kierowcę albo co załatwić. |
 | **Tryb ciemny** | Jak system / jasny / ciemny; mapa ma własny przełącznik jasna/ciemna. |
 
 <table>

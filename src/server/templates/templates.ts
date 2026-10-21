@@ -1,13 +1,16 @@
 import { randomUUID } from "node:crypto";
-import { and, count, eq, isNotNull, ne } from "drizzle-orm";
+import { and, count, eq, gt, inArray, isNotNull, lt, ne } from "drizzle-orm";
 import { z } from "zod";
-import { clients, orders, orderTemplates, points } from "@/db/schema";
+import { clients, drivers, orders, orderTemplates, points } from "@/db/schema";
 import type { Executor } from "@/db/types";
 import { uniqueViolation } from "@/db/errors";
-import { forecastState, plannedDays, runOn, warsawDate, type ForecastState } from "@/domain/recurring";
+import { forecastState, plannedDays, runOn, smsTimeFor, warsawDate, type ForecastState, type PlannedDay } from "@/domain/recurring";
+import { advisePlanRun } from "@/ai/functions/plan-advice";
+import type { AdviceCandidate, AdviceFacts } from "@/domain/plan-advice";
 import { templatesSeed } from "@/simulation/scenario/templates";
 import { HttpError } from "../http";
-import { loadMatchContext, matchVirtual } from "../orders/board";
+import { assignOrder } from "../orders/assign";
+import { assertAssignable, loadMatchContext, matchVirtual, type MatchContext, type MatchView } from "../orders/board";
 import { createOrder } from "../orders/create";
 import { registerSeedExtension } from "../sandbox/repository";
 
@@ -65,6 +68,10 @@ export type PlannedOrder = {
   bestDriver: string | null;
   bestPlates: string | null;
   reason: string;
+  /** The template's usual driver and whether they can take this run. */
+  defaultDriver: { name: string; plates: string; ok: boolean; reason: string } | null;
+  /** Creating the order assigns it to the usual driver (SMS the day before). */
+  assignsDefault: boolean;
 };
 
 const planKey = (templateId: string, date: string) => `${templateId}:${date}`;
@@ -75,6 +82,40 @@ async function liveTemplateOrders(db: Executor, sandboxId: string) {
     .select({ key: orders.templateKey, number: orders.number })
     .from(orders)
     .where(and(eq(orders.sandboxId, sandboxId), isNotNull(orders.templateKey), ne(orders.status, "ANULOWANE")));
+}
+
+async function evaluateRun(db: Executor, sandboxId: string, t: TemplateView, day: PlannedDay, simNow: Date, ctx: MatchContext) {
+  const results = await matchVirtual(
+    db,
+    sandboxId,
+    {
+      id: planKey(t.id, day.date),
+      clientId: t.clientId,
+      pickupPointId: t.pickupPointId,
+      deliveryPointId: t.deliveryPointId,
+      pickupFrom: day.pickupFrom,
+      pickupTo: day.pickupTo,
+      deliveryFrom: day.deliveryFrom,
+      deliveryTo: day.deliveryTo,
+      cargoPallets: t.cargoPallets,
+      cargoKg: t.cargoKg,
+      bodyRequired: t.bodyRequired,
+      adrRequired: t.adrRequired,
+    },
+    simNow,
+    ctx,
+  );
+  const windows = { pickupToMs: day.pickupTo.getTime(), deliveryToMs: day.deliveryTo.getTime() };
+  const usual = t.defaultDriverId ? results.find((r) => r.driverId === t.defaultDriverId) : undefined;
+  const usualOk = Boolean(usual && usual.tier !== "excluded");
+  const best = results.find((r) => r.tier !== "excluded");
+  // The usual driver drives when they can; otherwise the forecast is for the best one.
+  const chosen = usualOk ? usual : best;
+  const dropped = results.filter((r) => r.tier === "excluded");
+  // Vehicles that fit the load but are out for now (deadline, absence, too far) say what to fix.
+  const fixable = dropped.filter((r) => !r.hard).map((r) => `${r.plates}: ${r.reasons[0]}`);
+  const hard = [...new Set(dropped.filter((r) => r.hard).map((r) => r.reasons[0]))];
+  return { results, windows, usual, usualOk, chosen, fixable, hard, state: forecastState(chosen, windows) };
 }
 
 /**
@@ -89,32 +130,7 @@ export async function weekPlan(db: Executor, sandbox: { id: string; simOrigin: D
   for (const t of templates) {
     for (const day of plannedDays(t, simNow, PLAN_DAYS)) {
       const key = planKey(t.id, day.date);
-      const results = await matchVirtual(
-        db,
-        sandbox.id,
-        {
-          id: key,
-          clientId: t.clientId,
-          pickupPointId: t.pickupPointId,
-          deliveryPointId: t.deliveryPointId,
-          pickupFrom: day.pickupFrom,
-          pickupTo: day.pickupTo,
-          deliveryFrom: day.deliveryFrom,
-          deliveryTo: day.deliveryTo,
-          cargoPallets: t.cargoPallets,
-          cargoKg: t.cargoKg,
-          bodyRequired: t.bodyRequired,
-          adrRequired: t.adrRequired,
-        },
-        simNow,
-        ctx,
-      );
-      const best = results.find((r) => r.tier !== "excluded");
-      const state = forecastState(best, { pickupToMs: day.pickupTo.getTime(), deliveryToMs: day.deliveryTo.getTime() });
-      const dropped = results.filter((r) => r.tier === "excluded");
-      // Vehicles that fit the load but are out for now (deadline, absence, too far) say what to fix.
-      const fixable = dropped.filter((r) => !r.hard).map((r) => `${r.plates}: ${r.reasons[0]}`);
-      const hard = [...new Set(dropped.filter((r) => r.hard).map((r) => r.reasons[0]))];
+      const e = await evaluateRun(db, sandbox.id, t, day, simNow, ctx);
       out.push({
         key,
         templateId: t.id,
@@ -124,17 +140,19 @@ export async function weekPlan(db: Executor, sandbox: { id: string; simOrigin: D
         pickupTo: day.pickupTo.toISOString(),
         deliveryFrom: day.deliveryFrom.toISOString(),
         deliveryTo: day.deliveryTo.toISOString(),
-        orderNumber: existing.find((e) => e.key === key)?.number ?? null,
-        forecast: state,
-        bestDriver: best?.driverName ?? null,
-        bestPlates: best?.plates ?? null,
-        reason: best
-          ? best.reasons.slice(0, 2).join(" · ")
-          : fixable.length > 0
-            ? fixable.slice(0, 2).join("; ")
-            : hard.length > 0
-              ? `brak pojazdu: ${hard.slice(0, 2).join("; ")}`
+        orderNumber: existing.find((x) => x.key === key)?.number ?? null,
+        forecast: e.state,
+        bestDriver: e.chosen?.driverName ?? null,
+        bestPlates: e.chosen?.plates ?? null,
+        reason: e.chosen
+          ? e.chosen.reasons.slice(0, 2).join(" · ")
+          : e.fixable.length > 0
+            ? e.fixable.slice(0, 2).join("; ")
+            : e.hard.length > 0
+              ? `brak pojazdu: ${e.hard.slice(0, 2).join("; ")}`
               : "brak pojazdów we flocie",
+        defaultDriver: e.usual ? { name: e.usual.driverName, plates: e.usual.plates, ok: e.usualOk, reason: e.usualOk ? "" : (e.usual.reasons[0] ?? "") } : null,
+        assignsDefault: e.usualOk,
       });
     }
   }
@@ -142,19 +160,31 @@ export async function weekPlan(db: Executor, sandbox: { id: string; simOrigin: D
 }
 
 export type PlanSkip = { key: string; reason: string };
+/** `smsNow`: the order SMS went out right away (16:00 the day before had already passed, or "od razu"). */
+export type PlanCreated = { number: string; driverName: string | null; smsAt: string | null; smsNow: boolean; notAssigned: string | null };
+export type PlanItem = { key: string; driverId?: string | null };
+/** "dzien_przed": order SMS at 16:00 the day before the run; "od_razu": now. */
+export type SmsMode = "dzien_przed" | "od_razu";
 
 /**
  * One click: the selected planned orders become NOWE orders. A key is resolved
  * from its own date (not from a fresh plan), so a selection made just before
  * midnight still works; the database guarantees one live order per template and day.
  */
-export async function createPlanned(db: Executor, sandbox: { id: string; simOrigin: Date }, keys: string[], simNow: Date): Promise<{ created: string[]; skipped: PlanSkip[] }> {
+export async function createPlanned(
+  db: Executor,
+  sandbox: { id: string; simOrigin: Date },
+  items: (string | PlanItem)[],
+  simNow: Date,
+  opts: { sms: SmsMode } = { sms: "dzien_przed" },
+): Promise<{ created: PlanCreated[]; skipped: PlanSkip[] }> {
   const [templates, existing] = await Promise.all([listTemplates(db, sandbox), liveTemplateOrders(db, sandbox.id)]);
   const today = warsawDate(simNow);
   const lastDay = warsawDate(simNow, PLAN_DAYS);
-  const created: string[] = [];
+  const created: PlanCreated[] = [];
   const skipped: PlanSkip[] = [];
-  for (const key of new Set(keys)) {
+  const unique = [...new Map(items.map((i) => (typeof i === "string" ? { key: i } : i)).map((i) => [i.key, i])).values()];
+  for (const { key, driverId: pickedDriver } of unique) {
     const cut = key.lastIndexOf(":");
     const [templateId, date] = [key.slice(0, cut), key.slice(cut + 1)];
     const t = templates.find((x) => x.id === templateId);
@@ -177,8 +207,8 @@ export async function createPlanned(db: Executor, sandbox: { id: string; simOrig
       continue;
     }
     try {
-      const order = await (db as Executor).transaction((tx) =>
-        createOrder(
+      const result = await (db as Executor).transaction(async (tx) => {
+        const order = await createOrder(
           tx,
           sandbox.id,
           {
@@ -197,9 +227,30 @@ export async function createPlanned(db: Executor, sandbox: { id: string; simOrig
             notes: t.notes,
           },
           { simNow, source: "template", actor: "dispatcher", reason: `Zlecenie stałe: ${t.name}`, templateKey: key },
-        ),
-      );
-      created.push(order.number);
+        );
+        // A driver picked in the advisor, else the template's usual one — only if they still fit.
+        const driverId = pickedDriver ?? t.defaultDriverId;
+        if (!driverId) return { number: order.number, driverName: null, smsAt: null, smsNow: false, notAssigned: null };
+        const notAssigned = (reason: string) => ({ number: order.number, driverName: null, smsAt: null, smsNow: false, notAssigned: reason });
+        try {
+          await assertAssignable(tx, sandbox.id, order.id, driverId, simNow);
+        } catch (error) {
+          if (!(error instanceof HttpError)) throw error;
+          return notAssigned(error.message.replace(/^Tego zlecenia nie można przydzielić: /, "").replace(/\.$/, ""));
+        }
+        // Matching plans only confirmed runs: a run assigned a moment ago (this pack, SMS not out yet) must not overlap.
+        const clash = await tx
+          .select({ number: orders.number })
+          .from(orders)
+          .where(and(eq(orders.sandboxId, sandbox.id), eq(orders.driverId, driverId), inArray(orders.status, ["PRZYPISANE", "WYSLANE"]), lt(orders.pickupFrom, run.deliveryTo), gt(orders.deliveryTo, run.pickupFrom)));
+        if (clash.length) return notAssigned(`kierowca ma już w tym czasie ${clash[0].number}`);
+        const dayBefore = smsTimeFor(date);
+        const smsAt = opts.sms === "dzien_przed" && dayBefore && dayBefore > simNow ? dayBefore : simNow;
+        await assignOrder(tx, sandbox.id, order.id, driverId, { actor: "dispatcher", simNow, smsAt });
+        const [d] = await tx.select({ first: drivers.firstName, last: drivers.lastName }).from(drivers).where(and(eq(drivers.sandboxId, sandbox.id), eq(drivers.id, driverId)));
+        return { number: order.number, driverName: d ? `${d.first} ${d.last}` : null, smsAt: smsAt.toISOString(), smsNow: smsAt.getTime() === simNow.getTime(), notAssigned: null };
+      });
+      created.push(result);
     } catch (error) {
       const constraint = uniqueViolation(error);
       if (constraint === null) throw error;
@@ -235,6 +286,7 @@ export const TemplateInputSchema = z
     references: z.array(z.string().max(40, "Referencja: najwyżej 40 znaków")).max(4, "Najwyżej 4 referencje"),
     notes: z.string().max(300, "Uwagi: najwyżej 300 znaków"),
     weekdays: z.array(z.number().int().min(1).max(7)).min(1, "Wybierz co najmniej jeden dzień").max(7),
+    defaultDriverId: z.string().max(64).nullable().default(null),
   })
   .refine((t) => t.pickupFromMin < t.pickupToMin, { message: "Okno załadunku musi kończyć się po rozpoczęciu" })
   .refine((t) => t.deliveryFromMin < t.deliveryToMin, { message: "Okno rozładunku musi kończyć się po rozpoczęciu" })
@@ -243,9 +295,13 @@ export const TemplateInputSchema = z
 
 const live = (sandboxId: string, id: string) => and(eq(orderTemplates.sandboxId, sandboxId), eq(orderTemplates.id, id), eq(orderTemplates.archived, false));
 
-export async function saveTemplate(db: Executor, sandboxId: string, input: z.infer<typeof TemplateInputSchema>, simNow: Date, id?: string) {
+export async function saveTemplate(db: Executor, sandboxId: string, input: z.input<typeof TemplateInputSchema>, simNow: Date, id?: string) {
   const own = await db.select({ id: points.id }).from(points).where(and(eq(points.sandboxId, sandboxId), eq(points.clientId, input.clientId)));
   if (![input.pickupPointId, input.deliveryPointId].every((p) => own.some((x) => x.id === p))) throw new HttpError(400, "Punkt nie należy do wybranego klienta.");
+  if (input.defaultDriverId) {
+    const [d] = await db.select({ id: drivers.id }).from(drivers).where(and(eq(drivers.sandboxId, sandboxId), eq(drivers.id, input.defaultDriverId)));
+    if (!d) throw new HttpError(400, "Nie ma takiego kierowcy.");
+  }
   const values = { ...input, weekdays: [...new Set(input.weekdays)].sort() };
   if (id) {
     const res = await db.update(orderTemplates).set(values).where(live(sandboxId, id)).returning({ id: orderTemplates.id });
@@ -272,3 +328,41 @@ export async function deleteTemplate(db: Executor, sandboxId: string, id: string
   const res = await db.update(orderTemplates).set({ archived: true, active: false }).where(live(sandboxId, id)).returning({ id: orderTemplates.id });
   if (res.length === 0) throw new HttpError(404, "Nie ma takiego szablonu.");
 }
+
+const asCandidate = (r: MatchView, windows: { pickupToMs: number; deliveryToMs: number }): AdviceCandidate => {
+  const slack = (eta: number | null | undefined, to: number) => (eta == null ? null : Math.round((to - eta) / 60_000));
+  return {
+    driverId: r.driverId,
+    name: r.driverName,
+    plates: r.plates,
+    forecast: forecastState(r, windows) === "zdazy" ? "zdazy" : "ryzyko",
+    slackPickupMin: slack(r.pickupEtaMs, windows.pickupToMs),
+    slackDeliveryMin: slack(r.deliveryEtaMs, windows.deliveryToMs),
+    reasons: r.reasons.slice(0, 3),
+  };
+};
+
+/** "Doradź" for one planned run: the algorithm's candidates and obstacles, explained by AI (rules without it). */
+export async function adviseRun(db: Executor, sandbox: { id: string; simOrigin: Date }, key: string, simNow: Date) {
+  const cut = key.lastIndexOf(":");
+  const [templateId, date] = [key.slice(0, cut), key.slice(cut + 1)];
+  const t = (await listTemplates(db, sandbox)).find((x) => x.id === templateId);
+  const day = t ? runOn(t, date) : null;
+  if (!t || !day) throw new HttpError(404, "Nie ma takiego kursu w paczce.");
+  const e = await evaluateRun(db, sandbox.id, t, day, simNow, await loadMatchContext(db, sandbox.id));
+  const candidates = e.results.filter((r) => r.tier !== "excluded").slice(0, 5).map((r) => asCandidate(r, e.windows));
+  const facts: AdviceFacts = {
+    templateName: t.name,
+    clientName: t.clientName,
+    date,
+    deliveryTo: day.deliveryTo.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Warsaw" }),
+    defaultDriver: e.usual ? { name: e.usual.driverName, plates: e.usual.plates, ok: e.usualOk, reason: e.usualOk ? "" : (e.usual.reasons[0] ?? ""), hard: Boolean(e.usual.hard) } : null,
+    chosen: e.chosen ? asCandidate(e.chosen, e.windows) : null,
+    candidates,
+    fixable: e.fixable.slice(0, 3),
+    hard: e.hard.slice(0, 2),
+  };
+  const { advice, source } = await advisePlanRun({ db, sandboxId: sandbox.id, simNow, facts });
+  return { ...advice, source, candidates: candidates.map((c) => ({ driverId: c.driverId, name: c.name, plates: c.plates })) };
+}
+export type RunAdvice = Awaited<ReturnType<typeof adviseRun>>;

@@ -17,7 +17,8 @@ export type AiFunctionName =
   | "readAgentQuote"
   | "readShipmentStatus"
   | "draftShipmentUpdate"
-  | "diagnostics";
+  | "diagnostics"
+  | "advisePlanRun";
 
 export type AiFallbackReason = "no_api_key" | "sandbox_limit" | "daily_budget" | "ai_error" | "refusal" | "catch_up";
 

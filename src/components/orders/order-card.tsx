@@ -49,6 +49,7 @@ export function OrderCardBody({ order, compact = false }: { order: OrderCardData
         </div>
       )}
       {compact && order.eta && <div className="text-[11px] text-muted-foreground">ETA {formatTime(order.eta)}</div>}
+      {order.smsDue && <div className="text-[11px] text-muted-foreground">SMS do kierowcy: {formatSimClock(order.smsDue)}</div>}
     </>
   );
 }

@@ -231,7 +231,7 @@ function Lane({
                 </Button>
               )}
               {(o.status === "WYSLANE" || o.status === "PRZYPISANE") && (
-                <Button size="xs" variant="ghost" onClick={() => onAction(o.id, "unassign", `${o.number} wróciło do puli, kierowca dostał SMS o odwołaniu`)}>
+                <Button size="xs" variant="ghost" onClick={() => onAction(o.id, "unassign", o.status === "WYSLANE" ? `${o.number} wróciło do puli, kierowca dostał SMS o odwołaniu` : `${o.number} wróciło do puli (SMS nie zdążył wyjść)`)}>
                   Cofnij przydział
                 </Button>
               )}

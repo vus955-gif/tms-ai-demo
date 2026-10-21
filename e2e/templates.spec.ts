@@ -34,6 +34,24 @@ test.describe("etap 4a — zlecenia stałe z szablonów", () => {
     await expect.poll(() => plan.getByRole("row").count()).toBeLessThan(before);
   });
 
+  test("A3: zwykły kierowca, doradca przy zagrożonym dniu i SMS dzień przed kursem", async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.goto("/szablony");
+    await resetWorld(page);
+    const plan = page.getByTestId("week-plan");
+    // Adam Dąbrowski usually drives the Agro-Pol run, but his tachograph check is overdue.
+    await expect(plan).toContainText("zwykle: Adam Dąbrowski — nie może", { timeout: 30_000 });
+    await expect(plan).toContainText("zwykle: Anna Wiśniewska — dostanie zlecenie przy tworzeniu");
+    await plan.locator('[data-testid^="advise-tpl-agropol-pasza"]').first().click();
+    const advice = plan.locator('[data-testid^="advice-tpl-agropol-pasza"]').first();
+    await expect(advice).toContainText("Zwykły kierowca Adam Dąbrowski nie może", { timeout: 30_000 });
+    await advice.getByRole("button", { name: "Utwórz z tym kierowcą" }).click();
+    await expect(page.getByText(/Utworzono 1: ZL-\d+ — 1 z przydziałem \(SMS dzień przed kursem o 16:00\)/)).toBeVisible();
+
+    await page.goto("/zlecenia");
+    await expect(page.getByText(/SMS do kierowcy: /).first()).toBeVisible({ timeout: 30_000 });
+  });
+
   test("nowy szablon: walidacja i zapis", async ({ page }) => {
     await page.goto("/szablony");
     await expect(page.getByTestId("template-list").getByRole("listitem").first()).toBeVisible({ timeout: 30_000 });

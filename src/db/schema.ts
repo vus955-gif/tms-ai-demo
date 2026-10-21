@@ -227,6 +227,8 @@ export const orders = pgTable(
     source: text("source").$type<"scenario" | "manual" | "email" | "template">().notNull(),
     /** Recurring orders (stage 4): `<templateId>:<yyyy-mm-dd>`, one live (not cancelled) order per template and day. */
     templateKey: text("template_key"),
+    /** Assigned, order SMS not sent yet: when it goes out (the day before the run). */
+    smsDueSim: ts("sms_due_sim"),
     sourceMessageId: text("source_message_id"),
     createdSim: ts("created_sim").notNull(),
     arrivedPickupAt: ts("arrived_pickup_at"),
@@ -679,6 +681,8 @@ export const orderTemplates = pgTable(
     notes: text("notes").notNull().default(""),
     /** ISO weekdays 1 (Mon) … 7 (Sun). */
     weekdays: jsonb("weekdays").$type<number[]>().notNull(),
+    /** Who usually drives it: orders made from the plan go to this driver when they fit. */
+    defaultDriverId: text("default_driver_id"),
     active: boolean("active").notNull().default(true),
     /** Deleted by the dispatcher: kept so an emptied list is not mistaken for a never-seeded world. */
     archived: boolean("archived").notNull().default(false),

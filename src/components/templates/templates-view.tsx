@@ -1,8 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { CalendarClock, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Fragment, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SNAPSHOT_KEY, useSnapshot } from "@/hooks/use-snapshot";
@@ -10,7 +10,7 @@ import { getJson, postJson } from "@/lib/api";
 import { formatTime, formatWarsaw } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { WEEKDAY_SHORT, type ForecastState } from "@/domain/recurring";
-import type { PlannedOrder, PlanSkip, TemplateView } from "@/server/templates/templates";
+import type { PlanCreated, PlannedOrder, PlanSkip, RunAdvice, SmsMode, TemplateView } from "@/server/templates/templates";
 import { TemplateDialog } from "./template-dialog";
 
 const FORECAST: Record<ForecastState, { label: string; className: string }> = {
@@ -55,10 +55,31 @@ export function TemplatesView() {
     },
     onError: (e) => toast.error(e.message),
   });
+  const [sms, setSms] = useState<SmsMode>("dzien_przed");
+  // Advice belongs to the plan it was given for: when the plan is recomputed it is asked again.
+  const [advice, setAdvice] = useState<Record<string, RunAdvice & { bucket: number | null }>>({});
+  const advise = useMutation({
+    mutationFn: (key: string) => postJson<RunAdvice>("/api/templates/advice", { key }),
+    onSuccess: (r, key) => setAdvice((a) => ({ ...a, [key]: { ...r, bucket } })),
+    onError: (e) => toast.error(e.message),
+  });
   const create = useMutation({
-    mutationFn: (keys: string[]) => postJson<{ created: string[]; skipped: PlanSkip[] }>("/api/templates/plan", { keys }),
+    mutationFn: (keys: (string | { key: string; driverId: string })[]) => postJson<{ created: PlanCreated[]; skipped: PlanSkip[] }>("/api/templates/plan", { keys, sms }),
     onSuccess: (r) => {
-      if (r.created.length) toast.success(`Utworzono ${r.created.length}: ${r.created.join(", ")} — czekają w Zleceniach na przydział.`);
+      if (r.created.length) {
+        const later = r.created.filter((c) => c.driverName && !c.smsNow).length;
+        const now = r.created.filter((c) => c.driverName && c.smsNow).length;
+        const waiting = r.created.filter((c) => !c.driverName);
+        const parts = [
+          later ? `${later} z przydziałem (SMS dzień przed kursem o 16:00)` : "",
+          now ? `${now} z przydziałem (SMS wysłany od razu)` : "",
+          waiting.length ? `${waiting.length} czeka w Zleceniach na przydział` : "",
+        ].filter(Boolean);
+        toast.success(`Utworzono ${r.created.length}: ${r.created.map((c) => c.number).join(", ")} — ${parts.join(", ")}.`);
+        // Why the usual or the chosen driver did not get it: the forwarder should not have to guess.
+        const why = waiting.filter((c) => c.notAssigned);
+        if (why.length) toast.warning(`Bez przydziału: ${why.map((c) => `${c.number} (${c.notAssigned})`).join("; ")}.`);
+      }
       const why = [...new Set(r.skipped.map((s) => s.reason))];
       if (r.skipped.length) toast.warning(`Pominięto ${r.skipped.length}: ${why.join("; ")}.`);
       if (!r.created.length && !r.skipped.length) toast.info("Nic nowego do utworzenia.");
@@ -67,6 +88,7 @@ export function TemplatesView() {
     onError: (e) => toast.error(e.message),
   });
   const data = q.data;
+  const adviceFor = (key: string) => (advice[key]?.bucket === bucket ? advice[key] : undefined);
   const open = (data?.plan ?? []).filter((p) => !p.orderNumber);
   const chosen = new Set(open.map((p) => p.key).filter((k) => !unticked.has(k)));
 
@@ -116,9 +138,18 @@ export function TemplatesView() {
             </h2>
             <p className="text-xs text-muted-foreground">Prognoza z tych samych reguł co „klocki”: czas jazdy, okna, pojemność, chłodnia, kartoteka floty i terminarz. Każde zlecenie liczone osobno.</p>
           </div>
-          <Button onClick={() => create.mutate([...chosen])} disabled={chosen.size === 0 || create.isPending} data-testid="create-planned">
-            Utwórz zaznaczone ({chosen.size})
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-1.5 text-xs">
+              SMS do kierowców:
+              <select className="h-8 rounded-md border bg-background px-2 text-xs" value={sms} onChange={(e) => setSms(e.target.value as SmsMode)} aria-label="Kiedy SMS do kierowców">
+                <option value="dzien_przed">dzień przed kursem, 16:00</option>
+                <option value="od_razu">od razu</option>
+              </select>
+            </label>
+            <Button onClick={() => create.mutate([...chosen])} disabled={chosen.size === 0 || create.isPending} data-testid="create-planned">
+              Utwórz zaznaczone ({chosen.size})
+            </Button>
+          </div>
         </div>
         <div className="overflow-x-auto rounded-lg border bg-background">
           <table className="w-full text-sm">
@@ -133,7 +164,8 @@ export function TemplatesView() {
             </thead>
             <tbody>
               {data?.plan.map((p) => (
-                <tr key={p.key} className="border-b align-top" data-testid={`plan-${p.key}`}>
+                <Fragment key={p.key}>
+                <tr className="border-b align-top" data-testid={`plan-${p.key}`}>
                   <td className="px-2 py-1.5">
                     {p.orderNumber ? null : (
                       <input
@@ -166,10 +198,44 @@ export function TemplatesView() {
                           </span>
                         )}
                         <div className="mt-0.5 text-muted-foreground">{p.reason}</div>
+                        {p.defaultDriver && (
+                          <div className={cn("mt-0.5", p.defaultDriver.ok ? "text-ok" : "text-warn")}>
+                            zwykle: {p.defaultDriver.name} — {p.defaultDriver.ok ? "dostanie zlecenie przy tworzeniu" : `nie może: ${p.defaultDriver.reason}`}
+                          </div>
+                        )}
+                        {(p.forecast !== "zdazy" || (p.defaultDriver && !p.defaultDriver.ok)) && !adviceFor(p.key) && (
+                          <Button size="xs" variant="ghost" className="mt-1 text-ai" onClick={() => advise.mutate(p.key)} disabled={advise.isPending} data-testid={`advise-${p.key}`}>
+                            <Sparkles /> Doradź
+                          </Button>
+                        )}
                       </>
                     )}
                   </td>
                 </tr>
+                {adviceFor(p.key) && !p.orderNumber && (
+                  <tr className="border-b bg-ai-soft/30" data-testid={`advice-${p.key}`}>
+                    <td />
+                    <td colSpan={4} className="px-2 py-2 text-xs">
+                      <p>
+                        <span className="text-ai">{adviceFor(p.key)!.source === "ai" ? "✦ AI: " : "Podpowiedź (reguły): "}</span>
+                        {adviceFor(p.key)!.summary}
+                      </p>
+                      <ul className="mt-1 space-y-1">
+                        {adviceFor(p.key)!.options.map((o) => (
+                          <li key={o.text} className="flex flex-wrap items-center gap-2">
+                            <span>• {o.text}</span>
+                            {o.kind === "inny_kierowca" && o.driverId && (
+                              <Button size="xs" variant="outline" onClick={() => create.mutate([{ key: p.key, driverId: o.driverId! }])} disabled={create.isPending}>
+                                Utwórz z tym kierowcą
+                              </Button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
               {data && data.plan.length === 0 && (
                 <tr>

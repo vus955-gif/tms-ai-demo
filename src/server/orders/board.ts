@@ -34,6 +34,8 @@ export type OrderCard = {
   risk: string | null;
   eta: string | null;
   references: string[];
+  /** Assigned, order SMS planned for this time (recurring runs: the day before). */
+  smsDue: string | null;
 };
 
 export type DriverLane = {
@@ -71,6 +73,7 @@ export function orderCard(fleet: FleetData, o: OrderRow): OrderCard {
     risk: o.risk,
     eta: o.etaPredicted?.toISOString() ?? null,
     references: o.references,
+    smsDue: o.status === "PRZYPISANE" ? (o.smsDueSim?.toISOString() ?? null) : null,
   };
 }
 

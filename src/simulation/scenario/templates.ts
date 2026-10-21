@@ -19,6 +19,8 @@ export type ScenarioTemplate = {
   references: string[];
   notes: string;
   weekdays: number[];
+  /** The usual driver; orders from the plan go to them when they fit. */
+  defaultDriverId?: string | null;
 };
 
 const h = (hours: number, minutes = 0) => hours * 60 + minutes;
@@ -41,6 +43,8 @@ export const templatesSeed: ScenarioTemplate[] = [
     references: ["AP-STAŁE"],
     notes: "Zlecenie stałe — pasza w workach",
     weekdays: [1, 3, 5],
+    // Usually Adam Dąbrowski (EL 9K41) — whose tachograph check is overdue at the start of the demo.
+    defaultDriverId: "d-dabrowski",
   },
   {
     id: "tpl-baltic-chlodnia",
@@ -59,6 +63,7 @@ export const templatesSeed: ScenarioTemplate[] = [
     references: ["BF-RAMOWA"],
     notes: "Temperatura +2…+6 °C",
     weekdays: [1, 2, 3, 4, 5],
+    defaultDriverId: "d-wisniewska",
   },
   {
     id: "tpl-hanza-dostawy",

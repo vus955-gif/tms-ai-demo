@@ -24,6 +24,7 @@ export const AI_FUNCTION_LABEL: Record<string, string> = {
   readAgentQuote: "Stawka agenta",
   readShipmentStatus: "Status od agenta",
   draftShipmentUpdate: "Status dla klienta",
+  advisePlanRun: "Doradca planu",
   diagnostics: "Diagnostyka",
 };
 

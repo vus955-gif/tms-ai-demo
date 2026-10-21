@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useSnapshot } from "@/hooks/use-snapshot";
 import { getJson, postJson } from "@/lib/api";
 import { WEEKDAY_SHORT } from "@/domain/recurring";
 import type { CatalogClient } from "@/app/api/catalog/route";
@@ -42,6 +43,9 @@ export function TemplateDialog({ template, onClose, onSaved }: { template: Templ
   const [reefer, setReefer] = useState(template?.bodyRequired === "chlodnia");
   const [adr, setAdr] = useState(template?.adrRequired ?? false);
   const [refs, setRefs] = useState(template?.references.join(", ") ?? "");
+  const [driverId, setDriverId] = useState(template?.defaultDriverId ?? "");
+  const { data: snapshot } = useSnapshot();
+  const drivers = [...(snapshot?.fleet ?? [])].sort((a, b) => a.driverName.localeCompare(b.driverName, "pl"));
   const [error, setError] = useState<string | null>(null);
   const client = catalog.data?.clients.find((c) => c.id === clientId);
   const save = useMutation({
@@ -76,6 +80,7 @@ export function TemplateDialog({ template, onClose, onSaved }: { template: Templ
         .filter(Boolean),
       notes: template?.notes ?? "",
       weekdays,
+      defaultDriverId: driverId || null,
     });
   };
 
@@ -181,6 +186,18 @@ export function TemplateDialog({ template, onClose, onSaved }: { template: Templ
               <Input value={refs} onChange={(e) => setRefs(e.target.value)} placeholder="AP-STAŁE" aria-label="Referencje" />
             </label>
           </div>
+          <label className="grid gap-1 text-sm">
+            Zwykły kierowca (opcjonalnie)
+            <select className={select} value={driverId} onChange={(e) => setDriverId(e.target.value)} aria-label="Zwykły kierowca">
+              <option value="">— przydział ręcznie —</option>
+              {drivers.map((v) => (
+                <option key={v.driverId} value={v.driverId}>
+                  {v.driverName} ({v.plates})
+                </option>
+              ))}
+            </select>
+            <span className="text-[11px] text-muted-foreground">Zlecenia z paczki trafią do niego, jeśli da radę (czas pracy, terminy, pojemność); SMS pójdzie dzień przed kursem.</span>
+          </label>
           {error && (
             <p role="alert" className="text-sm text-destructive">
               {error}
