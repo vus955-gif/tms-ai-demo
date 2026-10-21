@@ -354,7 +354,8 @@ export async function adviseRun(db: Executor, sandbox: { id: string; simOrigin: 
   const facts: AdviceFacts = {
     templateName: t.name,
     clientName: t.clientName,
-    date,
+    // "pt 23.10", the way people say it (the AI repeats whatever form it gets).
+    date: day.pickupFrom.toLocaleDateString("pl-PL", { weekday: "short", day: "numeric", month: "2-digit", timeZone: "Europe/Warsaw" }).replace(",", ""),
     deliveryTo: day.deliveryTo.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Warsaw" }),
     defaultDriver: e.usual ? { name: e.usual.driverName, plates: e.usual.plates, ok: e.usualOk, reason: e.usualOk ? "" : (e.usual.reasons[0] ?? ""), hard: Boolean(e.usual.hard) } : null,
     chosen: e.chosen ? asCandidate(e.chosen, e.windows) : null,
