@@ -4,6 +4,7 @@ import "@/server/bootstrap";
 import { atCurrentTime } from "@/server/actions";
 import { readJson, withSandbox } from "@/server/http";
 import { approveSending, DetailsPatchSchema, draftNegotiation, draftOffer, recalcRoad, selectRate, setOutcome, updateDetails } from "@/server/sales/actions";
+import { explainQuoteRanking, setClientQuoteProfile } from "@/server/sales/ranking";
 import { quoteDetail } from "@/server/sales/views";
 
 export async function GET(request: NextRequest, ctx: RouteContext<"/api/sales/[id]">) {
@@ -25,6 +26,9 @@ const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("offer") }),
   z.object({ action: z.literal("negotiate"), agentQuoteId: z.string().min(1).max(64), target: z.number().positive().max(10_000_000) }),
   z.object({ action: z.literal("outcome"), value: z.enum(["wygrana", "przegrana", "anulowana"]) }),
+  // The client's quoting profile (how much price matters against time) and the worded recommendation.
+  z.object({ action: z.literal("profile"), priceWeight: z.number().min(0).max(100), note: z.string().max(300) }),
+  z.object({ action: z.literal("explain") }),
 ]);
 
 /** Salesperson actions on one quote. */
@@ -52,6 +56,11 @@ export async function POST(request: NextRequest, ctx: RouteContext<"/api/sales/[
         case "outcome":
           await setOutcome(c.db, c.sandbox.id, id, input.value, simNow);
           return { ok: true };
+        case "profile":
+          await setClientQuoteProfile(c.db, c.sandbox.id, id, input);
+          return { ok: true };
+        case "explain":
+          return explainQuoteRanking(c.db, c.sandbox.id, id, simNow);
       }
     });
   });

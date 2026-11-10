@@ -214,6 +214,7 @@ export async function setOutcome(db: Executor, sandboxId: string, quoteId: strin
 
 export const SettingsSchema = z.object({
   autoSend: z.boolean().optional(),
+  maxAgentsPerRfq: z.number().int().min(3).max(10).optional(),
   defaultMarginPct: z.number().min(0).max(100).optional(),
   adrSurchargePct: z.number().min(0).max(200).optional(),
   reeferSurchargePct: z.number().min(0).max(200).optional(),

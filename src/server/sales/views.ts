@@ -2,6 +2,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { agentQuotes, agents, clientContacts, clients, messages, quoteRequests, shipments, type AgentQuoteStatus, type QuoteMode, type QuoteStatus, type RoadRate } from "@/db/schema";
 import type { Executor } from "@/db/types";
 import { EMPTY_DETAILS, type QuoteDetails } from "@/domain/quote-rules";
+import { profileLabel, rankOffers, type Offer, type RankedOffer } from "@/domain/offer-ranking";
 import { offerPrice, type RoadCalculation } from "@/domain/sales-pricing";
 import { HttpError } from "../http";
 import { loadSettings, routeText } from "./quotes";
@@ -50,6 +51,10 @@ export type QuoteDetailView = {
   extractedBy: "ai" | "rules";
   deadlineSim: string | null;
   agents: AgentRow[];
+  /** The client's quoting profile and the agents' rates ranked against it (computed, not written by AI). */
+  profile: { priceWeight: number; note: string; label: string };
+  ranking: RankedOffer[];
+  rankingNote: string | null;
   selectedQuoteId: string | null;
   marginPct: number | null;
   defaultMarginPct: number;
@@ -97,6 +102,11 @@ export async function listQuotes(db: Executor, sandboxId: string): Promise<Quote
   });
 }
 
+/** Agents' answers that carry a rate: only these can be ranked. */
+function pricedOffers(rows: (typeof agentQuotes.$inferSelect)[]): Offer[] {
+  return rows.filter((a) => a.status === "odpowiedz" && a.price !== null && a.price > 0).map((a) => ({ id: a.id, price: a.price!, currency: a.currency ?? "", transitDays: a.transitDays }));
+}
+
 export async function quoteDetail(db: Executor, sandboxId: string, id: string): Promise<QuoteDetailView> {
   const [q] = await db.select().from(quoteRequests).where(and(eq(quoteRequests.sandboxId, sandboxId), eq(quoteRequests.id, id)));
   if (!q) throw new HttpError(404, "Nie ma takiej wyceny.");
@@ -109,6 +119,7 @@ export async function quoteDetail(db: Executor, sandboxId: string, id: string): 
   const agentMsgs = await db.select().from(messages).where(and(eq(messages.sandboxId, sandboxId), eq(messages.party, "agent"))).orderBy(asc(messages.atSim));
   const settings = await loadSettings(db, sandboxId);
   const selected = aqs.find((a) => a.id === q.selectedQuoteId);
+  const ranking = rankOffers(pricedOffers(aqs), client.quotePriceWeight);
   const [shipment] = await db.select({ id: shipments.id, number: shipments.number }).from(shipments).where(and(eq(shipments.sandboxId, sandboxId), eq(shipments.quoteId, q.id)));
   return {
     shipment: shipment ?? null,
@@ -142,6 +153,9 @@ export async function quoteDetail(db: Executor, sandboxId: string, id: string): 
         };
       })
       .sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity)),
+    profile: { priceWeight: client.quotePriceWeight, note: client.quoteNote, label: profileLabel(client.quotePriceWeight) },
+    ranking: ranking.ranked,
+    rankingNote: ranking.note,
     selectedQuoteId: q.selectedQuoteId,
     marginPct: q.marginPct,
     defaultMarginPct: settings.defaultMarginPct,
@@ -157,6 +171,7 @@ export type SalesSettingsView = {
   adrSurchargePct: number;
   reeferSurchargePct: number;
   roadRates: RoadRate[];
+  maxAgentsPerRfq: number;
   agents: { id: string; company: string; contactName: string; email: string; modes: QuoteMode[]; regions: string; active: boolean }[];
 };
 
@@ -169,6 +184,7 @@ export async function salesSettingsView(db: Executor, sandboxId: string): Promis
     adrSurchargePct: s.adrSurchargePct,
     reeferSurchargePct: s.reeferSurchargePct,
     roadRates: s.roadRates,
+    maxAgentsPerRfq: s.maxAgentsPerRfq,
     agents: list.map((a) => ({ id: a.id, company: a.company, contactName: a.contactName, email: a.email, modes: a.modes, regions: a.regions, active: a.active })),
   };
 }

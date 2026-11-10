@@ -47,13 +47,15 @@ export function laneRegion(originCountry: string | null, destinationCountry: str
 
 export const RFQ_MIN = 3;
 export const RFQ_MAX = 5;
+/** The salesperson may widen the net, but an inquiry never goes to more than ten agents. */
+export const RFQ_LIMIT = 10;
 
-/** Up to five agents for the lane; when fewer than three cover it, the most responsive others fill in. */
-export function pickRfqAgents<T extends { id: string; regions: string; replyRate: number }>(candidates: T[], region: Region | null): T[] {
+/** Up to `max` agents for the lane (five by default); when fewer than three cover it, the most responsive others fill in. */
+export function pickRfqAgents<T extends { id: string; regions: string; replyRate: number }>(candidates: T[], region: Region | null, max = RFQ_MAX): T[] {
   // Ties by id, so the same inquiry always goes to the same agents.
   const byReply = [...candidates].sort((a, b) => b.replyRate - a.replyRate || a.id.localeCompare(b.id));
   const covering = byReply.filter((a) => servesRegion(a.regions, region));
-  const picked = covering.slice(0, RFQ_MAX);
+  const picked = covering.slice(0, Math.min(Math.max(max, RFQ_MIN), RFQ_LIMIT));
   if (picked.length < RFQ_MIN) for (const a of byReply) if (picked.length < RFQ_MIN && !picked.includes(a)) picked.push(a);
   return picked;
 }

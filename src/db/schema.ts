@@ -75,6 +75,10 @@ export const clients = pgTable(
     taxId: text("tax_id").notNull(),
     emailDomain: text("email_domain").notNull(),
     isKey: boolean("is_key").notNull().default(false),
+    /** Quoting profile: how much price matters to this client (0–100); the rest is transit time. */
+    quotePriceWeight: integer("quote_price_weight").notNull().default(50),
+    /** What the salesperson knows about how this client buys ("lubi tanio i dłużej"). */
+    quoteNote: text("quote_note").notNull().default(""),
   },
   (t) => [primaryKey({ columns: [t.sandboxId, t.id] })],
 );
@@ -598,6 +602,8 @@ export const salesSettings = pgTable("sales_settings", {
   sandboxId: sandboxRef().primaryKey(),
   autoSend: boolean("auto_send").notNull().default(true),
   defaultMarginPct: doublePrecision("default_margin_pct").notNull().default(12),
+  /** How many agents at most get an RFQ for one inquiry (each in a separate message, never in copy). */
+  maxAgentsPerRfq: integer("max_agents_per_rfq").notNull().default(5),
   adrSurchargePct: doublePrecision("adr_surcharge_pct").notNull().default(15),
   reeferSurchargePct: doublePrecision("reefer_surcharge_pct").notNull().default(20),
   roadRates: jsonb("road_rates").$type<RoadRate[]>().notNull(),

@@ -16,6 +16,7 @@ import { formatSimClock } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { AgentRow, QuoteDetailView, ThreadEntry } from "@/server/sales/views";
 import { AGENT_STATUS, MODE, QUOTE_STATUS, VEHICLE } from "./labels";
+import { RankingPanel } from "./ranking-panel";
 
 const money = (amount: number, currency: string) => `${groupThousands(Math.round(amount))} ${currency}`;
 
@@ -247,6 +248,7 @@ function AgentsTable({ quote }: { quote: QuoteDetailView }) {
         <h3 className="text-sm font-semibold">Stawki agentów</h3>
         {quote.deadlineSim && <span className="text-[11px] text-muted-foreground">termin odpowiedzi: {formatSimClock(quote.deadlineSim)}</span>}
       </div>
+      <RankingPanel key={`${quote.profile.priceWeight}:${quote.profile.note}`} quote={quote} editable={editable} />
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -254,6 +256,7 @@ function AgentsTable({ quote }: { quote: QuoteDetailView }) {
               <th className="py-1.5 pr-2" />
               <th className="py-1.5 pr-2">Agent</th>
               <th className="py-1.5 pr-2">Status</th>
+              <th className="py-1.5 pr-2 text-right">Dopasowanie</th>
               <th className="py-1.5 pr-2 text-right">Stawka</th>
               <th className="py-1.5 pr-2">Tranzyt</th>
               <th className="py-1.5 pr-2">Ważna do</th>
@@ -298,6 +301,8 @@ function AgentLine({ quote, agent, selected, onSelect, editable }: { quote: Quot
   const { act } = useQuoteActions(quote.id);
   const draft = agent.thread.find((m) => m.state === "draft");
   const priced = agent.status === "odpowiedz" && agent.price !== null;
+  const fit = quote.ranking.find((r) => r.id === agent.agentQuoteId);
+  const best = quote.ranking[0]?.id === agent.agentQuoteId;
   return (
     <>
       <tr className={cn("border-b align-top", selected && "bg-ok-soft/40")} data-testid={`agent-${agent.agentId}`}>
@@ -310,6 +315,16 @@ function AgentLine({ quote, agent, selected, onSelect, editable }: { quote: Quot
           <div className="pl-4 text-[11px] text-muted-foreground">{agent.contactName}</div>
         </td>
         <td className={cn("py-1.5 pr-2 text-xs", AGENT_STATUS[agent.status].className)}>{AGENT_STATUS[agent.status].label}</td>
+        <td className="py-1.5 pr-2 text-right text-xs" data-testid={`fit-${agent.agentId}`}>
+          {fit ? (
+            <span title={fit.reasons.join("; ")}>
+              <span className={cn("rounded px-1.5 py-0.5 font-semibold tabular-nums", best ? "bg-ok/15 text-ok" : "bg-muted text-muted-foreground")}>{fit.fitPct}%</span>
+              {best && <span className="block text-[10px] text-ok">najbliżej profilu</span>}
+            </span>
+          ) : (
+            "—"
+          )}
+        </td>
         <td className="py-1.5 pr-2 text-right font-medium tabular-nums">{priced ? money(agent.price!, agent.currency ?? "") : "—"}</td>
         <td className="py-1.5 pr-2 text-xs">{agent.transitDays ? `${agent.transitDays} dni` : "—"}</td>
         <td className="py-1.5 pr-2 text-xs">{agent.validUntil ?? "—"}</td>
@@ -321,7 +336,7 @@ function AgentLine({ quote, agent, selected, onSelect, editable }: { quote: Quot
       {open && (
         <tr className="border-b bg-muted/30">
           <td />
-          <td colSpan={6} className="space-y-2 py-2 pr-2">
+          <td colSpan={7} className="space-y-2 py-2 pr-2">
             {agent.thread.filter((m) => m.state !== "draft").map((m) => (
               <MessageBox key={m.id} m={m} from={m.direction === "in" ? agent.company : "My"} />
             ))}

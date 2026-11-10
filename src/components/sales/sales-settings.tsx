@@ -34,12 +34,13 @@ function SettingsForm({ initial, onClose }: { initial: SalesSettingsView; onClos
   const [margin, setMargin] = useState(String(initial.defaultMarginPct));
   const [adr, setAdr] = useState(String(initial.adrSurchargePct));
   const [reefer, setReefer] = useState(String(initial.reeferSurchargePct));
+  const [maxAgents, setMaxAgents] = useState(String(initial.maxAgentsPerRfq));
   const [rates, setRates] = useState<RoadRate[]>(initial.roadRates);
   const num = (v: string) => Number(v.replace(",", "."));
   const save = useMutation({
     mutationFn: () =>
       postJson<SalesSettingsView>("/api/sales/settings", {
-        settings: { autoSend, defaultMarginPct: num(margin), adrSurchargePct: num(adr), reeferSurchargePct: num(reefer), roadRates: rates },
+        settings: { autoSend, defaultMarginPct: num(margin), adrSurchargePct: num(adr), reeferSurchargePct: num(reefer), maxAgentsPerRfq: Math.round(num(maxAgents)), roadRates: rates },
       }),
     onSuccess: (data) => {
       queryClient.setQueryData(SETTINGS_KEY, data);
@@ -74,6 +75,10 @@ function SettingsForm({ initial, onClose }: { initial: SalesSettingsView; onClos
         </label>
         <label className="grid gap-1 text-xs">
           Dopłata chłodnia %<Input value={reefer} onChange={(e) => setReefer(e.target.value)} className="h-8 w-24" />
+        </label>
+        <label className="grid gap-1 text-xs">
+          Agentów na zapytanie (3–10)
+          <Input value={maxAgents} onChange={(e) => setMaxAgents(e.target.value.replace(/[^0-9]/g, ""))} className="h-8 w-24" inputMode="numeric" data-testid="max-agents" />
         </label>
       </div>
       <div>

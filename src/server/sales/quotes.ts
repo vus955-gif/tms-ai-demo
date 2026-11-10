@@ -180,7 +180,8 @@ export async function sendAckAndRfqs(db: Executor, sandboxId: string, quoteId: s
     });
   }
   const forMode = (await db.select().from(agents).where(and(eq(agents.sandboxId, sandboxId), eq(agents.active, true)))).filter((a) => a.modes.includes(quote.mode));
-  const list = pickRfqAgents(forMode, laneRegion(findPlace(details.origin)?.country ?? null, findPlace(details.destination)?.country ?? null));
+  const { maxAgentsPerRfq } = await loadSettings(db, sandboxId);
+  const list = pickRfqAgents(forMode, laneRegion(findPlace(details.origin)?.country ?? null, findPlace(details.destination)?.country ?? null), maxAgentsPerRfq);
   // The demo agents behave the same in every world with the same seed (like the driver bots): which of them
   // answer, and when, depends on the world's seed, the quote number and the agent — not on random ids.
   const [world] = await db.select({ seed: sandboxes.seed }).from(sandboxes).where(eq(sandboxes.id, sandboxId));

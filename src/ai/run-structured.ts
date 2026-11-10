@@ -14,6 +14,7 @@ export type AiFunctionName =
   | "assessDamage"
   | "writeHandover"
   | "translateForDriver"
+  | "explainRanking"
   | "explainAlert"
   | "draftMessage"
   | "triageClientEmail"
