@@ -33,7 +33,8 @@ function pointLines(p: PointInfo): string[] {
   return lines;
 }
 
-export function orderSms(order: OrderInfo, clientName: string, pickup: PointInfo, delivery: PointInfo): string {
+/** `link`: the driver's page for this order (details, one-tap confirmation, CMR photo). Replying "OK" still works. */
+export function orderSms(order: OrderInfo, clientName: string, pickup: PointInfo, delivery: PointInfo, link?: string): string {
   const cargo = [`${order.cargoPallets} palet`, `${order.cargoKg} kg`];
   if (order.bodyRequired === "chlodnia") cargo.push("chłodnia");
   if (order.adrRequired) cargo.push("ADR");
@@ -46,6 +47,7 @@ export function orderSms(order: OrderInfo, clientName: string, pickup: PointInfo
     `Ładunek: ${cargo.join(", ")}`,
     ...(order.references.length ? [`Ref: ${order.references.join(", ")}`] : []),
     ...(order.notes ? [`Uwagi do zlecenia: ${order.notes}`] : []),
+    ...(link ? [`Szczegóły i potwierdzenie jednym kliknięciem: ${link}`] : []),
     "Potwierdź odpisując OK.",
   ].join("\n");
 }

@@ -11,6 +11,7 @@ import { formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ThreadDetail, ThreadMessage } from "@/server/messages/threads";
 import { markGuideStep, onGuideToolRequest } from "@/components/guide/guide-store";
+import { MessageText } from "@/components/messenger/message-text";
 import { CmrTray } from "./cmr-tray";
 
 const MAX = 500;
@@ -116,7 +117,7 @@ function PhonePanel({ driverId, onSelect, onClose }: { driverId: string | null; 
               <div key={m.id} className={cn("flex", m.direction === "in" ? "justify-end" : "justify-start")}>
                 <div className={cn("max-w-[85%] rounded-2xl px-3 py-1.5 text-[13px]", m.direction === "in" ? "rounded-br-sm bg-ok text-white" : "rounded-bl-sm border bg-background")}>
                   <Attachments message={m} />
-                  {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
+                  {m.body && <MessageText body={m.body} className="whitespace-pre-wrap" />}
                   <p className={cn("text-right text-[10px]", m.direction === "in" ? "text-white/80" : "text-muted-foreground")}>{formatTime(m.atSim)}</p>
                 </div>
               </div>

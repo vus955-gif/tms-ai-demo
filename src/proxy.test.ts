@@ -25,6 +25,12 @@ describe("password gate", () => {
     expect(api.status).toBe(401);
     const loginPage = await proxy(req("/login"));
     expect(loginPage.headers.get("x-middleware-next")).toBe("1");
+    // Links sent to people outside the company work without the demo password: client tracking and the driver's order page.
+    for (const open of ["/sledzenie/abc", "/api/track/abc", "/k/abc", "/api/driver-link/abc", "/api/driver-link/abc/cmr"]) {
+      expect((await proxy(req(open))).headers.get("x-middleware-next")).toBe("1");
+    }
+    // ...but nothing that merely starts with the same letter.
+    expect((await proxy(req("/klienci"))).status).toBe(307);
   });
 
   it("accepts the cookie issued after a correct password", async () => {

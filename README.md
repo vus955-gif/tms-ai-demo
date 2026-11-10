@@ -28,6 +28,7 @@ Demo pokazuje, jak mógłby wyglądać prosty TMS dla firmy z busami i ciągnika
 |---|---|
 | **Monitoring** | Mapa 14 pojazdów, ETA z czasem pracy kierowcy według rozporządzenia 561/2006 (przerwy, odpoczynki), alerty o ryzyku spóźnienia, objazdy przy utrudnieniach. |
 | **Zlecenia i „klocki”** | Dopasowanie kierowcy do zlecenia z powodami (dojazd, okna czasowe, pojemność, chłodnia, ADR, terminy, nieobecności), przydział przeciągnięciem, SMS do kierowcy, komunikator; „Zadzwoń” z alertu lub komunikatora zostawia notatkę z rozmowy w wątku kierowcy. |
+| **Strona zlecenia dla kierowcy** | SMS ze zleceniem zawiera link do strony na telefon: trasa, okna czasowe, uwagi, „Nawiguj”, potwierdzenie jednym kliknięciem, odmowa z powodem i zdjęcie CMR po rozładunku. Bez logowania i bez aplikacji; odpowiedź „OK” SMS-em działa jak dotąd. |
 | **Eksport do faktur** | Lista zamkniętych zleceń z danymi do faktury (klient, NIP, trasa, daty, dystans, pojazd, skan CMR) i eksport do CSV, który otwiera się w polskim Excelu. Wyeksportowane zlecenia są oznaczane, żeby nie trafiły do faktur dwa razy. |
 | **Dokumenty CMR** | Zdjęcie z telefonu kierowcy, odczyt AI, dopasowanie do zlecenia, kolejki „do zamknięcia”, „weryfikacja”, „nieczytelne”. |
 | **Skrzynka klientów** | Kategorie maili, szkice zleceń z zamówień i szkice odpowiedzi na pytania o status. |

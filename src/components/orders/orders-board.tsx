@@ -99,8 +99,8 @@ export function OrdersBoard() {
           <div className="flex items-center justify-between border-b px-3 py-2.5">
             <h1 className="text-sm font-semibold">Nowe zlecenia</h1>
             <div className="flex items-center gap-1.5">
-              <Button size="sm" variant="ghost" onClick={() => setShowClosed(true)} title="Zamknięte zlecenia i eksport do faktur" data-testid="closed-open">
-                <Archive /> Zamknięte
+              <Button size="icon-sm" variant="ghost" onClick={() => setShowClosed(true)} title="Zamknięte zlecenia i eksport do faktur" data-testid="closed-open">
+                <Archive /> <span className="sr-only">Zamknięte zlecenia i eksport do faktur</span>
               </Button>
               <Button size="sm" variant="outline" onClick={() => setCreating(true)} data-testid="new-order">
                 <Plus /> Nowe zlecenie

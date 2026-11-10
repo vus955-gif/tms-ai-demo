@@ -9,7 +9,8 @@ export const TRANSITIONS: Rule[] = [
   { from: ["NOWE"], to: "PRZYPISANE", actors: ["dispatcher", "system"] },
   { from: ["PRZYPISANE"], to: "WYSLANE", actors: ["system"] },
   { from: ["PRZYPISANE", "WYSLANE"], to: "NOWE", actors: ["dispatcher", "system"] },
-  { from: ["WYSLANE"], to: "POTWIERDZONE", actors: ["ai", "dispatcher"] },
+  // "driver": the driver tapped "Potwierdzam" on the order page from the SMS link — no interpretation needed.
+  { from: ["WYSLANE"], to: "POTWIERDZONE", actors: ["ai", "dispatcher", "driver"] },
   // Undo of a confirmation the AI read wrongly (AI log → "Cofnij").
   { from: ["POTWIERDZONE"], to: "WYSLANE", actors: ["dispatcher"] },
   { from: ["POTWIERDZONE"], to: "ZALADUNEK", actors: ["system"] },

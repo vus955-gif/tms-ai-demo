@@ -1,5 +1,6 @@
 "use client";
 
+import { MessageText } from "./message-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Phone, Send } from "lucide-react";
 import Link from "next/link";
@@ -186,7 +187,7 @@ function Conversation({ detail }: { detail: ThreadDetail }) {
                   Otwórz w Dokumentach
                 </Link>
               )}
-              {m.body && <p className="whitespace-pre-wrap">{m.body}</p>}
+              {m.body && <MessageText body={m.body} className="whitespace-pre-wrap" />}
               <div className={cn("mt-1 flex flex-wrap items-center gap-1.5 text-[11px]", m.direction === "out" ? "text-brand-foreground/80" : "text-muted-foreground")}>
                 <span>{formatSimClock(m.atSim)}</span>
                 {m.direction === "out" && m.sentBy === "system" && <span>· automatycznie ({m.kind === "order" ? "zlecenie" : m.kind === "reminder" ? "przypomnienie" : m.kind === "cancellation" ? "odwołanie" : m.kind})</span>}

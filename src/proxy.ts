@@ -9,6 +9,8 @@ export async function proxy(request: NextRequest) {
   if (pathname === "/login" || pathname === "/api/login") return NextResponse.next();
   // Client tracking links are meant to be opened by the carrier's clients, without the demo password.
   if (pathname.startsWith("/sledzenie/") || pathname.startsWith("/api/track/")) return NextResponse.next();
+  // The same goes for the driver's order page from the SMS link.
+  if (pathname.startsWith("/k/") || pathname.startsWith("/api/driver-link/")) return NextResponse.next();
   const token = request.cookies.get(AUTH_COOKIE)?.value;
   if (token && token === (await authToken(password))) return NextResponse.next();
   if (pathname.startsWith("/api/")) {

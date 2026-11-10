@@ -5,6 +5,7 @@ import { escalationTimes } from "@/domain/escalation";
 import { cancellationSms, orderSms } from "@/domain/sms-templates";
 import { createRng, seedFromString } from "@/simulation/random";
 import { botReplyDelayMin, type BotReplyKind } from "@/simulation/bots/driver-replies";
+import { createDriverLink } from "../driver-link/links";
 import { HttpError } from "../http";
 import { sendToDriver } from "../messages/gateway";
 import { scheduleEvent } from "../tick/engine";
@@ -67,7 +68,7 @@ export async function sendOrderSms(db: Executor, sandboxId: string, orderId: str
   const [client] = await db.select().from(clients).where(and(eq(clients.sandboxId, sandboxId), eq(clients.id, order.clientId)));
   await sendToDriver(db, sandboxId, {
     driverId,
-    body: orderSms(order, client?.name ?? "", pickup, delivery),
+    body: orderSms(order, client?.name ?? "", pickup, delivery, await createDriverLink(db, sandboxId, order.id, driverId, at)),
     kind: "order",
     orderId: order.id,
     sentBy: "system",

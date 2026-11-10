@@ -603,6 +603,22 @@ export const salesSettings = pgTable("sales_settings", {
  * Client tracking links (stage 5): one random token per shared order. The token
  * is the only key a client has, so it is globally unique and unguessable.
  */
+/**
+ * Link in the order SMS: the driver's page for one order ("Potwierdzam", CMR photo). The token is the
+ * only key — the driver's phone has no demo-world cookie — and it opens just this order for this driver.
+ */
+export const driverLinks = pgTable(
+  "driver_links",
+  {
+    token: text("token").primaryKey(),
+    sandboxId: sandboxRef(),
+    orderId: text("order_id").notNull(),
+    driverId: text("driver_id").notNull(),
+    createdSim: ts("created_sim").notNull(),
+  },
+  (t) => [index("driver_links_order_idx").on(t.sandboxId, t.orderId)],
+);
+
 export const trackingLinks = pgTable(
   "tracking_links",
   {
