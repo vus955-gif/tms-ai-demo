@@ -13,13 +13,28 @@ const TEXTS: Record<Exclude<BotReplyKind, "silent">, string[]> = {
   refusal: ["Nie dam rady, jutro mam wolne", "Nie pojadę, auto idzie do serwisu", "Nie zdążę, mam już inne plany na wieczór"],
 };
 
+/** The same kinds of answers from drivers who write in Ukrainian or Russian (kept plain, so the rules can read the short ones). */
+const TEXTS_UK: typeof TEXTS = {
+  confirm: ["ок", "Добре, їду", "Приймаю", "Підтверджую", "👍", "ок, так"],
+  condition: ["Добре, але буду приблизно на 2 години пізніше, ще стою на розвантаженні", "Ок, тільки мушу заправитися дорогою, буде на 30 хвилин пізніше"],
+  question: ["Який номер рампи?", "Чи є авізація, чи мені дзвонити самому?"],
+  refusal: ["Не можу, завтра маю вихідний", "Не поїду, авто йде на сервіс"],
+};
+const TEXTS_RU: typeof TEXTS = {
+  confirm: ["ок", "Хорошо, еду", "Принимаю", "Подтверждаю", "👍", "да, ок"],
+  condition: ["Хорошо, но буду примерно на 2 часа позже, ещё стою на выгрузке", "Ок, только надо заправиться по дороге, будет на 30 минут позже"],
+  question: ["Какой номер рампы?", "Есть авизация или мне звонить самому?"],
+  refusal: ["Не могу, завтра у меня выходной", "Не поеду, машина идёт в сервис"],
+};
+const TEXTS_BY_LANGUAGE = { pl: TEXTS, uk: TEXTS_UK, ru: TEXTS_RU };
+
 /** Probabilities from spec §10.3. */
 export const SILENT_P = 0.15;
 const CONDITION_P = 0.12;
 const QUESTION_P = 0.08;
 
 /** Picks how a simulated driver answers an order SMS. */
-export function chooseBotReply(rng: Rng, refusalPropensity: number, forced?: BotReplyKind): { kind: BotReplyKind; text: string | null } {
+export function chooseBotReply(rng: Rng, refusalPropensity: number, forced?: BotReplyKind, language: "pl" | "uk" | "ru" = "pl"): { kind: BotReplyKind; text: string | null } {
   const kind: BotReplyKind =
     forced ??
     (rng.chance(SILENT_P)
@@ -31,7 +46,7 @@ export function chooseBotReply(rng: Rng, refusalPropensity: number, forced?: Bot
           : rng.chance(QUESTION_P)
             ? "question"
             : "confirm");
-  return { kind, text: kind === "silent" ? null : rng.pick(TEXTS[kind]) };
+  return { kind, text: kind === "silent" ? null : rng.pick(TEXTS_BY_LANGUAGE[language][kind]) };
 }
 
 /** Reply delay in minutes (2–15). */

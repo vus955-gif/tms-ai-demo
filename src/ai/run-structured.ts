@@ -13,6 +13,7 @@ export type AiFunctionName =
   | "readServiceDocument"
   | "assessDamage"
   | "writeHandover"
+  | "translateForDriver"
   | "explainAlert"
   | "draftMessage"
   | "triageClientEmail"

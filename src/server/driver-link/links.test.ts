@@ -77,8 +77,8 @@ describe("A6: the driver's order page (link in the order SMS)", () => {
   it("refusal returns the order to the pool with the reason; a taken-back link says only that the order is off", async () => {
     const at = (await runTick(db, sandbox.id, realAt(58))).simNow;
     await approveDraftOrder(db, sandbox.id, "zl-1043", null, at);
-    await assignOrder(db, sandbox.id, "zl-1043", "d-piotrowska", { actor: "dispatcher", simNow: at, replyAfterMin: 600 });
-    const first = await tokenFor("zl-1043", "d-piotrowska");
+    await assignOrder(db, sandbox.id, "zl-1043", "d-petrenko", { actor: "dispatcher", simNow: at, replyAfterMin: 600 });
+    const first = await tokenFor("zl-1043", "d-petrenko");
     const refused = await refuseByDriver(db, first, "Brak czasu pracy", realAt(59));
     expect(refused.state).toBe("odwolane");
     expect(refused.pickup.city).toBe("");

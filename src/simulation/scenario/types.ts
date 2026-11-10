@@ -72,6 +72,7 @@ export type ScenarioDriver = {
   vehicleId: string;
   refusalPropensity: number;
   extensionsUsedThisWeek: number;
+  language: "pl" | "uk" | "ru";
 };
 
 /** Activity relative to simulation start, in minutes (negative = before start; null end = ongoing). */

@@ -40,8 +40,8 @@ export const activities: ScenarioActivity[] = [
   ...shift("d-wozniak", [["other_work", 15], ["other_work", 50], ["driving", 35]]),
   ...shift("d-kowalczyk", [["other_work", 15], ["driving", 10], ["other_work", 30], ["driving", 95]]),
   ...shift("d-mazur", [["other_work", 15], ["driving", 40], ["other_work", 30], ["driving", 35]]),
-  ...shift("d-krawczyk", [["other_work", 15], ["driving", 15]]),
-  ...resting("d-piotrowska", -800),
+  ...shift("d-kozlow", [["other_work", 15], ["driving", 15]]),
+  ...resting("d-petrenko", -800),
   ...resting("d-grabowski", -700),
 ];
 
@@ -252,7 +252,7 @@ export const orders: ScenarioOrder[] = [
     cargoKg: 980,
     references: ["HR-SKL-0457"],
     status: "POTWIERDZONE",
-    driverId: "d-krawczyk",
+    driverId: "d-kozlow",
     vehicleId: "v-po6n88",
     start: { stage: "to_pickup", fromPointId: "pt-baza-poznan", progress: 0.5 },
   }),
@@ -413,7 +413,7 @@ export const history: ScenarioHistory[] = [
   { driverId: "d-wozniak", clientId: "cl-hanza", completedOrders: 10 },
   { driverId: "d-kowalczyk", clientId: "cl-mazovia", completedOrders: 3 },
   { driverId: "d-mazur", clientId: "cl-agropol", completedOrders: 6 },
-  { driverId: "d-krawczyk", clientId: "cl-hanza", completedOrders: 4 },
-  { driverId: "d-piotrowska", clientId: "cl-hanza", completedOrders: 2 },
+  { driverId: "d-kozlow", clientId: "cl-hanza", completedOrders: 4 },
+  { driverId: "d-petrenko", clientId: "cl-hanza", completedOrders: 2 },
   { driverId: "d-grabowski", clientId: "cl-hanza", completedOrders: 1 },
 ];

@@ -1,5 +1,6 @@
 "use client";
 
+import { DRIVER_LANGUAGES, LANGUAGE_ADVERB, LANGUAGE_LABEL, type DriverLanguage } from "@/domain/driver-language";
 import { MessageText } from "./message-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Phone, Send } from "lucide-react";
@@ -110,6 +111,7 @@ export function MessengerView() {
                 <Phone /> Zadzwoń
               </Button>
               {calling && <CallDialog driverId={thread.data.driverId} onClose={() => setCalling(false)} />}
+              <LanguageSelect detail={thread.data} />
             </div>
             {thread.data.order ? (
               <div className="space-y-1 rounded-lg border p-2.5">
@@ -146,9 +148,10 @@ function Conversation({ detail }: { detail: ThreadDetail }) {
     bottom.current?.scrollIntoView({ block: "end" });
   }, [count]);
   const send = useMutation({
-    mutationFn: (body: string) => postJson<ThreadDetail>(`/api/messages/${detail.driverId}`, { body }),
+    mutationFn: (body: string) => postJson<ThreadDetail & { sentUntranslated?: boolean }>(`/api/messages/${detail.driverId}`, { body }),
     onSuccess: (next, body) => {
       setText((current) => (current.trim() === body ? "" : current));
+      if (next.sentUntranslated) toast.warning("Wiadomość poszła po polsku: tłumaczenie było niedostępne albo zgubiło liczbę lub numer zlecenia.");
       queryClient.setQueriesData({ queryKey: ["thread", detail.driverId] }, next);
       void queryClient.invalidateQueries({ queryKey: ["threads"] });
     },
@@ -188,6 +191,15 @@ function Conversation({ detail }: { detail: ThreadDetail }) {
                 </Link>
               )}
               {m.body && <MessageText body={m.body} className="whitespace-pre-wrap" />}
+              {m.translation && (
+                <p className={cn("mt-1 whitespace-pre-wrap border-t pt-1 text-xs", m.direction === "out" ? "border-brand-foreground/30 text-brand-foreground/85" : "text-muted-foreground")} data-testid="msg-translation">
+                  <span className="font-medium">{m.direction === "in" ? "Tłumaczenie AI: " : "Po polsku: "}</span>
+                  {m.translation}
+                </p>
+              )}
+              {m.direction === "in" && !m.translation && detail.language !== "pl" && /[\u0400-\u04FF]/.test(m.body) && (
+                <p className="mt-1 border-t pt-1 text-xs text-warn">Bez tłumaczenia: AI było niedostępne, gdy wiadomość przyszła.</p>
+              )}
               <div className={cn("mt-1 flex flex-wrap items-center gap-1.5 text-[11px]", m.direction === "out" ? "text-brand-foreground/80" : "text-muted-foreground")}>
                 <span>{formatSimClock(m.atSim)}</span>
                 {m.direction === "out" && m.sentBy === "system" && <span>· automatycznie ({m.kind === "order" ? "zlecenie" : m.kind === "reminder" ? "przypomnienie" : m.kind === "cancellation" ? "odwołanie" : m.kind})</span>}
@@ -236,9 +248,40 @@ function Conversation({ detail }: { detail: ThreadDetail }) {
           </Button>
         </div>
         <div className={cn("text-right text-[11px]", tooLong ? "text-destructive" : "text-muted-foreground")}>
-          {text.length}/{MAX} · wiadomość pójdzie SMS-em
+          {text.length}/{MAX} · wiadomość pójdzie SMS-em{detail.language !== "pl" ? `, przetłumaczona: kierowca czyta ${LANGUAGE_ADVERB[detail.language]}` : ""}
         </div>
       </form>
     </section>
+  );
+}
+
+/** Which language the driver reads. System SMS and the order page follow it; chat is translated both ways. */
+function LanguageSelect({ detail }: { detail: ThreadDetail }) {
+  const queryClient = useQueryClient();
+  const change = useMutation({
+    mutationFn: (language: DriverLanguage) => postJson<ThreadDetail>(`/api/messages/${detail.driverId}`, { language }),
+    onSuccess: (next) => {
+      queryClient.setQueriesData({ queryKey: ["thread", detail.driverId] }, next);
+      toast.success(next.language === "pl" ? "Kierowca dostaje SMS-y po polsku." : `Kierowca dostaje SMS-y ${LANGUAGE_ADVERB[next.language]}; Twoje wiadomości będą tłumaczone.`);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  return (
+    <label className="mt-2 flex items-center gap-2 text-xs">
+      <span className="text-muted-foreground">Język kierowcy</span>
+      <select
+        className="h-7 rounded-md border bg-background px-1.5 text-xs"
+        value={detail.language}
+        disabled={change.isPending}
+        onChange={(e) => change.mutate(e.target.value as DriverLanguage)}
+        data-testid="driver-language"
+      >
+        {DRIVER_LANGUAGES.map((l) => (
+          <option key={l} value={l}>
+            {LANGUAGE_LABEL[l]}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

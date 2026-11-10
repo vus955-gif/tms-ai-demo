@@ -90,12 +90,12 @@ describe("stage 2: orders, SMS and driver replies", () => {
   });
 
   it("reminds a silent driver and then alerts the dispatcher", async () => {
-    await db.update(sandboxes).set({ phoneDriverId: "d-piotrowska" }).where(eq(sandboxes.id, sandbox.id));
+    await db.update(sandboxes).set({ phoneDriverId: "d-petrenko" }).where(eq(sandboxes.id, sandbox.id));
     const at = await tickTo(70);
-    // Piotrowska drives a small van; ZL-1042 (6 pallets) fits.
-    await db.transaction((tx) => assignOrder(tx, sandbox.id, "zl-1042", "d-piotrowska", { actor: "dispatcher", simNow: at }));
+    // Petrenko drives a small van; ZL-1042 (6 pallets) fits.
+    await db.transaction((tx) => assignOrder(tx, sandbox.id, "zl-1042", "d-petrenko", { actor: "dispatcher", simNow: at }));
     await tickTo(70 + 21);
-    expect((await thread("d-piotrowska")).some((m) => m.kind === "reminder")).toBe(true);
+    expect((await thread("d-petrenko")).some((m) => m.kind === "reminder")).toBe(true);
     await tickTo(70 + 41);
     expect((await openAlerts()).some((a) => a.kind === "no_reply" && a.orderId === "zl-1042")).toBe(true);
   });
@@ -105,6 +105,6 @@ describe("stage 2: orders, SMS and driver replies", () => {
     await db.transaction((tx) => unassignOrder(tx, sandbox.id, "zl-1042", at));
     expect((await order("zl-1042")).status).toBe("NOWE");
     expect((await order("zl-1042")).driverId).toBeNull();
-    expect((await thread("d-piotrowska")).at(-1)!.kind).toBe("cancellation");
+    expect((await thread("d-petrenko")).at(-1)!.kind).toBe("cancellation");
   });
 });

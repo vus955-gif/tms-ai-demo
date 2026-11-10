@@ -161,6 +161,8 @@ export const drivers = pgTable(
     vehicleId: text("vehicle_id"),
     refusalPropensity: doublePrecision("refusal_propensity").notNull().default(0.1),
     extensionsUsedThisWeek: integer("extensions_used_this_week").notNull().default(0),
+    /** Language the driver reads: system SMS and the order page use it, chat is translated to and from it. */
+    language: text("language").$type<"pl" | "uk" | "ru">().notNull().default("pl"),
   },
   (t) => [primaryKey({ columns: [t.sandboxId, t.id] })],
 );
@@ -474,6 +476,8 @@ export const messages = pgTable(
     aiSuggestedReplies: jsonb("ai_suggested_replies").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     aiConfidence: doublePrecision("ai_confidence"),
     aiExtracted: jsonb("ai_extracted").$type<Record<string, unknown> | null>(),
+    /** The same message in the other language: Polish for what a foreign-language driver wrote or received. */
+    translation: text("translation"),
     classifiedBy: text("classified_by").$type<"ai" | "rules" | null>(),
     /** Free-form purpose tag for system messages (order, reminder, cancellation, cmr_resend…). */
     kind: text("kind"),

@@ -80,6 +80,8 @@ export async function processDriverInbound(
       aiConfidence: c.confidence,
       classifiedBy: source === "ai" ? "ai" : "rules",
       orderId: related?.id ?? null,
+      // What a Ukrainian- or Russian-speaking driver wrote, in Polish for the dispatcher (AI only).
+      translation: c.polish,
     })
     .where(and(eq(messages.sandboxId, sandboxId), eq(messages.id, messageId)));
 

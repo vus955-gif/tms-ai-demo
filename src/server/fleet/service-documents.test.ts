@@ -109,7 +109,7 @@ describe("A4: service document → AI → fleet file entry approved by a person"
     await expect(record("v-po2c19:oc", { ...base, validUntil: "18.11.2027" })).rejects.toThrow("RRRR-MM-DD");
     await expect(record("v-po2c19:oc", { ...base, validUntil: "2060-01-01" })).rejects.toThrow("ponad 20 lat");
     await expect(record("v-po2c19:serwis", { ...base, validUntil: null, nextKm: 1000 })).rejects.toThrow("powyżej obecnego przebiegu");
-    await expect(record("d-krawczyk:karta_kierowcy", base)).rejects.toThrow("tylko terminy pojazdu lub naczepy");
+    await expect(record("d-kozlow:karta_kierowcy", base)).rejects.toThrow("tylko terminy pojazdu lub naczepy");
     await expect(record("v-nie-ma:oc", base)).rejects.toThrow("Nie ma takiego terminu");
     // Nothing above changed the OC term.
     expect((await term("v-po2c19:oc")).docNumber).not.toBe("OC/1");

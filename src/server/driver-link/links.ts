@@ -4,12 +4,12 @@ import { clients, documents, driverLinks, messages, orders, points, type OrderSt
 import type { Db, Executor } from "@/db/types";
 import { CARRIER_DISPATCH_PHONE, CARRIER_NAME } from "@/domain/carrier";
 import { COUNTRY_NAMES } from "@/domain/countries";
-import { windowText } from "@/domain/sms-templates";
+import { windowFor } from "@/domain/sms-templates";
 import { samplesForOrder } from "@/simulation/scenario/cmr-samples";
 import { openAlert } from "../alerts/repository";
 import { config } from "../config";
 import { HttpError } from "../http";
-import { storeDriverInbound } from "../messages/gateway";
+import { driverLanguage, storeDriverInbound } from "../messages/gateway";
 import { processDriverInbound, type UploadedImage } from "../messages/inbound";
 import { transitionOrder } from "../orders/transition";
 import { getSandbox } from "../sandbox/repository";
@@ -24,6 +24,8 @@ type Stop = { name: string; address: string; city: string; country: string; wind
 export type DriverOrderView = {
   carrier: string;
   dispatchPhone: string;
+  /** Language of the page: the one the driver reads. */
+  language: "pl" | "uk" | "ru";
   number: string;
   clientName: string;
   state: DriverLinkState;
@@ -82,6 +84,7 @@ async function resolve(db: Db, token: string, realNow: Date) {
 
 async function buildView(db: Executor, sandboxId: string, order: OrderRow, link: LinkRow): Promise<DriverOrderView> {
   const state = driverLinkState(order, link);
+  const language = await driverLanguage(db, sandboxId, link.driverId);
   const [client] = await db.select({ name: clients.name }).from(clients).where(and(eq(clients.sandboxId, sandboxId), eq(clients.id, order.clientId)));
   const pts = await db.select().from(points).where(eq(points.sandboxId, sandboxId));
   const stop = (pointId: string, from: Date, to: Date): Stop => {
@@ -91,7 +94,7 @@ async function buildView(db: Executor, sandboxId: string, order: OrderRow, link:
       address: p?.address ?? "",
       city: p?.city ?? "",
       country: p ? COUNTRY_NAMES[p.country] : "",
-      window: windowText(from, to),
+      window: windowFor(language, from, to),
       remarks: [p?.requirements, p?.notes].filter(Boolean).join(". "),
       lat: p?.lat ?? 0,
       lng: p?.lng ?? 0,
@@ -115,6 +118,7 @@ async function buildView(db: Executor, sandboxId: string, order: OrderRow, link:
   return {
     carrier: CARRIER_NAME,
     dispatchPhone: CARRIER_DISPATCH_PHONE,
+    language,
     number: order.number,
     clientName: hidden ? "" : (client?.name ?? ""),
     state,

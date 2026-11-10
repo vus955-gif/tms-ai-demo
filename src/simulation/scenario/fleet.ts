@@ -96,7 +96,7 @@ const driver = (
   lastName: string,
   vehicleId: string,
   phoneSuffix: string,
-  opts: { adr?: boolean; refusal?: number; extensions?: number } = {},
+  opts: { adr?: boolean; refusal?: number; extensions?: number; language?: "uk" | "ru" } = {},
 ): ScenarioDriver => ({
   id,
   firstName,
@@ -107,6 +107,7 @@ const driver = (
   vehicleId,
   refusalPropensity: opts.refusal ?? 0.1,
   extensionsUsedThisWeek: opts.extensions ?? 0,
+  language: opts.language ?? "pl",
 });
 
 /** Van drivers refuse more often — a pattern dispatchers know from practice. */
@@ -124,7 +125,8 @@ export const drivers: ScenarioDriver[] = [
   driver("d-wozniak", "Michał", "Woźniak", "v-po8z55", "109"),
   driver("d-kowalczyk", "Paweł", "Kowalczyk", "v-wx9t04", "110", { refusal: BUS_REFUSAL }),
   driver("d-mazur", "Rafał", "Mazur", "v-el3b12", "111", { refusal: BUS_REFUSAL }),
-  driver("d-krawczyk", "Łukasz", "Krawczyk", "v-po6n88", "112", { refusal: BUS_REFUSAL }),
-  driver("d-piotrowska", "Katarzyna", "Piotrowska", "v-dw1t07", "113", { refusal: BUS_REFUSAL }),
+  // Two drivers read another language: their SMS and order page are in it, chat is translated both ways.
+  driver("d-kozlow", "Siergiej", "Kozłow", "v-po6n88", "112", { refusal: BUS_REFUSAL, language: "ru" }),
+  driver("d-petrenko", "Oksana", "Petrenko", "v-dw1t07", "113", { refusal: BUS_REFUSAL, language: "uk" }),
   driver("d-grabowski", "Jakub", "Grabowski", "v-gd4w63", "114", { refusal: BUS_REFUSAL }),
 ];

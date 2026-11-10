@@ -31,7 +31,7 @@ registerEventHandler("escalation.reminder", async (ctx, event) => {
   const p = event.payload as unknown as EscalationPayload;
   const order = await stillWaiting(ctx, p);
   if (!order) return;
-  await sendToDriver(ctx.tx, ctx.sandbox.id, { driverId: p.driverId, body: reminderSms(order), kind: "reminder", orderId: order.id, sentBy: "system", atSim: ctx.simNow });
+  await sendToDriver(ctx.tx, ctx.sandbox.id, { driverId: p.driverId, localized: (lang) => reminderSms(order, lang), kind: "reminder", orderId: order.id, sentBy: "system", atSim: ctx.simNow });
 });
 
 registerEventHandler("escalation.alert", async (ctx, event) => {
@@ -66,7 +66,7 @@ registerEventHandler("bot.driver_reply", async (ctx, event) => {
   if (!order || order.status !== "WYSLANE" || order.driverId !== p.driverId) return;
   const [driver] = await ctx.tx.select().from(drivers).where(and(eq(drivers.sandboxId, ctx.sandbox.id), eq(drivers.id, p.driverId)));
   const rng = createRng(ctx.sandbox.seed ^ seedFromString(`${event.id}`));
-  const reply = chooseBotReply(rng, driver?.refusalPropensity ?? 0.1, p.forced ?? undefined);
+  const reply = chooseBotReply(rng, driver?.refusalPropensity ?? 0.1, p.forced ?? undefined, driver?.language ?? "pl");
   if (!reply.text) return;
   const messageId = await storeDriverInbound(ctx.tx, ctx.sandbox.id, { driverId: p.driverId, body: reply.text, atSim: ctx.simNow });
   scheduleProcessing(ctx, messageId);

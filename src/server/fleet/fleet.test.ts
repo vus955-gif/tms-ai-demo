@@ -35,7 +35,7 @@ describe("stage 6: fleet file and driver calendar", () => {
     expect(term("WB 6P77", "serwis")).toMatchObject({ status: "wkrotce", kmLeft: 1800 });
     expect(term("EL 5R30", "serwis")).toMatchObject({ status: "po_terminie", kmLeft: -1200, blocking: false });
     expect(term("GD 15PL", "atp").status).toBe("wkrotce");
-    expect(term("Łukasz Krawczyk", "karta_kierowcy").status).toBe("wkrotce");
+    expect(term("Siergiej Kozłow", "karta_kierowcy").status).toBe("wkrotce");
     expect(f.overdue).toBe(2);
     expect(f.soon).toBeGreaterThanOrEqual(5);
     expect(f.vehicles[0].worst).toBe("po_terminie");

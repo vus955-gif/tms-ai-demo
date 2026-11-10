@@ -91,7 +91,7 @@ export async function handleCmrDocument(
   const quality = { legible: reading.legible, stamp: reading.consignee_stamp, signature: reading.consignee_signature, remarks: reading.remarks };
   if (!reading.legible) {
     await db.insert(documents).values({ ...base, status: "nieczytelny", readBy: "ai", extracted: reading as unknown as Record<string, unknown>, quality });
-    await sendToDriver(db, sandboxId, { driverId, body: cmrResendSms(), kind: "cmr_resend", sentBy: "system", atSim: msg.atSim });
+    await sendToDriver(db, sandboxId, { driverId, localized: (lang) => cmrResendSms(lang), kind: "cmr_resend", sentBy: "system", atSim: msg.atSim });
     await scheduleBotResend(db, sandboxId, driverId, sampleId, msg.atSim);
     return;
   }
@@ -216,7 +216,7 @@ registerEventHandler("cmr.reminder", async (ctx, event) => {
   const { orderId } = event.payload as { orderId: string };
   const [order] = await ctx.tx.select().from(orders).where(and(eq(orders.sandboxId, ctx.sandbox.id), eq(orders.id, orderId)));
   if (!order || order.status !== "ROZLADUNEK" || !order.driverId || (await hasDocument(ctx.tx, ctx.sandbox.id, order))) return;
-  await sendToDriver(ctx.tx, ctx.sandbox.id, { driverId: order.driverId, body: cmrMissingSms(order), kind: "cmr_missing", orderId, sentBy: "system", atSim: ctx.simNow });
+  await sendToDriver(ctx.tx, ctx.sandbox.id, { driverId: order.driverId, localized: (lang) => cmrMissingSms(order, lang), kind: "cmr_missing", orderId, sentBy: "system", atSim: ctx.simNow });
 });
 
 registerEventHandler("cmr.alert", async (ctx, event) => {

@@ -1,8 +1,10 @@
-import { formatSimClock, formatTime } from "@/lib/format";
+import { formatSimClock, formatTime, formatWarsaw } from "@/lib/format";
+import { SMS_TEXT, type DriverLanguage } from "./driver-language";
 
 /**
  * SMS texts sent to drivers. Built from order data only — addresses, times and
  * references are copied verbatim; AI never writes these (spec §2, §7).
+ * In another language only the fixed words change (ready-made translations); the data stays as it is.
  */
 
 type PointInfo = { name: string; address: string; city: string; country: string; requirements: string; notes: string };
@@ -26,44 +28,55 @@ export function windowText(from: Date, to: Date): string {
   return sameDay ? `${formatSimClock(from).replace(" · ", " ")}–${formatTime(to)}` : `${formatSimClock(from).replace(" · ", " ")} – ${formatSimClock(to).replace(" · ", " ")}`;
 }
 
-function pointLines(p: PointInfo): string[] {
+/** The same window without the Polish weekday abbreviation: "15.10 07:00–09:00". */
+function windowNumeric(from: Date, to: Date): string {
+  const day = (d: Date) => formatWarsaw(d, "d.MM");
+  return day(from) === day(to) ? `${day(from)} ${formatTime(from)}–${formatTime(to)}` : `${day(from)} ${formatTime(from)} – ${day(to)} ${formatTime(to)}`;
+}
+
+/** A time window as the driver reads it: with the Polish weekday for Polish, numeric otherwise. */
+export const windowFor = (lang: DriverLanguage, from: Date, to: Date) => (lang === "pl" ? windowText(from, to) : windowNumeric(from, to));
+const momentFor = (lang: DriverLanguage, at: Date) => (lang === "pl" ? formatSimClock(at).replace(" · ", " ") : `${formatWarsaw(at, "d.MM")} ${formatTime(at)}`);
+
+function pointLines(p: PointInfo, lang: DriverLanguage): string[] {
   const lines = [`${p.name}, ${p.address}, ${p.city} (${p.country})`];
   const remarks = [p.requirements, p.notes].filter(Boolean).join(". ");
-  if (remarks) lines.push(`Uwagi: ${remarks}`);
+  if (remarks) lines.push(`${SMS_TEXT[lang].remarks}: ${remarks}`);
   return lines;
 }
 
 /** `link`: the driver's page for this order (details, one-tap confirmation, CMR photo). Replying "OK" still works. */
-export function orderSms(order: OrderInfo, clientName: string, pickup: PointInfo, delivery: PointInfo, link?: string): string {
-  const cargo = [`${order.cargoPallets} palet`, `${order.cargoKg} kg`];
-  if (order.bodyRequired === "chlodnia") cargo.push("chłodnia");
+export function orderSms(order: OrderInfo, clientName: string, pickup: PointInfo, delivery: PointInfo, link?: string, lang: DriverLanguage = "pl"): string {
+  const t = SMS_TEXT[lang];
+  const cargo = [`${order.cargoPallets} ${t.pallets}`, `${order.cargoKg} ${t.kg}`];
+  if (order.bodyRequired === "chlodnia") cargo.push(t.reefer);
   if (order.adrRequired) cargo.push("ADR");
   return [
-    `ZLECENIE ${order.number} · ${clientName}`,
-    `ZAŁADUNEK: ${windowText(order.pickupFrom, order.pickupTo)}`,
-    ...pointLines(pickup),
-    `ROZŁADUNEK: ${windowText(order.deliveryFrom, order.deliveryTo)}`,
-    ...pointLines(delivery),
-    `Ładunek: ${cargo.join(", ")}`,
+    `${t.order} ${order.number} · ${clientName}`,
+    `${t.pickup}: ${windowFor(lang, order.pickupFrom, order.pickupTo)}`,
+    ...pointLines(pickup, lang),
+    `${t.delivery}: ${windowFor(lang, order.deliveryFrom, order.deliveryTo)}`,
+    ...pointLines(delivery, lang),
+    `${t.cargo}: ${cargo.join(", ")}`,
     ...(order.references.length ? [`Ref: ${order.references.join(", ")}`] : []),
-    ...(order.notes ? [`Uwagi do zlecenia: ${order.notes}`] : []),
-    ...(link ? [`Szczegóły i potwierdzenie jednym kliknięciem: ${link}`] : []),
-    "Potwierdź odpisując OK.",
+    ...(order.notes ? [`${t.orderNotes}: ${order.notes}`] : []),
+    ...(link ? [`${t.link}: ${link}`] : []),
+    t.confirm,
   ].join("\n");
 }
 
-export function reminderSms(order: Pick<OrderInfo, "number" | "pickupFrom">): string {
-  return `Przypomnienie: potwierdź zlecenie ${order.number} (załadunek ${formatSimClock(order.pickupFrom).replace(" · ", " ")}). Odpisz OK albo zadzwoń do spedycji.`;
+export function reminderSms(order: Pick<OrderInfo, "number" | "pickupFrom">, lang: DriverLanguage = "pl"): string {
+  return SMS_TEXT[lang].reminder(order.number, momentFor(lang, order.pickupFrom));
 }
 
-export function cancellationSms(order: Pick<OrderInfo, "number">): string {
-  return `Zlecenie ${order.number} zostało odwołane. Nie jedź na załadunek. W razie pytań zadzwoń do spedycji.`;
+export function cancellationSms(order: Pick<OrderInfo, "number">, lang: DriverLanguage = "pl"): string {
+  return SMS_TEXT[lang].cancellation(order.number);
 }
 
-export function cmrResendSms(): string {
-  return "Zdjęcie CMR jest nieczytelne. Zrób wyraźne zdjęcie całego dokumentu (ostre, bez cienia, z polem 24) i wyślij jeszcze raz.";
+export function cmrResendSms(lang: DriverLanguage = "pl"): string {
+  return SMS_TEXT[lang].cmrResend;
 }
 
-export function cmrMissingSms(order: Pick<OrderInfo, "number">): string {
-  return `Brakuje zdjęcia CMR dla zlecenia ${order.number}. Wyślij je MMS-em albo mailem, póki dokument masz pod ręką.`;
+export function cmrMissingSms(order: Pick<OrderInfo, "number">, lang: DriverLanguage = "pl"): string {
+  return SMS_TEXT[lang].cmrMissing(order.number);
 }

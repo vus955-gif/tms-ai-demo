@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { messages } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
+import { drivers, messages } from "@/db/schema";
 import type { Executor } from "@/db/types";
+import type { DriverLanguage } from "@/domain/driver-language";
 
 /**
  * MessageGateway, demo implementation: messages are only stored. Production
@@ -10,12 +12,29 @@ import type { Executor } from "@/db/types";
 
 export const driverThread = (driverId: string) => `driver:${driverId}`;
 
-export async function sendToDriver(
-  db: Executor,
-  sandboxId: string,
-  msg: { driverId: string; body: string; kind: string; orderId?: string | null; sentBy: "dispatcher" | "system"; atSim: Date },
-): Promise<string> {
+export async function driverLanguage(db: Executor, sandboxId: string, driverId: string): Promise<DriverLanguage> {
+  const [driver] = await db.select({ language: drivers.language }).from(drivers).where(and(eq(drivers.sandboxId, sandboxId), eq(drivers.id, driverId)));
+  return driver?.language ?? "pl";
+}
+
+type Outbound = { driverId: string; kind: string; orderId?: string | null; sentBy: "dispatcher" | "system"; atSim: Date } & (
+  | { body: string; translation?: string | null }
+  // A system SMS built from a template: sent in the driver's language, with the Polish text kept for the dispatcher.
+  | { localized: (lang: DriverLanguage) => string }
+);
+
+export async function sendToDriver(db: Executor, sandboxId: string, msg: Outbound): Promise<string> {
   const id = randomUUID();
+  let body: string;
+  let translation: string | null;
+  if ("localized" in msg) {
+    const lang = await driverLanguage(db, sandboxId, msg.driverId);
+    body = msg.localized(lang);
+    translation = lang === "pl" ? null : msg.localized("pl");
+  } else {
+    body = msg.body;
+    translation = msg.translation ?? null;
+  }
   await db.insert(messages).values({
     sandboxId,
     id,
@@ -24,7 +43,8 @@ export async function sendToDriver(
     party: "driver",
     driverId: msg.driverId,
     threadKey: driverThread(msg.driverId),
-    body: msg.body,
+    body,
+    translation,
     state: "sent",
     sentBy: msg.sentBy,
     atSim: msg.atSim,

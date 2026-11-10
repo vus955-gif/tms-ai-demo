@@ -24,7 +24,9 @@ export async function writeHandover(opts: { db: Executor; sandboxId: string; sim
     fn: "writeHandover",
     schema: HandoverSchema as unknown as z.ZodType<z.infer<typeof HandoverSchema> | null>,
     system: SYSTEM,
-    content: [{ type: "text", text: `<fakty>${JSON.stringify(opts.facts)}</fakty>` }],
+    // The model gets the same finished sentences the dispatcher sees, not raw fields: a bare "soon: 5"
+    // was once retold as "5 vehicles" where the fact was "5 deadlines".
+    content: [{ type: "text", text: `<fakty>\n${rules}\n</fakty>` }],
     fallback: () => null,
     db: opts.db,
     sandboxId: opts.sandboxId,

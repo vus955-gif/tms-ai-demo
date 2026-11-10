@@ -34,6 +34,8 @@ export type ThreadMessage = {
   aiSuggestedReplies: string[];
   classifiedBy: "ai" | "rules" | null;
   readAtSim: string | null;
+  /** The Polish version of a message written or sent in the driver's language. */
+  translation: string | null;
 };
 
 export type ThreadDetail = {
@@ -42,6 +44,8 @@ export type ThreadDetail = {
   phone: string;
   plates: string;
   trailerPlates: string | null;
+  /** Language the driver reads: system SMS go out in it and chat is translated to and from it. */
+  language: "pl" | "uk" | "ru";
   order: OrderSummary | null;
   messages: ThreadMessage[];
 };
@@ -93,6 +97,7 @@ export async function threadDetail(db: Executor, sandboxId: string, driverId: st
     phone: driver.phone,
     plates: vehicle?.plates ?? "",
     trailerPlates: vehicle ? (fleet.trailerByVehicle.get(vehicle.id)?.plates ?? null) : null,
+    language: driver.language,
     order: order ? orderSummary(fleet, order) : null,
     messages: rows.map((m) => ({
       id: m.id,
@@ -110,6 +115,7 @@ export async function threadDetail(db: Executor, sandboxId: string, driverId: st
       aiSuggestedReplies: m.aiSuggestedReplies,
       classifiedBy: m.classifiedBy,
       readAtSim: m.readAtSim?.toISOString() ?? null,
+      translation: m.translation,
     })),
   };
 }

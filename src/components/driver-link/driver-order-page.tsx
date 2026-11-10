@@ -4,20 +4,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Check, MapPin, Navigation, Phone, Truck } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { PAGE_TEXT } from "@/domain/driver-language";
 import { ApiError, getJson, postJson } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { DriverLinkState, DriverOrderView } from "@/server/driver-link/links";
 
+/** Sent to the server as they are (Polish); the page shows them in the driver's language. */
 const REASONS = ["Auto niesprawne", "Brak czasu pracy", "Choroba lub sprawa osobista", "Inny powód"] as const;
 
-const STATE: Record<DriverLinkState, { text: string; tone: "wait" | "ok" | "off" }> = {
-  do_potwierdzenia: { text: "Czeka na Twoje potwierdzenie", tone: "wait" },
-  potwierdzone: { text: "Potwierdzone. Jedź na załadunek.", tone: "ok" },
-  zaladunek: { text: "Załadunek", tone: "ok" },
-  w_drodze: { text: "W drodze na rozładunek", tone: "ok" },
-  rozladunek: { text: "Rozładunek", tone: "ok" },
-  zakonczone: { text: "Zlecenie zakończone. Dziękujemy.", tone: "ok" },
-  odwolane: { text: "Zlecenie odwołane. Nie jedź na załadunek.", tone: "off" },
+const TONE: Record<DriverLinkState, "wait" | "ok" | "off"> = {
+  do_potwierdzenia: "wait",
+  potwierdzone: "ok",
+  zaladunek: "ok",
+  w_drodze: "ok",
+  rozladunek: "ok",
+  zakonczone: "ok",
+  odwolane: "off",
 };
 
 async function sendPhoto(token: string, file: File): Promise<DriverOrderView> {
@@ -31,7 +33,8 @@ async function sendPhoto(token: string, file: File): Promise<DriverOrderView> {
 
 /**
  * The driver's page for one order, opened from the SMS link. Built for a phone held in one hand:
- * large text, one main action at a time, plain words, no login and no app to install.
+ * large text, one main action at a time, plain words, no login and no app to install — and in the
+ * language the driver reads (Polish, Ukrainian or Russian).
  */
 export function DriverOrderPage({ token }: { token: string }) {
   const queryClient = useQueryClient();
@@ -59,17 +62,18 @@ export function DriverOrderPage({ token }: { token: string }) {
   const failure = act.error ?? photo.error ?? sample.error;
 
   const o = q.data;
-  const state = o ? STATE[o.state] : null;
+  const t = PAGE_TEXT[o?.language ?? "pl"];
+  const tone = o ? TONE[o.state] : null;
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col gap-3 bg-background p-4 text-base">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col gap-3 bg-background p-4 text-base" lang={o?.language ?? "pl"}>
       <header className="flex items-center gap-2">
         <span className="flex size-9 items-center justify-center rounded-md bg-brand text-brand-foreground">
           <Truck className="size-5" aria-hidden />
         </span>
         <div>
-          <div className="font-semibold leading-tight">{o?.carrier ?? "Zlecenie dla kierowcy"}</div>
-          <div className="text-sm text-muted-foreground">Zlecenie dla kierowcy</div>
+          <div className="font-semibold leading-tight">{o?.carrier ?? t.subtitle}</div>
+          <div className="text-sm text-muted-foreground">{t.subtitle}</div>
         </div>
       </header>
 
@@ -78,35 +82,31 @@ export function DriverOrderPage({ token }: { token: string }) {
           {q.error.message}
         </p>
       )}
-      {!o && !q.isError && <p className="text-muted-foreground">Wczytywanie zlecenia…</p>}
+      {!o && !q.isError && <p className="text-muted-foreground">{t.loading}</p>}
 
-      {o && state && (
+      {o && tone && (
         <>
           <section className="rounded-xl border p-4" data-testid="driver-order">
             <h1 className="text-2xl font-bold tabular-nums">{o.number}</h1>
             {o.clientName && <p className="text-muted-foreground">{o.clientName}</p>}
             <p
               data-testid="driver-state"
-              className={cn(
-                "mt-3 rounded-lg px-3 py-2 font-semibold",
-                state.tone === "wait" && "bg-warn-soft text-warn",
-                state.tone === "ok" && "bg-ok-soft text-ok",
-                state.tone === "off" && "bg-bad-soft text-bad",
-              )}
+              className={cn("mt-3 rounded-lg px-3 py-2 font-semibold", tone === "wait" && "bg-warn-soft text-warn", tone === "ok" && "bg-ok-soft text-ok", tone === "off" && "bg-bad-soft text-bad")}
             >
-              {state.text}
+              {t.state[o.state]}
             </p>
           </section>
 
           {o.state !== "odwolane" && (
             <>
-              <StopCard title="Załadunek" stop={o.pickup} />
-              <StopCard title="Rozładunek" stop={o.delivery} />
+              <StopCard title={t.pickup} navigate={t.navigate} stop={o.pickup} />
+              <StopCard title={t.delivery} navigate={t.navigate} stop={o.delivery} />
               <section className="rounded-xl border p-4">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Ładunek</h2>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t.cargo}</h2>
                 <p className="mt-1 font-medium">{o.cargo}</p>
                 {o.references.length > 0 && <p className="text-sm text-muted-foreground">Ref: {o.references.join(", ")}</p>}
                 {o.notes && <p className="mt-2 rounded-md bg-muted p-2 text-sm">{o.notes}</p>}
+                {t.inPolish && <p className="mt-2 text-xs text-muted-foreground">{t.inPolish}</p>}
               </section>
             </>
           )}
@@ -120,18 +120,18 @@ export function DriverOrderPage({ token }: { token: string }) {
           {o.state === "do_potwierdzenia" && !refusing && (
             <div className="sticky bottom-0 -mx-4 grid gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur">
               <Button className="h-14 text-lg" onClick={() => act.mutate({ action: "confirm" })} disabled={busy} data-testid="driver-confirm">
-                <Check /> {act.isPending ? "Potwierdzam…" : "Potwierdzam zlecenie"}
+                <Check /> {act.isPending ? t.confirming : t.confirm}
               </Button>
               <Button variant="outline" className="h-12" onClick={() => setRefusing(true)} disabled={busy} data-testid="driver-refuse-open">
-                Nie mogę jechać
+                {t.refuse}
               </Button>
             </div>
           )}
 
           {o.state === "do_potwierdzenia" && refusing && (
             <section className="grid gap-2 rounded-xl border p-4" data-testid="driver-refuse">
-              <h2 className="font-semibold">Dlaczego nie możesz jechać?</h2>
-              <div className="grid gap-2" role="radiogroup" aria-label="Powód odmowy">
+              <h2 className="font-semibold">{t.refuseTitle}</h2>
+              <div className="grid gap-2" role="radiogroup" aria-label={t.refuseTitle}>
                 {REASONS.map((r) => (
                   <button
                     key={r}
@@ -141,40 +141,36 @@ export function DriverOrderPage({ token }: { token: string }) {
                     onClick={() => setReason(r)}
                     className={cn("h-12 rounded-lg border px-3 text-left", reason === r ? "border-brand bg-accent font-semibold" : "hover:bg-accent/50")}
                   >
-                    {r}
+                    {t.reasons[r] ?? r}
                   </button>
                 ))}
               </div>
               <Button variant="destructive" className="h-12" onClick={() => reason && act.mutate({ action: "refuse", reason })} disabled={!reason || busy} data-testid="driver-refuse-send">
-                {act.isPending ? "Wysyłam…" : "Wyślij odmowę do spedycji"}
+                {act.isPending ? t.sending : t.refuseSend}
               </Button>
               <Button variant="ghost" className="h-11" onClick={() => setRefusing(false)} disabled={busy}>
-                Wróć
+                {t.back}
               </Button>
             </section>
           )}
 
           {(o.state === "rozladunek" || (o.state === "zakonczone" && o.cmr === "przyjete")) && (
             <section className="grid gap-2 rounded-xl border p-4" data-testid="driver-cmr">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Zdjęcie CMR</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t.cmrTitle}</h2>
               {o.cmr === "przyjete" ? (
                 <p className="flex items-center gap-2 font-semibold text-ok">
-                  <Check className="size-5" aria-hidden /> Zdjęcie CMR dotarło. Dziękujemy.
+                  <Check className="size-5" aria-hidden /> {t.cmrReceived}
                 </p>
               ) : (
                 <>
-                  {o.cmr === "do_poprawy" ? (
-                    <p className="rounded-lg bg-warn-soft p-2 font-medium text-warn">Zdjęcie jest nieczytelne. Zrób jeszcze raz: cały dokument, ostro, bez cienia, z pieczątką odbiorcy.</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Po rozładunku zrób zdjęcie podpisanego CMR: cały dokument, ostro, z pieczątką odbiorcy.</p>
-                  )}
+                  {o.cmr === "do_poprawy" ? <p className="rounded-lg bg-warn-soft p-2 font-medium text-warn">{t.cmrRetake}</p> : <p className="text-sm text-muted-foreground">{t.cmrHint}</p>}
                   <input
                     ref={fileInput}
                     type="file"
                     accept="image/*"
                     capture="environment"
                     className="sr-only"
-                    aria-label="Zdjęcie CMR"
+                    aria-label={t.cmrTitle}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       e.target.value = "";
@@ -182,11 +178,11 @@ export function DriverOrderPage({ token }: { token: string }) {
                     }}
                   />
                   <Button className="h-14 text-lg" onClick={() => fileInput.current?.click()} disabled={busy}>
-                    <Camera /> {photo.isPending ? "Wysyłam zdjęcie…" : "Zrób zdjęcie CMR"}
+                    <Camera /> {photo.isPending ? t.cmrSending : t.cmrButton}
                   </Button>
                   {o.samples.length > 0 && (
                     <div className="grid gap-1.5 rounded-lg bg-muted p-2">
-                      <p className="text-xs text-muted-foreground">Demo: nie masz dokumentu pod ręką? Wyślij przykładowe zdjęcie.</p>
+                      <p className="text-xs text-muted-foreground">{t.sampleHint}</p>
                       {o.samples.map((s) => (
                         <Button key={s.id} variant="outline" className="h-11 justify-start" onClick={() => sample.mutate(s.id)} disabled={busy} data-testid={`driver-sample-${s.id}`}>
                           {s.label}
@@ -202,10 +198,10 @@ export function DriverOrderPage({ token }: { token: string }) {
           <footer className="mt-auto grid gap-1 pt-2">
             <Button asChild variant="outline" className="h-12">
               <a href={`tel:${o.dispatchPhone.replace(/\s/g, "")}`}>
-                <Phone /> Zadzwoń do spedycji: {o.dispatchPhone}
+                <Phone /> {t.call}: {o.dispatchPhone}
               </a>
             </Button>
-            <p className="text-center text-xs text-muted-foreground">Demo: firma i numer są fikcyjne.</p>
+            <p className="text-center text-xs text-muted-foreground">{t.demoNote}</p>
           </footer>
         </>
       )}
@@ -213,7 +209,7 @@ export function DriverOrderPage({ token }: { token: string }) {
   );
 }
 
-function StopCard({ title, stop }: { title: string; stop: DriverOrderView["pickup"] }) {
+function StopCard({ title, navigate, stop }: { title: string; navigate: string; stop: DriverOrderView["pickup"] }) {
   return (
     <section className="rounded-xl border p-4">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{title}</h2>
@@ -229,7 +225,7 @@ function StopCard({ title, stop }: { title: string; stop: DriverOrderView["picku
       {stop.remarks && <p className="mt-2 rounded-md bg-muted p-2 text-sm">{stop.remarks}</p>}
       <Button asChild variant="outline" className="mt-3 h-11 w-full">
         <a href={`https://www.google.com/maps/dir/?api=1&destination=${stop.lat},${stop.lng}`} target="_blank" rel="noreferrer">
-          <Navigation /> Nawiguj
+          <Navigation /> {navigate}
         </a>
       </Button>
     </section>

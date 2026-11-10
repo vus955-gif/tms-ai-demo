@@ -66,9 +66,10 @@ export async function sendOrderSms(db: Executor, sandboxId: string, orderId: str
   const pickup = pts.find((p) => p.id === order.pickupPointId)!;
   const delivery = pts.find((p) => p.id === order.deliveryPointId)!;
   const [client] = await db.select().from(clients).where(and(eq(clients.sandboxId, sandboxId), eq(clients.id, order.clientId)));
+  const link = await createDriverLink(db, sandboxId, order.id, driverId, at);
   await sendToDriver(db, sandboxId, {
     driverId,
-    body: orderSms(order, client?.name ?? "", pickup, delivery, await createDriverLink(db, sandboxId, order.id, driverId, at)),
+    localized: (lang) => orderSms(order, client?.name ?? "", pickup, delivery, link, lang),
     kind: "order",
     orderId: order.id,
     sentBy: "system",
@@ -108,7 +109,7 @@ export async function unassignOrder(db: Executor, sandboxId: string, orderId: st
   }
   await transitionOrder(db, sandboxId, order, "NOWE", "dispatcher", "Cofnięcie przydziału", simNow, { driverId: null, vehicleId: null, trailerId: null, smsDueSim: null });
   // The driver only hears about it if the order SMS has gone out.
-  if (order.status === "WYSLANE") await sendToDriver(db, sandboxId, { driverId: order.driverId, body: cancellationSms(order), kind: "cancellation", orderId, sentBy: "system", atSim: simNow });
+  if (order.status === "WYSLANE") await sendToDriver(db, sandboxId, { driverId: order.driverId, localized: (lang) => cancellationSms(order, lang), kind: "cancellation", orderId, sentBy: "system", atSim: simNow });
 }
 
 /** Dispatcher confirms on the driver's behalf (e.g. after a phone call). */
@@ -121,6 +122,6 @@ export async function cancelOrder(db: Executor, sandboxId: string, orderId: stri
   const order = await loadOrder(db, sandboxId, orderId);
   await transitionOrder(db, sandboxId, order, "ANULOWANE", "dispatcher", "Anulowane przez spedytora", simNow);
   if (order.driverId && ["WYSLANE", "POTWIERDZONE"].includes(order.status)) {
-    await sendToDriver(db, sandboxId, { driverId: order.driverId, body: cancellationSms(order), kind: "cancellation", orderId, sentBy: "system", atSim: simNow });
+    await sendToDriver(db, sandboxId, { driverId: order.driverId, localized: (lang) => cancellationSms(order, lang), kind: "cancellation", orderId, sentBy: "system", atSim: simNow });
   }
 }
