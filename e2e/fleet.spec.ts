@@ -13,6 +13,8 @@ test.describe("etap 6 — kartoteka floty i terminarz", () => {
 
     // ZL-1043 arrives by e-mail at 09:10 (≈40 s at 60×): approve it and open the "klocki".
     await page.getByRole("button", { name: "60×" }).click();
+    // Leaving the page before the server confirms the new tempo would abort the request and keep the clock at 10×.
+    await expect(page.getByRole("button", { name: "60×" })).toHaveAttribute("aria-pressed", "true");
     await page.goto("/zlecenia");
     await expect(page.getByTestId("approve-ZL-1043")).toBeVisible({ timeout: 90_000 });
     await page.getByRole("button", { name: "1×" }).click();
