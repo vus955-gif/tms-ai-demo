@@ -7,7 +7,8 @@ test.describe("etap 0 — powłoka", () => {
     await expect(page).toHaveURL(/\/monitoring$/);
     await expect(page.getByTestId("sim-clock")).toContainText(/\d{1,2}\.\d{2} · \d{2}:\d{2}/);
     await expect(page.getByTestId("ai-badge")).toContainText("AI");
-    await expect(page.getByRole("navigation", { name: "Menu główne" }).getByRole("link")).toHaveCount(11);
+    // The dispatcher's menu: every module except Sales (that one belongs to the "Handlowiec" role).
+    await expect(page.getByRole("navigation", { name: "Menu główne" }).getByRole("link")).toHaveCount(12);
   });
 
   test("pauza zatrzymuje zegar, wznowienie go puszcza", async ({ page }) => {

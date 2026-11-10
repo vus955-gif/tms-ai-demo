@@ -24,8 +24,12 @@ export function onDriverDocument(listener: DocumentListener) {
 
 async function orderLabel(db: Executor, sandboxId: string, order: typeof orders.$inferSelect) {
   const pts = await db.select().from(points).where(and(eq(points.sandboxId, sandboxId), inArray(points.id, [order.pickupPointId, order.deliveryPointId])));
-  const city = (id: string) => pts.find((p) => p.id === id)?.city ?? id;
-  return `${order.number} (${city(order.pickupPointId)} → ${city(order.deliveryPointId)}, załadunek ${windowText(order.pickupFrom, order.pickupTo)})`;
+  // Both stops are named outright: the model has to tell which of them a remark about "the place" refers to.
+  const stop = (id: string) => {
+    const p = pts.find((x) => x.id === id);
+    return p ? `${p.name}, ${p.city} (${p.country})` : id;
+  };
+  return `${order.number} — załadunek: ${stop(order.pickupPointId)}, ${windowText(order.pickupFrom, order.pickupTo)}; rozładunek: ${stop(order.deliveryPointId)}`;
 }
 
 /**

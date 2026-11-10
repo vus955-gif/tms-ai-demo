@@ -19,6 +19,7 @@ export const AI_FUNCTION_LABEL: Record<string, string> = {
   readCmr: "Odczyt CMR",
   readServiceDocument: "Odczyt dokumentu serwisowego",
   assessDamage: "Asystent szkód",
+  writeHandover: "Przekazanie zmiany",
   explainAlert: "Wyjaśnienie alertu",
   draftMessage: "Szkic wiadomości",
   triageClientEmail: "Mail klienta",

@@ -35,7 +35,7 @@ process.env.AI_CALLS_PER_SANDBOX_PER_HOUR = "1000";
 type Row = { suite: string; id: string; expected: string; ai: string; rules: string; aiOk: boolean; rulesOk: boolean; note?: string };
 
 /** `site`: whether the message carries lasting knowledge about a loading/unloading place (B3). */
-const DRIVER_CASES: { body: string; expect: string[]; pending?: boolean; site?: boolean }[] = [
+const DRIVER_CASES: { body: string; expect: string[]; pending?: boolean; site?: boolean; stop?: "zaladunek" | "rozladunek" }[] = [
   { body: "ok", expect: ["potwierdzenie"], pending: true },
   { body: "OK jadę", expect: ["potwierdzenie"], pending: true },
   { body: "przyjmuję", expect: ["potwierdzenie"], pending: true },
@@ -53,7 +53,10 @@ const DRIVER_CASES: { body: string; expect: string[]; pending?: boolean; site?: 
   { body: "Kontrola ITD, sprawdzają tachograf", expect: ["operacyjne"] },
   { body: "padła chłodnia, temperatura rośnie", expect: ["operacyjne"] },
   { body: "Jestem na MOP-ie, robię przerwę. Wszystko ok.", expect: ["luzne"], site: false },
-  { body: "Na przyszłość: w Lipsku rozładunek jest od tyłu hali, rampa 4, a wjazd tylko od Industriestrasse.", expect: ["luzne", "niejasne"], site: true },
+  { body: "Na przyszłość: w Lipsku rozładunek jest od tyłu hali, rampa 4, a wjazd tylko od Industriestrasse.", expect: ["luzne", "niejasne"], site: true, stop: "rozladunek" },
+  // The stop is named only by a declined Polish city name: the note must land on the right point.
+  { body: "Tak na przyszłość, w Lipsku wjazd dla ciężarówek jest tylko bramą nr 3, a na portierni trzeba zostawić dowód.", expect: ["luzne", "niejasne"], site: true, stop: "rozladunek" },
+  { body: "W Gądkach bez numeru awizacji ochrona nie wpuszcza na plac, trzeba go mieć przed przyjazdem.", expect: ["luzne", "niejasne"], site: true, stop: "zaladunek" },
   { body: "Dziś na rampie w Lipsku kolejka, postoję z godzinę.", expect: ["operacyjne", "luzne"], site: false },
   { body: "dzięki za info", expect: ["luzne"] },
   { body: "CMR w załączniku", expect: ["dokument"] },
@@ -113,7 +116,9 @@ async function main() {
 
   if (suites.includes("driver")) {
     for (const [i, c] of DRIVER_CASES.entries()) {
-      const context = { pendingOrder: c.pending ? "ZL-1043 (Gądki → Leipzig, załadunek jutro 07:00–09:00)" : null, currentOrder: c.pending ? null : "ZL-1035 (Gądki → Leipzig)" };
+      // The same wording the app gives the model: both stops named outright.
+      const stops = "załadunek: Logistyka Wisła — magazyn Gądki, Gądki (PL), jutro 07:00–09:00; rozładunek: Logistyka Wisła — hub Leipzig, Leipzig (DE)";
+      const context = { pendingOrder: c.pending ? `ZL-1043 — ${stops}` : null, currentOrder: c.pending ? null : `ZL-1035 — ${stops}` };
       const out = await classifyDriverMessage({ db, sandboxId: sandbox.id, simNow, body: c.body, hasAttachment: c.body.includes("CMR"), context, messageId: `eval-${i}`, skipAi: false });
       const rules = classifyByRules(c.body, c.body.includes("CMR"));
       log({
@@ -122,9 +127,9 @@ async function main() {
         expected: c.expect.join("|"),
         ai: `${out.value.category}${out.source === "ai" ? ` (${out.value.confidence.toFixed(2)})` : " (fallback!)"}`,
         rules: rules.category,
-        aiOk: out.source === "ai" && c.expect.includes(out.value.category) && (c.site === undefined || Boolean(out.value.site_note) === c.site),
+        aiOk: out.source === "ai" && c.expect.includes(out.value.category) && (c.site === undefined || Boolean(out.value.site_note) === c.site) && (c.stop === undefined || out.value.site_stop === c.stop),
         rulesOk: c.expect.includes(rules.category) && (c.site === undefined || Boolean(rules.site_note) === c.site),
-        note: c.site === undefined ? undefined : `uwaga o miejscu: oczekiwana ${c.site ? "tak" : "nie"}, AI ${out.value.site_note ? `„${out.value.site_note}”` : "brak"}`,
+        note: c.site === undefined ? undefined : `uwaga o miejscu: oczekiwana ${c.site ? "tak" : "nie"}${c.stop ? ` (${c.stop})` : ""}, AI ${out.value.site_note ? `„${out.value.site_note}” (${out.value.site_stop ?? "postój nieustalony"})` : "brak"}`,
       });
     }
   }

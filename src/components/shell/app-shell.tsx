@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, BriefcaseBusiness, Building2, CalendarDays, ClipboardList, FileText, Mail, Map, Menu, MessageSquare, Repeat, Ship, Truck, Wrench, X } from "lucide-react";
+import { Bot, BriefcaseBusiness, Building2, CalendarDays, ClipboardCheck, ClipboardList, FileText, Mail, Map, Menu, MessageSquare, Repeat, Ship, Truck, Wrench, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -30,6 +30,7 @@ export const NAV = [
   { href: "/dokumenty", label: "Dokumenty", icon: FileText, roles: ["spedytor"] },
   { href: "/flota", label: "Flota", icon: Wrench, roles: ["spedytor"] },
   { href: "/terminarz", label: "Terminarz", icon: CalendarDays, roles: ["spedytor"] },
+  { href: "/przekazanie", label: "Przekazanie zmiany", icon: ClipboardCheck, roles: ["spedytor"] },
   { href: "/dziennik-ai", label: "Dziennik AI", icon: Bot, roles: ["spedytor", "handlowiec"] },
 ] as const;
 

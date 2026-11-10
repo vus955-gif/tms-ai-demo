@@ -12,6 +12,7 @@ export type AiFunctionName =
   | "readCmr"
   | "readServiceDocument"
   | "assessDamage"
+  | "writeHandover"
   | "explainAlert"
   | "draftMessage"
   | "triageClientEmail"

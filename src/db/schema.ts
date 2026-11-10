@@ -603,6 +603,21 @@ export const salesSettings = pgTable("sales_settings", {
  * Client tracking links (stage 5): one random token per shared order. The token
  * is the only key a client has, so it is globally unique and unguessable.
  */
+/** Shift handover notes: what the outgoing dispatcher left for the next one, with the facts it was written from. */
+export const handovers = pgTable(
+  "handovers",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    body: text("body").notNull(),
+    facts: jsonb("facts").$type<Record<string, unknown>>().notNull(),
+    /** How the note came to be: drafted by AI, built from the plain sections, or typed by hand. */
+    source: text("source").$type<"ai" | "rules" | "reczna">().notNull(),
+    createdSim: ts("created_sim").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.sandboxId, t.id] }), index("handovers_created_idx").on(t.sandboxId, t.createdSim)],
+);
+
 /**
  * A damage case opened from a consignee's remark on a CMR: what kind of reservation it is,
  * the checklist with its ticked steps, and the draft e-mail to the client. One per document.

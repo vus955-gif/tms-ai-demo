@@ -8,7 +8,7 @@ test.describe("układ na telefonie", () => {
 
   test("żaden ekran panelu nie wystaje poza szerokość telefonu", async ({ page }) => {
     test.setTimeout(180_000);
-    const routes = ["/monitoring", "/zlecenia", "/szablony", "/przesylki", "/komunikator", "/skrzynka", "/klienci", "/dokumenty", "/flota", "/terminarz", "/dziennik-ai", "/sprzedaz"];
+    const routes = ["/monitoring", "/zlecenia", "/szablony", "/przesylki", "/komunikator", "/skrzynka", "/klienci", "/dokumenty", "/flota", "/terminarz", "/przekazanie", "/dziennik-ai", "/sprzedaz"];
     for (const route of routes) {
       await page.goto(route);
       await expect(page.getByTestId("sim-clock")).toContainText(/\d{1,2}:\d{2}/, { timeout: 60_000 });
