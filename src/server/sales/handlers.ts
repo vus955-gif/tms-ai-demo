@@ -47,7 +47,7 @@ registerEventHandler("bot.agent_reply", async (ctx, event) => {
   const [agent] = await ctx.tx.select().from(agents).where(and(eq(agents.sandboxId, ctx.sandbox.id), eq(agents.id, aq.agentId)));
   const details = { ...EMPTY_DETAILS, ...(quote.details as Partial<QuoteDetails>) };
   const lang = language(agent.id);
-  const rng = createRng(seedFromString(`${ctx.sandbox.id}:${aq.id}:rate`));
+  const rng = createRng(ctx.sandbox.seed ^ seedFromString(`${quote.number}:${agent.id}:rate`));
   const body = p.noSpace
     ? noSpaceText(lang, quote.number, agent.contactName)
     : agentReplyText({
@@ -111,7 +111,7 @@ registerEventHandler("bot.agent_negotiation", async (ctx, event) => {
   if (!aq?.price || !aq.currency) return;
   const quote = await loadQuote(ctx.tx, ctx.sandbox.id, p.quoteId);
   const [agent] = await ctx.tx.select().from(agents).where(and(eq(agents.sandboxId, ctx.sandbox.id), eq(agents.id, aq.agentId)));
-  const rng = createRng(seedFromString(`${ctx.sandbox.id}:${aq.id}:${p.target}`));
+  const rng = createRng(ctx.sandbox.seed ^ seedFromString(`${quote?.number ?? ""}:${agent.id}:${p.target}`));
   const accepted = p.target >= aq.price * 0.9 && rng.chance(0.7);
   const price = accepted ? p.target : Math.round((aq.price + p.target) / 2);
   const lang = language(agent.id);

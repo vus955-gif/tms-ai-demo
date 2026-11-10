@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
-import { agentQuotes, agents, clientContacts, clients, messages, points, quoteRequests, salesSettings, type QuoteMode, type QuoteStatus } from "@/db/schema";
+import { agentQuotes, agents, clientContacts, clients, messages, points, quoteRequests, salesSettings, sandboxes, type QuoteMode, type QuoteStatus } from "@/db/schema";
 import type { Db, Executor } from "@/db/types";
 import { extractQuoteRequest, readAgentReply } from "@/ai/functions/sales";
 import { canRouteKey, getRouteByKey, registerPointCoords } from "@/adapters/routing/static-routes";
@@ -181,6 +181,9 @@ export async function sendAckAndRfqs(db: Executor, sandboxId: string, quoteId: s
   }
   const forMode = (await db.select().from(agents).where(and(eq(agents.sandboxId, sandboxId), eq(agents.active, true)))).filter((a) => a.modes.includes(quote.mode));
   const list = pickRfqAgents(forMode, laneRegion(findPlace(details.origin)?.country ?? null, findPlace(details.destination)?.country ?? null));
+  // The demo agents behave the same in every world with the same seed (like the driver bots): which of them
+  // answer, and when, depends on the world's seed, the quote number and the agent — not on random ids.
+  const [world] = await db.select({ seed: sandboxes.seed }).from(sandboxes).where(eq(sandboxes.id, sandboxId));
   for (const agent of list) {
     const aqId = randomUUID();
     await db.insert(agentQuotes).values({ sandboxId, id: aqId, requestId: quoteId, agentId: agent.id, status: "wyslane", sentSim: simNow });
@@ -196,7 +199,7 @@ export async function sendAckAndRfqs(db: Executor, sandboxId: string, quoteId: s
       kind: "rfq",
     });
     // Demo bots: some agents answer (a few with "no space"), some stay silent.
-    const rng = createRng(seedFromString(`${sandboxId}:${quoteId}:${agent.id}`));
+    const rng = createRng((world?.seed ?? 1) ^ seedFromString(`${quote.number}:${agent.id}`));
     if (rng.chance(agent.replyRate)) {
       await scheduleEvent(db, sandboxId, {
         dueSim: new Date(simNow.getTime() + rng.int(20, 300) * MIN),
