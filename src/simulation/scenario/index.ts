@@ -1,6 +1,6 @@
 import { clients, contacts } from "./clients";
 import { couplings, drivers, trailers, vehicles } from "./fleet";
-import { activities, history, idleVehicles, orders } from "./operations";
+import { activities, closedOrders, history, idleVehicles, orders } from "./operations";
 import { points } from "./points";
 import type { Scenario } from "./types";
 
@@ -14,6 +14,7 @@ export const scenario: Scenario = {
   drivers,
   activities,
   orders,
+  closedOrders,
   idleVehicles,
   history,
 };

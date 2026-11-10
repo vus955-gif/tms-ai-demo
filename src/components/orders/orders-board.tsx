@@ -2,7 +2,7 @@
 
 import { DndContext, PointerSensor, useDroppable, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Truck } from "lucide-react";
+import { Archive, Plus, Truck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { getJson, postJson } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { DriverLane, MatchView, OrderCard as OrderCardData, OrdersBoard as BoardData } from "@/server/orders/board";
 import { MatchBlock, TIER_LABEL } from "./match-block";
+import { ClosedOrdersDialog } from "./closed-orders-dialog";
 import { NewOrderDialog } from "./new-order-dialog";
 import Link from "next/link";
 import { DraftOrderCard, DraggableOrderCard, OrderCardBody } from "./order-card";
@@ -63,6 +64,7 @@ export function OrdersBoard() {
   const [dragging, setDragging] = useState<OrderCardData | null>(null);
   const [picking, setPicking] = useState<OrderCardData | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showClosed, setShowClosed] = useState(false);
   const matchFor = dragging ?? picking;
   const matching = useQuery({
     queryKey: ["matching", matchFor?.id, snapshot?.simNow],
@@ -96,9 +98,14 @@ export function OrdersBoard() {
         <aside className="flex min-h-0 flex-col border-b bg-background lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between border-b px-3 py-2.5">
             <h1 className="text-sm font-semibold">Nowe zlecenia</h1>
-            <Button size="sm" variant="outline" onClick={() => setCreating(true)} data-testid="new-order">
-              <Plus /> Nowe zlecenie
-            </Button>
+            <div className="flex items-center gap-1.5">
+              <Button size="sm" variant="ghost" onClick={() => setShowClosed(true)} title="Zamknięte zlecenia i eksport do faktur" data-testid="closed-open">
+                <Archive /> Zamknięte
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setCreating(true)} data-testid="new-order">
+                <Plus /> Nowe zlecenie
+              </Button>
+            </div>
           </div>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
             {data?.drafts.map((o) => (
@@ -175,6 +182,7 @@ export function OrdersBoard() {
         }}
       />
       <NewOrderDialog open={creating} onOpenChange={setCreating} />
+      {showClosed && <ClosedOrdersDialog onClose={() => setShowClosed(false)} />}
     </DndContext>
   );
 }

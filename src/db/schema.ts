@@ -238,6 +238,8 @@ export const orders = pgTable(
     /** Latest predicted arrival at the delivery point (for lists and client views). */
     etaPredicted: ts("eta_predicted"),
     risk: text("risk").$type<"green" | "yellow" | "red" | null>(),
+    /** Closed orders: when the order went out in an invoicing export (so it is not invoiced twice). */
+    invoiceExportedAt: ts("invoice_exported_at"),
   },
   (t) => [
     primaryKey({ columns: [t.sandboxId, t.id] }),

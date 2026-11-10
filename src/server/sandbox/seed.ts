@@ -107,5 +107,50 @@ export async function seedScenario(db: Executor, sandboxId: string, simOrigin: D
       atSim: simOrigin,
     })),
   );
+  // Runs closed on the days before the demo starts: ready for the invoicing export.
+  await db.insert(orders).values(
+    scenario.closedOrders.map((o) => ({
+      ...sid,
+      id: o.id,
+      number: o.number,
+      clientId: o.clientId,
+      pickupPointId: o.pickupPointId,
+      pickupFrom: t(o.pickupFromMin),
+      pickupTo: t(o.pickupToMin),
+      deliveryPointId: o.deliveryPointId,
+      deliveryFrom: t(o.deliveryFromMin),
+      deliveryTo: t(o.deliveryToMin),
+      cargoPallets: o.cargoPallets,
+      cargoKg: o.cargoKg,
+      bodyRequired: o.bodyRequired,
+      adrRequired: o.adrRequired,
+      references: o.references,
+      notes: o.notes,
+      status: "ZAMKNIETE" as const,
+      driverId: o.driverId,
+      vehicleId: o.vehicleId,
+      trailerId: trailerOf.get(o.vehicleId) ?? null,
+      etd: t(o.pickupToMin),
+      etaAgreed: t(o.deliveryToMin),
+      source: "scenario" as const,
+      createdSim: t(o.pickupFromMin - 24 * 60),
+      arrivedPickupAt: t(o.pickupFromMin),
+      departedPickupAt: t(o.departedPickupMin),
+      arrivedDeliveryAt: t(o.unloadedMin - 45),
+      unloadedAt: t(o.unloadedMin),
+    })),
+  );
+  await db.insert(orderStatusChanges).values(
+    scenario.closedOrders.map((o) => ({
+      ...sid,
+      id: randomUUID(),
+      orderId: o.id,
+      fromStatus: "DO_ZAMKNIECIA" as const,
+      toStatus: "ZAMKNIETE" as const,
+      actor: "dispatcher" as const,
+      reason: "Zamknięte po sprawdzeniu dokumentów",
+      atSim: t(o.closedMin),
+    })),
+  );
   await db.insert(driverClientHistory).values(scenario.history.map((h) => ({ ...sid, ...h })));
 }

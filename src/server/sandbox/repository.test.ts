@@ -22,9 +22,12 @@ describe("sandbox repository", () => {
     expect(sandbox.speed).toBe(10);
     const fleet = await db.select().from(vehicles).where(eq(vehicles.sandboxId, sandbox.id));
     expect(fleet).toHaveLength(14);
-    const active = await db.select().from(orders).where(eq(orders.sandboxId, sandbox.id));
+    const seeded = await db.select().from(orders).where(eq(orders.sandboxId, sandbox.id));
+    const active = seeded.filter((o) => o.status !== "ZAMKNIETE");
     expect(active).toHaveLength(11);
     expect(active.find((o) => o.id === "zl-1031")!.trailerId).toBe("tr-po77n3");
+    // Runs closed on the days before the demo: ready for the invoicing export.
+    expect(seeded.filter((o) => o.status === "ZAMKNIETE")).toHaveLength(6);
   });
 
   it("returns the same world for the same cookie", async () => {

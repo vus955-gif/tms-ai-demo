@@ -110,6 +110,13 @@ export type ScenarioOrder = {
   start: ScenarioProgress;
 };
 
+/** An order finished and closed before the demo starts (minutes relative to simulation start, all negative). */
+export type ScenarioClosedOrder = Omit<ScenarioOrder, "status" | "start"> & {
+  departedPickupMin: number;
+  unloadedMin: number;
+  closedMin: number;
+};
+
 export type ScenarioHistory = { driverId: string; clientId: string; completedOrders: number };
 
 export type ScenarioIdleVehicle = { vehicleId: string; pointId: string };
@@ -124,6 +131,7 @@ export type Scenario = {
   drivers: ScenarioDriver[];
   activities: ScenarioActivity[];
   orders: ScenarioOrder[];
+  closedOrders: ScenarioClosedOrder[];
   idleVehicles: ScenarioIdleVehicle[];
   history: ScenarioHistory[];
 };

@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "invoice_exported_at" timestamp with time zone;
