@@ -5,6 +5,7 @@
 **System zarządzania transportem drogowym z monitoringiem floty i asystentem AI dla spedytora**
 
 [![Status: work in progress](https://img.shields.io/badge/status-work%20in%20progress-orange)](#status-i-plan)
+[![CI](https://github.com/vus955-gif/tms-ai-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/vus955-gif/tms-ai-demo/actions/workflows/ci.yml)
 [![Licencja: MIT](https://img.shields.io/badge/licencja-MIT-blue)](LICENSE)
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
@@ -115,6 +116,12 @@ npm run lint && npm run typecheck
 
 Testy e2e uruchamiają serwer w trybie reguł awaryjnych (bez klucza AI), żeby nie zależały od modelu ani od sieci. Jakość AI mierzy osobno `npm run eval:ai`.
 
+Przy każdym pushu i pull requeście te same kroki uruchamia GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) razem z kontrolą podatności w zależnościach produkcyjnych (`npm audit --omit=dev`). CI nie potrzebuje żadnych sekretów.
+
+## Bezpieczeństwo
+
+Każda odpowiedź ma nagłówki bezpieczeństwa ([`src/lib/security-headers.ts`](src/lib/security-headers.ts)): Content-Security-Policy (skrypty tylko z własnej domeny, połączenia tylko do aplikacji i hosta mapy, zakaz osadzania w ramkach), `nosniff`, `Referrer-Policy`, `Permissions-Policy` i HSTS na produkcji. Host stylu mapy jest dopuszczany automatycznie; jeśli własny styl pobiera kafelki z innego hosta, dopisz go w `CSP_EXTRA_ORIGINS`.
+
 ## Wdrożenie na Vercel
 
 1. Zaimportuj repozytorium w Vercel (**Add New → Project**). Next.js zostanie wykryty automatycznie.
@@ -140,6 +147,7 @@ Wszystkie zmienne są opcjonalne lokalnie; wzór jest w [`.env.example`](.env.ex
 | `NEXT_PUBLIC_MAP_STYLE_URL` | Styl jasnej mapy | OpenFreeMap Positron |
 | `NEXT_PUBLIC_MAP_STYLE_DARK_URL` | Styl ciemnej mapy | OpenFreeMap Dark |
 | `NEXT_PUBLIC_MAP_STYLE_FALLBACK_URL` | Zapasowy styl mapy | brak |
+| `CSP_EXTRA_ORIGINS` | Dodatkowe hosty dozwolone dla mapy w Content-Security-Policy (po spacji lub przecinku) | brak |
 | `SIM_DEFAULT_SPEED` | Tempo symulacji na start | `10` |
 | `SANDBOX_TTL_HOURS` | Czas życia świata demo | `24` |
 | `SANDBOXES_PER_IP_PER_DAY` | Limit nowych światów na adres IP dziennie | `20` |
