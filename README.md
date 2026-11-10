@@ -36,6 +36,7 @@ Demo pokazuje, jak mógłby wyglądać prosty TMS dla firmy z busami i ciągnika
 | **Przesyłki morskie, lotnicze, kolejowe** | Plan etapów, automatyczne prośby o status do agentów (z przypomnieniem), odczyt odpowiedzi przez AI, alert przy zmianie ETA, przypomnienia o statusie dla klienta i szkic statusu z faktów (lub wysyłka automatyczna) bez danych agenta. Pozycji na żywo nie podłączono ze względu na koszty dostawców — zob. [`docs/sledzenie-przesylek.md`](docs/sledzenie-przesylek.md). |
 | **Klienci i punkty** | Nowi klienci, osoby i punkty z mapą i wyszukiwaniem adresu (Nominatim); trasy do nowych punktów szacowane i oznaczone jako przybliżone. |
 | **Panel klienta** | Link śledzenia jednego transportu: status, ETA, postęp i mapa, bez danych kierowcy. |
+| **Dokument serwisowy z AI** | W kartotece floty: zdjęcie lub PDF zaświadczenia o badaniu, polisy OC, protokołu tachografu albo serwisu. AI odczytuje dokument, kod dopasowuje pojazd po numerze rejestracyjnym i wylicza nowy termin, a spedytor sprawdza formularz i zatwierdza wpis. Bez AI ten sam formularz służy do wpisu ręcznego. |
 | **Flota i terminarz** | Terminy pojazdów, naczep i kierowców (badania, OC, tachograf, ATP, dokumenty) oraz nieobecności; terminy blokujące i nieobecności wykluczają z przydziału. Przepinanie naczep na placu z historią (która naczepa była pod którym ciągnikiem) i ostrzeżeniami o przydzielonych zleceniach. |
 | **Zlecenia stałe** | Szablony i paczka zleceń na tydzień z prognozą terminowości, tworzona jednym kliknięciem; zwykły kierowca szablonu dostaje zlecenie, jeśli da radę, a SMS idzie dzień przed kursem o 16:00. Przy zagrożonym dniu „Doradź”: AI tłumaczy ryzyko z wyliczeń algorytmu i proponuje innego kierowcę albo co załatwić. |
 | **Tryb ciemny** | Jak system / jasny / ciemny; mapa ma własny przełącznik jasna/ciemna. |
@@ -60,7 +61,7 @@ Demo pokazuje, jak mógłby wyglądać prosty TMS dla firmy z busami i ciągnika
 - **Limity kosztów:** dzienny budżet dla całego demo i limit wywołań na świat i godzinę.
 - **Dziennik AI:** każde wywołanie z wejściem, wynikiem, liczbą tokenów i kosztem; zmiany statusu wykonane przez AI można cofnąć.
 - **Bezpieczniki prywatności:** widoki dla klienta nigdy nie zawierają danych kierowcy, a zapytania do agentów nie zawierają danych klienta (w razie wątpliwości wycena czeka na człowieka).
-- **Ocena jakości:** `npm run eval:ai` sprawdza model na zestawach z wzorcowymi odpowiedziami (SMS-y, zdjęcia CMR, maile) i porównuje go z regułami awaryjnymi.
+- **Ocena jakości:** `npm run eval:ai` sprawdza model na zestawach z wzorcowymi odpowiedziami (SMS-y, zdjęcia CMR, maile, dokumenty serwisowe) i porównuje go z regułami awaryjnymi.
 
 ## Jak działa symulacja
 

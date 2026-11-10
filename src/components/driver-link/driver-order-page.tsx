@@ -118,7 +118,7 @@ export function DriverOrderPage({ token }: { token: string }) {
           )}
 
           {o.state === "do_potwierdzenia" && !refusing && (
-            <div className="grid gap-2">
+            <div className="sticky bottom-0 -mx-4 grid gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur">
               <Button className="h-14 text-lg" onClick={() => act.mutate({ action: "confirm" })} disabled={busy} data-testid="driver-confirm">
                 <Check /> {act.isPending ? "Potwierdzam…" : "Potwierdzam zlecenie"}
               </Button>

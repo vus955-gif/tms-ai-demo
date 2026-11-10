@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftRight, CheckCheck, Lock } from "lucide-react";
+import { ArrowLeftRight, CheckCheck, FileText, Lock } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { formatWarsaw } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { FleetFileView, SubjectView, TermView } from "@/server/fleet/views";
 import type { TermStatus } from "@/domain/fleet-terms";
+import { ServiceDocumentDialog } from "./service-document-dialog";
 import { SwapTrailerDialog } from "./swap-trailer-dialog";
 import { groupThousands } from "@/domain/sales-pricing";
 
@@ -31,6 +32,7 @@ export function FleetView() {
   const { data: snapshot } = useSnapshot();
   const [tab, setTab] = useState<Tab>("vehicles");
   const [onlyAttention, setOnlyAttention] = useState(false);
+  const [addingDocument, setAddingDocument] = useState(false);
   const q = useQuery({ queryKey: ["fleet", snapshot?.simNow], queryFn: () => getJson<FleetFileView>("/api/fleet"), enabled: Boolean(snapshot), placeholderData: (p) => p });
   const data = q.data;
   const list = (data?.[tab] ?? []).filter((s) => !onlyAttention || s.worst !== "ok");
@@ -60,7 +62,10 @@ export function FleetView() {
             {data && <span className="ml-1 text-xs opacity-70">{data[t.id].filter((s) => s.worst !== "ok").length || ""}</span>}
           </Button>
         ))}
-        <label className="ml-auto flex items-center gap-1.5 text-sm">
+        <Button size="sm" variant="outline" className="ml-auto" onClick={() => setAddingDocument(true)} disabled={!data} data-testid="service-doc-open">
+          <FileText /> Dokument serwisowy
+        </Button>
+        <label className="flex items-center gap-1.5 text-sm">
           <input type="checkbox" className="size-4" checked={onlyAttention} onChange={(e) => setOnlyAttention(e.target.checked)} /> tylko wymagające uwagi
         </label>
       </div>
@@ -70,6 +75,7 @@ export function FleetView() {
         ))}
       </div>
       {!data && <p className="text-sm text-muted-foreground">Wczytywanie…</p>}
+      {data && addingDocument && <ServiceDocumentDialog fleet={data} onClose={() => setAddingDocument(false)} />}
     </div>
   );
 }

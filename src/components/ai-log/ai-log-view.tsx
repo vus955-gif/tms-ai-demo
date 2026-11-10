@@ -17,6 +17,7 @@ import { formatInt, formatSimClock, formatUsd } from "@/lib/format";
 export const AI_FUNCTION_LABEL: Record<string, string> = {
   classifyDriverMessage: "Wiadomość kierowcy",
   readCmr: "Odczyt CMR",
+  readServiceDocument: "Odczyt dokumentu serwisowego",
   explainAlert: "Wyjaśnienie alertu",
   draftMessage: "Szkic wiadomości",
   triageClientEmail: "Mail klienta",

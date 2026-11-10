@@ -17,6 +17,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "routes:precompute": "tsx scripts/precompute-routes.ts",
     "cmr:generate": "tsx scripts/generate-cmr.ts",
+    "service-docs:generate": "tsx scripts/generate-service-docs.ts",
     "eval:ai": "tsx --env-file-if-exists=.env.local scripts/eval-ai.ts"
   },
   "dependencies": {

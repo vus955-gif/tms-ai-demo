@@ -10,6 +10,7 @@ import { AI_MODEL, costUsd } from "./pricing";
 export type AiFunctionName =
   | "classifyDriverMessage"
   | "readCmr"
+  | "readServiceDocument"
   | "explainAlert"
   | "draftMessage"
   | "triageClientEmail"

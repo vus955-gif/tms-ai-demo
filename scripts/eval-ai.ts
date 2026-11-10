@@ -1,12 +1,12 @@
 /**
  * AI quality check on sets with known answers: driver SMS classification,
- * CMR photo reading (17 synthetic photos with ground truth) and client e-mail
- * triage. Compares the model with the rule-based fallback and prints the cost.
+ * CMR photo reading (17 synthetic photos with ground truth), client e-mail
+ * triage and service documents for the fleet file. Compares the model with the rule-based fallback and prints the cost.
  *
  * Costs real money (fractions of a cent per call with Haiku 5.5) — runs only
  * with ANTHROPIC_API_KEY. Results: evals/results/<time>.json
  *
- * Usage: npm run eval:ai [-- --suite=driver,cmr,email]
+ * Usage: npm run eval:ai [-- --suite=driver,cmr,email,service]
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -19,12 +19,14 @@ import { classifyByRules } from "../src/ai/fallback/driver-message-rules";
 import { hasApiCredentials } from "../src/ai/client";
 import { CMR_AUTO_THRESHOLD, matchCmr, normalize, type CmrCandidate } from "../src/domain/cmr-matching";
 import { loadSampleImage } from "../src/server/documents/cmr";
+import { readFleetDocument } from "../src/server/fleet/service-documents";
 import { createSandbox } from "../src/server/sandbox/repository";
 import { cmrSamples } from "../src/simulation/scenario/cmr-samples";
 import { BOT_EMAILS, COMPLAINT_EMAIL_MEBLE, ORDER_EMAIL_WISLA, STATUS_EMAIL_MAZOVIA } from "../src/simulation/scenario/client-emails";
 import { clients, contacts } from "../src/simulation/scenario/clients";
 import { orders } from "../src/simulation/scenario/operations";
 import { points } from "../src/simulation/scenario/points";
+import { serviceSamples } from "../src/simulation/scenario/service-samples";
 import { createTestDb } from "../src/test/db";
 
 // The eval runs in its own in-memory world; lift the per-world hourly cap for it.
@@ -95,7 +97,7 @@ async function main() {
     console.error("Brak ANTHROPIC_API_KEY (w .env.local). Ewaluacja wywołuje prawdziwe API — bez klucza nie ma czego mierzyć.");
     process.exit(1);
   }
-  const suites = (process.argv.find((a) => a.startsWith("--suite="))?.split("=")[1] ?? "driver,cmr,email").split(",");
+  const suites = (process.argv.find((a) => a.startsWith("--suite="))?.split("=")[1] ?? "driver,cmr,email,service").split(",");
   const db = await createTestDb();
   const realNow = new Date();
   const sandbox = await createSandbox(db, { ipHash: "eval", realNow });
@@ -190,15 +192,35 @@ async function main() {
     }
   }
 
+  if (suites.includes("service")) {
+    // The whole path a dispatcher sees: the reading, the vehicle matched by plates and the proposed deadline.
+    for (const s of serviceSamples) {
+      const out = await readFleetDocument(db, sandbox, simNow, { sampleId: s.id });
+      const p = out.proposal;
+      const t = s.truth;
+      const subjectId = `v-${t.plates.toLowerCase().replace(/\s/g, "")}`;
+      const problems: string[] = [];
+      if (p.subjectId !== subjectId) problems.push(`pojazd ${p.subjectId ?? "—"}≠${subjectId}`);
+      if (p.kind !== t.kind) problems.push(`rodzaj ${p.kind ?? "—"}≠${t.kind}`);
+      if (p.performedOn !== t.performedOn) problems.push(`data wykonania ${p.performedOn ?? "—"}≠${t.performedOn}`);
+      if (t.validUntil && p.validUntil !== t.validUntil) problems.push(`ważne do ${p.validUntil ?? "—"}≠${t.validUntil}`);
+      if (t.validUntil && p.validUntilSource !== "dokument") problems.push("data ważności nie z dokumentu");
+      if (t.kind === "serwis" && p.nextKm !== (t.odometerKm ?? 0) + 100_000) problems.push(`następny serwis ${p.nextKm ?? "—"} km`);
+      if (p.docNumber !== t.docNumber) problems.push(`numer ${p.docNumber || "—"}≠${t.docNumber}`);
+      if (p.warnings.length) problems.push(`ostrzeżenia: ${p.warnings.join(" | ")}`);
+      log({ suite: "serwis", id: s.id, expected: "pojazd, rodzaj, daty i numer zgodne", ai: problems.length ? problems.join("; ") : "OK", rules: "— (bez AI brak odczytu)", aiOk: out.source === "ai" && problems.length === 0, rulesOk: false });
+    }
+  }
+
   const [{ cost }] = await db.select({ cost: sum(aiLog.costUsd) }).from(aiLog);
   console.log("\n=== Podsumowanie ===");
   for (const suite of [...new Set(rows.map((r) => r.suite))]) {
     const list = rows.filter((r) => r.suite === suite);
     const ai = list.filter((r) => r.aiOk).length;
     const rules = list.filter((r) => r.rulesOk).length;
-    console.log(`${suite.padEnd(5)} AI ${ai}/${list.length}${suite === "cmr" ? "" : ` · reguły ${rules}/${list.length}`}`);
+    console.log(`${suite.padEnd(5)} AI ${ai}/${list.length}${suite === "cmr" || suite === "serwis" ? "" : ` · reguły ${rules}/${list.length}`}`);
   }
-  console.log(`Koszt: ${Number(cost ?? 0).toFixed(4)} USD (model: ${process.env.AI_CMR_MODEL || "claude-haiku-5-5"} do CMR, claude-haiku-5-5 do reszty)`);
+  console.log(`Koszt: ${Number(cost ?? 0).toFixed(4)} USD (model: ${process.env.AI_CMR_MODEL || "claude-haiku-5-5"} do CMR i dokumentów serwisowych, claude-haiku-5-5 do reszty)`);
   const dir = path.join(process.cwd(), "evals", "results");
   mkdirSync(dir, { recursive: true });
   const file = path.join(dir, `${new Date().toISOString().replace(/[:.]/g, "-")}.json`);
