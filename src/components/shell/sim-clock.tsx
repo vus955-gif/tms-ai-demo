@@ -11,7 +11,7 @@ export function SimClock({ snapshot }: { snapshot: ClientSnapshot | undefined })
   const label = snapshot && now !== null ? formatSimClock(interpolatedSimNow(snapshot, now)) : "—";
   return (
     <div
-      className="flex items-center gap-1.5 rounded-md border bg-background px-2.5 py-1 font-mono text-sm tabular-nums"
+      className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border bg-background px-2.5 py-1 font-mono text-sm tabular-nums"
       data-testid="sim-clock"
       aria-label="Czas symulacji"
     >

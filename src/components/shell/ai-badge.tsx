@@ -33,7 +33,8 @@ export function AiBadge({ status }: { status: AiStatus | undefined }) {
           )}
         >
           <Sparkles className="size-3.5" aria-hidden />
-          {text}
+          {/* On a phone the header has room for the icon only; the text stays for screen readers. */}
+          <span className="max-sm:sr-only">{text}</span>
         </span>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">{hint}</TooltipContent>

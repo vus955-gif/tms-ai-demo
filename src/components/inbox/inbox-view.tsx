@@ -88,8 +88,8 @@ export function InboxView() {
   }, [selected, unread, marking, markThreadRead]);
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-[320px_minmax(0,1fr)_360px]">
-      <aside className="flex min-h-0 flex-col border-r bg-background">
+    <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,2fr)_minmax(0,3fr)_minmax(0,2fr)] lg:grid-cols-[320px_minmax(0,1fr)_360px] lg:grid-rows-1">
+      <aside className="flex min-h-0 flex-col border-b bg-background lg:border-b-0 lg:border-r">
         <h1 className="border-b px-3 py-2.5 text-sm font-semibold">Skrzynka klientów</h1>
         <ul className="min-h-0 flex-1 overflow-y-auto" data-testid="inbox-list">
           {items.data?.items.map((i) => (
@@ -129,7 +129,7 @@ export function InboxView() {
           )}
         </ul>
       </aside>
-      {selected && thread.data ? <ThreadPane key={selected} thread={thread.data} /> : <div className="col-span-2 flex items-center justify-center text-sm text-muted-foreground">Wybierz wiadomość z listy.</div>}
+      {selected && thread.data ? <ThreadPane key={selected} thread={thread.data} /> : <div className="row-span-2 flex items-center justify-center text-sm text-muted-foreground lg:col-span-2 lg:row-span-1">Wybierz wiadomość z listy.</div>}
     </div>
   );
 }
@@ -256,7 +256,7 @@ function AiPanel({ thread }: { thread: InboxThread }) {
   const problems = t?.extracted?.problems ?? [];
 
   return (
-    <aside className="min-h-0 space-y-4 overflow-y-auto border-l bg-background p-3 text-sm" data-testid="inbox-ai">
+    <aside className="min-h-0 space-y-4 overflow-y-auto border-t bg-background p-3 text-sm lg:border-l lg:border-t-0" data-testid="inbox-ai">
       <div>
         <div className="text-xs text-muted-foreground">{thread.client.name}</div>
         <div className="font-medium">{thread.contact.name}</div>

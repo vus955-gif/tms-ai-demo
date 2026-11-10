@@ -65,7 +65,7 @@ export function AlertsButton() {
 
 function AlertsPanel({ alerts, onClose }: { alerts: AlertView[]; onClose: () => void }) {
   return (
-    <div className="absolute right-2 top-12 z-50 flex max-h-[calc(100dvh-4rem)] w-[400px] flex-col rounded-lg border bg-background shadow-xl" data-testid="alerts-panel">
+    <div className="fixed inset-x-2 top-[6.25rem] z-50 mx-auto flex max-h-[calc(100dvh-7rem)] max-w-md flex-col lg:absolute lg:left-auto lg:right-2 lg:top-12 lg:mx-0 lg:max-h-[calc(100dvh-4rem)] lg:w-[400px] lg:max-w-none rounded-lg border bg-background shadow-xl" data-testid="alerts-panel">
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-sm font-medium">Powiadomienia</span>
         <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Zamknij powiadomienia">

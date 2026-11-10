@@ -10,6 +10,7 @@ import { getJson, postJson } from "@/lib/api";
 import { formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ThreadDetail, ThreadMessage } from "@/server/messages/threads";
+import { markGuideStep, onGuideToolRequest } from "@/components/guide/guide-store";
 import { CmrTray } from "./cmr-tray";
 
 const MAX = 500;
@@ -27,6 +28,8 @@ export function PhoneButton() {
     setOpen(false);
     select.mutate(null);
   };
+  // The guide ("Pokaż telefon kierowcy") opens this tool for the visitor.
+  useEffect(() => onGuideToolRequest("phone", () => setOpen(true)), []);
   return (
     <>
       <Button
@@ -34,10 +37,11 @@ export function PhoneButton() {
         size="sm"
         onClick={() => (open ? close() : setOpen(true))}
         aria-expanded={open}
+        title="Telefon kierowcy"
         data-testid="phone-toggle"
         className={cn(snapshot?.phoneDriverId && "border-brand text-brand")}
       >
-        <Smartphone /> Telefon kierowcy
+        <Smartphone /> <span className="sr-only xl:not-sr-only">Telefon kierowcy</span>
       </Button>
       {open && <PhonePanel driverId={snapshot?.phoneDriverId ?? null} onSelect={(id) => select.mutate(id)} onClose={close} />}
     </>
@@ -74,13 +78,14 @@ function PhonePanel({ driverId, onSelect, onClose }: { driverId: string | null; 
       // Keep anything typed while the message was on its way.
       setText((current) => (current.trim() === body ? "" : current));
       refresh();
+      markGuideStep("sms");
     },
     onError: (e) => toast.error(e.message),
   });
   const tooLong = text.length > MAX;
 
   return (
-    <div className="absolute right-2 top-12 z-50 flex h-[min(640px,calc(100dvh-4rem))] w-[340px] flex-col overflow-hidden rounded-[28px] border-[6px] border-foreground/85 bg-background shadow-2xl" data-testid="phone-panel">
+    <div className="fixed inset-x-2 top-[6.25rem] z-50 mx-auto flex h-[min(640px,calc(100dvh-7rem))] max-w-[360px] flex-col lg:absolute lg:left-auto lg:right-2 lg:top-12 lg:mx-0 lg:h-[min(640px,calc(100dvh-4rem))] lg:w-[340px] lg:max-w-none overflow-hidden rounded-[28px] border-[6px] border-foreground/85 bg-background shadow-2xl" data-testid="phone-panel">
       <div className="flex items-center gap-2 border-b px-3 py-2">
         <select
           className="h-8 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm"
@@ -119,7 +124,13 @@ function PhonePanel({ driverId, onSelect, onClose }: { driverId: string | null; 
             {thread.data && sms.length === 0 && <p className="text-center text-xs text-muted-foreground">Brak SMS-ów.</p>}
             <div ref={bottom} />
           </div>
-          <CmrTray driverId={driverId} onSent={refresh} />
+          <CmrTray
+            driverId={driverId}
+            onSent={() => {
+              refresh();
+              markGuideStep("cmr");
+            }}
+          />
           <form
             className="flex items-end gap-2 border-t p-2"
             onSubmit={(e) => {

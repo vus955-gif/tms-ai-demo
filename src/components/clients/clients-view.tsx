@@ -36,8 +36,8 @@ export function ClientsView() {
   const selected = q.data?.clients.find((c) => c.id === selectedId) ?? list[0] ?? null;
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-[320px_minmax(0,1fr)]">
-      <aside className="flex min-h-0 flex-col border-r bg-background">
+    <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,2fr)_minmax(0,3fr)] lg:grid-cols-[320px_minmax(0,1fr)] lg:grid-rows-1">
+      <aside className="flex min-h-0 flex-col border-b bg-background lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
           <h1 className="text-sm font-semibold">Klienci</h1>
           <Button size="sm" variant="outline" onClick={() => setCreating(true)} data-testid="new-client">

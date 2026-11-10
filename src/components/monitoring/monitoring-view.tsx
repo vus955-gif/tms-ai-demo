@@ -3,7 +3,8 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
+import { markGuideStep } from "@/components/guide/guide-store";
 import { useNow } from "@/hooks/use-now";
 import { interpolatedSimNow, useSnapshot } from "@/hooks/use-snapshot";
 import { getJson } from "@/lib/api";
@@ -54,8 +55,13 @@ export function MonitoringView() {
   const simNowMs = snapshot ? (now !== null ? interpolatedSimNow(snapshot, now) : new Date(snapshot.simNow).getTime()) : 0;
   const detailData = detail.data && detail.data.vehicle.id === selectedId ? detail.data : undefined;
 
+  // First step of the guide: the visitor opened a vehicle.
+  useEffect(() => {
+    if (selectedId) markGuideStep("pojazd");
+  }, [selectedId]);
+
   return (
-    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)_420px]">
+    <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,2fr)_minmax(0,3fr)] lg:grid-cols-[minmax(0,1fr)_420px] lg:grid-rows-1">
       <div className="relative min-h-0">
         <FleetMap
           vehicles={vehicles}
@@ -71,7 +77,7 @@ export function MonitoringView() {
           <Legend color="#94a3b8" label="wolny" />
         </div>
       </div>
-      <aside className="flex min-h-0 flex-col border-l bg-background">
+      <aside className="flex min-h-0 flex-col border-t bg-background lg:border-l lg:border-t-0">
         {isPending && vehicles.length === 0 && <p className="p-6 text-sm text-muted-foreground">Wczytywanie floty…</p>}
         {selected ? (
           <VehicleDetailPanel

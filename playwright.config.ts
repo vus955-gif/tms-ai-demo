@@ -14,6 +14,8 @@ export default defineConfig({
     locale: "pl-PL",
     timezoneId: "Europe/Warsaw",
     trace: "retain-on-failure",
+    // The first-visit guide opens over the work area; the flows start with it closed (guide.spec.ts opens it on purpose).
+    storageState: { cookies: [], origins: [{ origin: `http://localhost:${PORT}`, localStorage: [{ name: "tms-guide", value: '{"open":false,"done":[]}' }] }] },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } }],
   webServer: {

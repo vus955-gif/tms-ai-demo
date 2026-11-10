@@ -18,8 +18,8 @@ export function ClientViewButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)} aria-expanded={open} data-testid="client-view-toggle">
-        <Eye /> Widok klienta
+      <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)} aria-expanded={open} title="Widok klienta" data-testid="client-view-toggle">
+        <Eye /> <span className="sr-only xl:not-sr-only">Widok klienta</span>
       </Button>
       {open && <Panel onClose={() => setOpen(false)} />}
     </>
@@ -36,7 +36,7 @@ function Panel({ onClose }: { onClose: () => void }) {
     enabled: Boolean(clientId),
   });
   return (
-    <div className="absolute right-[356px] top-12 z-50 flex w-[360px] flex-col gap-2 rounded-xl border bg-background p-3 shadow-2xl" data-testid="client-view-panel">
+    <div className="fixed inset-x-2 top-[6.25rem] z-50 mx-auto flex max-w-md flex-col lg:absolute lg:left-auto lg:right-[356px] lg:top-12 lg:mx-0 lg:w-[360px] lg:max-w-none gap-2 rounded-xl border bg-background p-3 shadow-2xl" data-testid="client-view-panel">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold">Widok klienta</span>
         <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Zamknij widok klienta">

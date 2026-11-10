@@ -37,6 +37,8 @@ Demo pokazuje, jak mógłby wyglądać prosty TMS dla firmy z busami i ciągnika
 | **Flota i terminarz** | Terminy pojazdów, naczep i kierowców (badania, OC, tachograf, ATP, dokumenty) oraz nieobecności; terminy blokujące i nieobecności wykluczają z przydziału. Przepinanie naczep na placu z historią (która naczepa była pod którym ciągnikiem) i ostrzeżeniami o przydzielonych zleceniach. |
 | **Zlecenia stałe** | Szablony i paczka zleceń na tydzień z prognozą terminowości, tworzona jednym kliknięciem; zwykły kierowca szablonu dostaje zlecenie, jeśli da radę, a SMS idzie dzień przed kursem o 16:00. Przy zagrożonym dniu „Doradź”: AI tłumaczy ryzyko z wyliczeń algorytmu i proponuje innego kierowcę albo co załatwić. |
 | **Tryb ciemny** | Jak system / jasny / ciemny; mapa ma własny przełącznik jasna/ciemna. |
+| **Przewodnik po demo** | Przy pierwszej wizycie pięć kroków pokazuje sedno: pojazd na mapie, SMS kierowcy, zdjęcie CMR, mail klienta, dziennik AI. Kroki odhaczają się same, gdy gość je wykona. |
+| **Telefon** | Panel działa też na wąskim ekranie: menu wysuwa się z nagłówka, a listy i szczegóły układają się jedno pod drugim. |
 
 <table>
   <tr>

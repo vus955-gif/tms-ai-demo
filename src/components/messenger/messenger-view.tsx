@@ -60,8 +60,8 @@ export function MessengerView() {
   const select = (driverId: string) => router.replace(`${pathname}?d=${driverId}`, { scroll: false });
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-[300px_minmax(0,1fr)_280px]">
-      <aside className="flex min-h-0 flex-col border-r bg-background">
+    <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,2fr)_minmax(0,4fr)_minmax(0,2fr)] lg:grid-cols-[300px_minmax(0,1fr)_280px] lg:grid-rows-1">
+      <aside className="flex min-h-0 flex-col border-b bg-background lg:border-b-0 lg:border-r">
         <h1 className="border-b px-3 py-2.5 text-sm font-semibold">Kierowcy</h1>
         <ul className="min-h-0 flex-1 overflow-y-auto" data-testid="thread-list">
           {threads.data?.threads.map((t) => (
@@ -96,7 +96,7 @@ export function MessengerView() {
       ) : (
         <div className="flex items-center justify-center text-sm text-muted-foreground">Wybierz kierowcę z listy.</div>
       )}
-      <aside className="min-h-0 overflow-y-auto border-l bg-background p-3 text-sm">
+      <aside className="min-h-0 overflow-y-auto border-t bg-background p-3 text-sm lg:border-l lg:border-t-0">
         {thread.data ? (
           <div className="space-y-3">
             <div>

@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AtSign, Send, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CATEGORY } from "@/components/inbox/inbox-view";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SNAPSHOT_KEY } from "@/hooks/use-snapshot";
 import { getJson, postJson } from "@/lib/api";
 import type { MailClient } from "@/app/api/client-mail/route";
+import { markGuideStep, onGuideToolRequest } from "@/components/guide/guide-store";
 
 const EXAMPLES = [
   { label: "Zamówienie", subject: "Zlecenie transportu", body: "Dzień dobry,\nprosimy o transport.\nZaładunek: jutro 08:00–10:00.\nRozładunek: jutro 14:00–16:00.\n10 palet, 4000 kg.\nPozdrawiam" },
@@ -23,10 +24,12 @@ const EXAMPLES = [
 /** Demo tool: the visitor writes an e-mail as one of the fictional clients. */
 export function ClientMailButton() {
   const [open, setOpen] = useState(false);
+  // The guide ("Pokaż pocztę klienta") opens this tool for the visitor.
+  useEffect(() => onGuideToolRequest("client-mail", () => setOpen(true)), []);
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)} aria-expanded={open} data-testid="client-mail-toggle">
-        <AtSign /> Poczta klienta
+      <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)} aria-expanded={open} title="Poczta klienta" data-testid="client-mail-toggle">
+        <AtSign /> <span className="sr-only xl:not-sr-only">Poczta klienta</span>
       </Button>
       {open && <ClientMailPanel onClose={() => setOpen(false)} />}
     </>
@@ -47,6 +50,7 @@ function ClientMailPanel({ onClose }: { onClose: () => void }) {
     onSuccess: (r) => {
       setSubject("");
       setBody("");
+      markGuideStep("mail");
       void queryClient.invalidateQueries({ queryKey: ["inbox"] });
       void queryClient.invalidateQueries({ queryKey: ["orders"] });
       void queryClient.invalidateQueries({ queryKey: SNAPSHOT_KEY });
@@ -58,7 +62,7 @@ function ClientMailPanel({ onClose }: { onClose: () => void }) {
   });
 
   return (
-    <div className="absolute right-[356px] top-12 z-50 flex w-[380px] flex-col gap-2 rounded-xl border bg-background p-3 shadow-2xl" data-testid="client-mail-panel">
+    <div className="fixed inset-x-2 top-[6.25rem] z-50 mx-auto flex max-h-[calc(100dvh-7rem)] max-w-md flex-col overflow-y-auto lg:absolute lg:left-auto lg:right-[356px] lg:top-12 lg:mx-0 lg:max-h-none lg:w-[380px] lg:max-w-none lg:overflow-visible gap-2 rounded-xl border bg-background p-3 shadow-2xl" data-testid="client-mail-panel">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold">Poczta klienta</span>
         <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Zamknij pocztę klienta">

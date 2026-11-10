@@ -71,8 +71,8 @@ export function DocumentsView() {
   };
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-[340px_minmax(0,1fr)]">
-      <aside className="flex min-h-0 flex-col border-r bg-background">
+    <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,2fr)_minmax(0,3fr)] lg:grid-cols-[340px_minmax(0,1fr)] lg:grid-rows-1">
+      <aside className="flex min-h-0 flex-col border-b bg-background lg:border-b-0 lg:border-r">
         <div className="flex gap-1 border-b p-2" role="tablist" aria-label="Kolejki dokumentów">
           {QUEUES.map((q) => {
             const n = all.filter((d) => q.statuses.includes(d.status)).length;
@@ -166,7 +166,7 @@ function DocumentDetail({ doc, onDone }: { doc: DocumentView; onDone: () => void
   const open = ["do_zamkniecia", "do_weryfikacji", "nieczytelny"].includes(doc.status);
 
   return (
-    <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_minmax(320px,420px)] overflow-hidden" data-testid="document-detail">
+    <div className="grid min-h-0 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:overflow-hidden" data-testid="document-detail">
       <div className="min-h-0 overflow-auto bg-muted/40 p-4">
         {doc.imageUrl ? (
           <button type="button" onClick={() => setZoom((z) => !z)} className={cn("block", zoom ? "w-[160%] max-w-none" : "mx-auto max-w-2xl")} aria-label={zoom ? "Pomniejsz zdjęcie" : "Powiększ zdjęcie"}>
@@ -180,7 +180,7 @@ function DocumentDetail({ doc, onDone }: { doc: DocumentView; onDone: () => void
           </div>
         )}
       </div>
-      <div className="min-h-0 space-y-4 overflow-y-auto border-l bg-background p-4 text-sm">
+      <div className="min-h-0 space-y-4 border-t bg-background p-4 text-sm lg:overflow-y-auto lg:border-l lg:border-t-0">
         <div>
           <div className="flex items-center justify-between gap-2">
             <h1 className="text-base font-semibold">{doc.matchedOrder ? `CMR · ${doc.matchedOrder.number}` : "CMR · nieprzypisany"}</h1>

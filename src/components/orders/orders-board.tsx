@@ -92,8 +92,8 @@ export function OrdersBoard() {
   const data = board.data;
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)}>
-      <div className="grid h-full min-h-0 grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="flex min-h-0 flex-col border-r bg-background">
+      <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[minmax(0,2fr)_minmax(0,3fr)] lg:grid-cols-[300px_minmax(0,1fr)] lg:grid-rows-1">
+        <aside className="flex min-h-0 flex-col border-b bg-background lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between border-b px-3 py-2.5">
             <h1 className="text-sm font-semibold">Nowe zlecenia</h1>
             <Button size="sm" variant="outline" onClick={() => setCreating(true)} data-testid="new-order">
@@ -143,13 +143,13 @@ export function OrdersBoard() {
           <p className="border-t px-3 py-2 text-[11px] text-muted-foreground">Przeciągnij zlecenie na kierowcę albo użyj „Przydziel…”.</p>
         </aside>
 
-        <section className="min-h-0 overflow-y-auto">
-          <div className="sticky top-0 z-10 grid grid-cols-[220px_minmax(0,1fr)_minmax(0,1.4fr)] gap-3 border-b bg-muted/80 px-4 py-2 text-[11px] uppercase tracking-wide text-muted-foreground backdrop-blur">
+        <section className="min-h-0 overflow-auto">
+          <div className="sticky top-0 z-10 grid min-w-[680px] grid-cols-[220px_minmax(0,1fr)_minmax(0,1.4fr)] gap-3 border-b bg-muted/80 px-4 py-2 text-[11px] uppercase tracking-wide text-muted-foreground backdrop-blur">
             <span>Kierowca · pojazd</span>
             <span>Teraz</span>
             <span>Kolejka</span>
           </div>
-          <ul className="divide-y">
+          <ul className="min-w-[680px] divide-y">
             {data?.lanes.map((lane) => (
               <Lane
                 key={lane.driverId}
