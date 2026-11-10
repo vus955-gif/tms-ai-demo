@@ -11,6 +11,8 @@ import {
   points,
   trailers,
   vehicles,
+  type OrderStatus,
+  type StatusActor,
 } from "@/db/schema";
 import type { Executor } from "@/db/types";
 import { scenario } from "@/simulation/scenario";
@@ -140,17 +142,23 @@ export async function seedScenario(db: Executor, sandboxId: string, simOrigin: D
       unloadedAt: t(o.unloadedMin),
     })),
   );
+  // The whole life of each closed run, so its history reads like one the system recorded live.
   await db.insert(orderStatusChanges).values(
-    scenario.closedOrders.map((o) => ({
-      ...sid,
-      id: randomUUID(),
-      orderId: o.id,
-      fromStatus: "DO_ZAMKNIECIA" as const,
-      toStatus: "ZAMKNIETE" as const,
-      actor: "dispatcher" as const,
-      reason: "Zamknięte po sprawdzeniu dokumentów",
-      atSim: t(o.closedMin),
-    })),
+    scenario.closedOrders.flatMap((o) => {
+      const created = o.pickupFromMin - 24 * 60;
+      const steps: [OrderStatus | null, OrderStatus, StatusActor, string, number][] = [
+        [null, "NOWE", "dispatcher", "Zlecenie założone przez spedytora", created],
+        ["NOWE", "PRZYPISANE", "dispatcher", "Przydział przez spedytora", created + 25],
+        ["PRZYPISANE", "WYSLANE", "system", "Wysłano SMS ze zleceniem", created + 25],
+        ["WYSLANE", "POTWIERDZONE", "driver", "Kierowca potwierdził na stronie zlecenia", created + 34],
+        ["POTWIERDZONE", "ZALADUNEK", "system", "Przyjazd na załadunek (GPS)", o.pickupFromMin],
+        ["ZALADUNEK", "W_DRODZE", "system", "Wyjazd z załadunku (GPS)", o.departedPickupMin],
+        ["W_DRODZE", "ROZLADUNEK", "system", "Przyjazd na rozładunek (GPS)", o.unloadedMin - 45],
+        ["ROZLADUNEK", "DO_ZAMKNIECIA", "dispatcher", "CMR przypisany ręcznie", Math.min(o.unloadedMin + 40, o.closedMin - 1)],
+        ["DO_ZAMKNIECIA", "ZAMKNIETE", "dispatcher", "Zamknięte po sprawdzeniu dokumentów", o.closedMin],
+      ];
+      return steps.map(([fromStatus, toStatus, actor, reason, min]) => ({ ...sid, id: randomUUID(), orderId: o.id, fromStatus, toStatus, actor, reason, atSim: t(min) }));
+    }),
   );
   await db.insert(driverClientHistory).values(scenario.history.map((h) => ({ ...sid, ...h })));
 }

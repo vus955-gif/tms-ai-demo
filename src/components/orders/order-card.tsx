@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { formatHm, formatSimClock, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { OrderCard as OrderCardData } from "@/server/orders/board";
+import { OrderHistoryButton } from "./order-history";
 
 const STATUS_TONE: Record<string, string> = {
   NOWE: "bg-muted text-foreground",
@@ -27,7 +28,10 @@ export function OrderCardBody({ order, compact = false }: { order: OrderCardData
   return (
     <>
       <div className="flex items-start justify-between gap-2">
-        <span className="font-medium">{order.number}</span>
+        <span className="flex items-center gap-1">
+          <span className="font-medium">{order.number}</span>
+          <OrderHistoryButton orderId={order.id} number={order.number} />
+        </span>
         <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium", STATUS_TONE[order.status] ?? "bg-muted")}>{order.statusLabel}</span>
       </div>
       <div className="truncate text-xs text-muted-foreground">{order.clientName}</div>

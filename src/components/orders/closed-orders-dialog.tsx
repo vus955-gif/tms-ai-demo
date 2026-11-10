@@ -10,6 +10,7 @@ import { getJson } from "@/lib/api";
 import { formatWarsaw } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ClosedOrder } from "@/server/orders/closed";
+import { OrderHistoryButton } from "./order-history";
 
 const CLOSED_KEY = ["orders-closed"] as const;
 
@@ -107,7 +108,12 @@ export function ClosedOrdersDialog({ onClose }: { onClose: () => void }) {
                     <td className="px-2 py-1.5">
                       <input type="checkbox" checked={selected.has(o.id)} onChange={() => toggle(o.id)} aria-label={`Wybierz ${o.number} do eksportu`} />
                     </td>
-                    <td className="px-2 py-1.5 font-medium tabular-nums">{o.number}</td>
+                    <td className="px-2 py-1.5 font-medium tabular-nums">
+                      <span className="flex items-center gap-1">
+                        {o.number}
+                        <OrderHistoryButton orderId={o.id} number={o.number} />
+                      </span>
+                    </td>
                     <td className="px-2 py-1.5">{o.clientName}</td>
                     <td className="px-2 py-1.5">
                       {o.pickupCity} → {o.deliveryCity}
