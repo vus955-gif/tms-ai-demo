@@ -34,7 +34,8 @@ process.env.AI_CALLS_PER_SANDBOX_PER_HOUR = "1000";
 
 type Row = { suite: string; id: string; expected: string; ai: string; rules: string; aiOk: boolean; rulesOk: boolean; note?: string };
 
-const DRIVER_CASES: { body: string; expect: string[]; pending?: boolean }[] = [
+/** `site`: whether the message carries lasting knowledge about a loading/unloading place (B3). */
+const DRIVER_CASES: { body: string; expect: string[]; pending?: boolean; site?: boolean }[] = [
   { body: "ok", expect: ["potwierdzenie"], pending: true },
   { body: "OK jadę", expect: ["potwierdzenie"], pending: true },
   { body: "przyjmuję", expect: ["potwierdzenie"], pending: true },
@@ -48,10 +49,12 @@ const DRIVER_CASES: { body: string; expect: string[]; pending?: boolean }[] = [
   { body: "biorę, tylko jeśli nie ma ADR", expect: ["warunek_pytanie"], pending: true },
   { body: "dobra, ale dopiero po pauzie dobowej", expect: ["warunek_pytanie"], pending: true },
   { body: "Złapałem gumę, stoję na poboczu pod Strykowem", expect: ["operacyjne"] },
-  { body: "korek na A2, będę ok. 40 min później", expect: ["operacyjne"] },
+  { body: "korek na A2, będę ok. 40 min później", expect: ["operacyjne"], site: false },
   { body: "Kontrola ITD, sprawdzają tachograf", expect: ["operacyjne"] },
   { body: "padła chłodnia, temperatura rośnie", expect: ["operacyjne"] },
-  { body: "Jestem na MOP-ie, robię przerwę. Wszystko ok.", expect: ["luzne"] },
+  { body: "Jestem na MOP-ie, robię przerwę. Wszystko ok.", expect: ["luzne"], site: false },
+  { body: "Na przyszłość: w Lipsku rozładunek jest od tyłu hali, rampa 4, a wjazd tylko od Industriestrasse.", expect: ["luzne", "niejasne"], site: true },
+  { body: "Dziś na rampie w Lipsku kolejka, postoję z godzinę.", expect: ["operacyjne", "luzne"], site: false },
   { body: "dzięki za info", expect: ["luzne"] },
   { body: "CMR w załączniku", expect: ["dokument"] },
   { body: "zobaczymy", expect: ["niejasne", "warunek_pytanie"], pending: true },
@@ -119,8 +122,9 @@ async function main() {
         expected: c.expect.join("|"),
         ai: `${out.value.category}${out.source === "ai" ? ` (${out.value.confidence.toFixed(2)})` : " (fallback!)"}`,
         rules: rules.category,
-        aiOk: out.source === "ai" && c.expect.includes(out.value.category),
-        rulesOk: c.expect.includes(rules.category),
+        aiOk: out.source === "ai" && c.expect.includes(out.value.category) && (c.site === undefined || Boolean(out.value.site_note) === c.site),
+        rulesOk: c.expect.includes(rules.category) && (c.site === undefined || Boolean(rules.site_note) === c.site),
+        note: c.site === undefined ? undefined : `uwaga o miejscu: oczekiwana ${c.site ? "tak" : "nie"}, AI ${out.value.site_note ? `„${out.value.site_note}”` : "brak"}`,
       });
     }
   }

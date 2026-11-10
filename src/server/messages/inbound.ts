@@ -5,6 +5,7 @@ import { classifyDriverMessage } from "@/ai/functions/classify-driver-message";
 import type { DriverMessageClassification } from "@/ai/fallback/driver-message-rules";
 import { windowText } from "@/domain/sms-templates";
 import { recordAiAction } from "../ai-actions";
+import { suggestPointNote } from "../clients/point-notes";
 import { openAlert } from "../alerts/repository";
 import { transitionOrder } from "../orders/transition";
 
@@ -189,6 +190,8 @@ export async function processDriverInbound(
     case "luzne":
       break;
   }
+  // What the driver wrote about the place itself becomes a proposal for the point's notes.
+  if (c.site_note) await suggestPointNote(db, sandboxId, { driverId, messageId, text: c.site_note, stop: c.site_stop, source: source === "ai" ? "ai" : "rules", atSim: at });
   // An attached photo is always handed to the document flow, whatever the text says.
   if (msg.attachments.length > 0 || opts.uploaded) {
     for (const listener of documentListeners) {

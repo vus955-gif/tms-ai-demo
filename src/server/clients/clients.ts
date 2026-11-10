@@ -7,6 +7,7 @@ import type { Executor } from "@/db/types";
 import { COUNTRY_CODES, COUNTRY_NAMES, inCountry } from "@/domain/countries";
 import { checkTaxId } from "@/domain/tax-id";
 import { HttpError } from "../http";
+import { openPointSuggestions, type PointSuggestion } from "./point-notes";
 
 /** A public demo: room for a realistic book of clients, not for filling the database. */
 export const LIMITS = { clients: 30, contactsPerClient: 10, manualPoints: 60 } as const;
@@ -192,6 +193,8 @@ export type ClientOverview = {
     notes: string;
     handlingMinutes: number;
     manual: boolean;
+    /** Notes proposed from drivers' messages, waiting for the dispatcher's decision. */
+    suggestions: PointSuggestion[];
   }[];
   openOrders: number;
   closedOrders: number;
@@ -207,6 +210,7 @@ export async function clientsOverview(db: Executor, sandboxId: string): Promise<
     db.select({ clientId: orders.clientId }).from(orders).where(and(eq(orders.sandboxId, sandboxId), inArray(orders.status, ["ZAMKNIETE"]))),
   ]);
   registerPointCoords(pointRows);
+  const suggestions = await openPointSuggestions(db, sandboxId);
   const count = (rows: { clientId: string }[], id: string) => rows.filter((r) => r.clientId === id).length;
   return clientRows
     .map((c) => ({
@@ -231,6 +235,7 @@ export async function clientsOverview(db: Executor, sandboxId: string): Promise<
           notes: p.notes,
           handlingMinutes: p.handlingMinutes,
           manual: p.source === "manual",
+          suggestions: suggestions.get(p.id) ?? [],
         }))
         .sort((a, b) => a.name.localeCompare(b.name, "pl")),
       openOrders: count(openRows, c.id),

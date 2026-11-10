@@ -1,15 +1,16 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, MapPinned, Plus, Star, Trash2, UserPlus } from "lucide-react";
+import { Building2, MapPinned, MessageSquareQuote, Plus, Star, Trash2, UserPlus } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { COUNTRY_NAMES, type Country } from "@/domain/countries";
-import { useWorldReady } from "@/hooks/use-snapshot";
+import { SNAPSHOT_KEY, useSnapshot, useWorldReady } from "@/hooks/use-snapshot";
 import { getJson, postJson } from "@/lib/api";
+import { formatWarsaw } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ClientOverview } from "@/server/clients/clients";
 import { ClientDialog } from "./client-dialog";
@@ -27,10 +28,13 @@ export function ClientsView() {
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
   const [editingPoint, setEditingPoint] = useState<ClientOverview["points"][number] | "new" | null>(null);
-  const q = useQuery({ queryKey: ["clients"], queryFn: () => getJson<Data>("/api/clients"), enabled: ready });
+  // A new note proposed from a driver's message changes the menu badge: reload the book then, not only on demand.
+  const { data: snapshot } = useSnapshot();
+  const q = useQuery({ queryKey: ["clients", snapshot?.badges.klienci ?? 0], queryFn: () => getJson<Data>("/api/clients"), enabled: ready, placeholderData: (previous) => previous });
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["clients"] });
     void queryClient.invalidateQueries({ queryKey: ["catalog"] });
+    void queryClient.invalidateQueries({ queryKey: SNAPSHOT_KEY });
   };
   const list = (q.data?.clients ?? []).filter((c) => c.name.toLocaleLowerCase("pl").includes(query.trim().toLocaleLowerCase("pl")));
   const selected = q.data?.clients.find((c) => c.id === selectedId) ?? list[0] ?? null;
@@ -221,6 +225,9 @@ function ClientCard({
                 {p.requirements && <div className="text-xs">Wymagania: {p.requirements}</div>}
                 {p.notes && <div className="text-xs italic">„{p.notes}”</div>}
                 {p.manual && <div className="mt-1 text-[11px] text-warn">dodany w aplikacji · trasy przybliżone</div>}
+                {p.suggestions.map((s) => (
+                  <SuggestionCard key={s.id} pointId={p.id} suggestion={s} onDone={onChanged} />
+                ))}
               </li>
             ))}
             {client.points.length === 0 && <li className="text-sm text-muted-foreground">Brak punktów — dodaj pierwszy, żeby zakładać zlecenia dla tego klienta.</li>}
@@ -228,6 +235,47 @@ function ClientCard({
           {client.points.length > 0 && <PointMap pins={pins} className="h-72 w-full overflow-hidden rounded-lg border" />}
         </div>
       </section>
+    </div>
+  );
+}
+
+type Suggestion = ClientOverview["points"][number]["suggestions"][number];
+
+/** A note about the place, proposed from a driver's message. The dispatcher may reword it before it joins the point's notes. */
+function SuggestionCard({ pointId, suggestion, onDone }: { pointId: string; suggestion: Suggestion; onDone: () => void }) {
+  const [text, setText] = useState(suggestion.text);
+  const decide = useMutation({
+    mutationFn: (decision: "accept" | "reject") => postJson(`/api/points/${pointId}`, { action: "suggestion", suggestionId: suggestion.id, decision, text: decision === "accept" ? text : undefined }),
+    onSuccess: (_data, decision) => {
+      toast.success(decision === "accept" ? "Dodano do uwag punktu. Kolejni kierowcy zobaczą ją w SMS-ie ze zleceniem." : "Propozycja odrzucona.");
+      onDone();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  return (
+    <div className="mt-2 grid gap-1.5 rounded-md border border-ai/40 bg-ai-soft/40 p-2" data-testid="point-suggestion">
+      <div className="flex items-center gap-1.5 text-[11px] font-medium text-ai">
+        <MessageSquareQuote className="size-3.5" aria-hidden />
+        Uwaga od kierowcy: {suggestion.driverName}, {formatWarsaw(suggestion.createdSim, "d.MM HH:mm")}
+        {suggestion.source === "ai" ? " · sformułowana przez AI" : " · cała wiadomość, bez AI"}
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={2}
+        maxLength={240}
+        aria-label="Treść uwagi o punkcie"
+        className="w-full resize-none rounded-md border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+      />
+      {suggestion.source === "ai" && <p className="text-[11px] text-muted-foreground">Z wiadomości: „{suggestion.quote}”</p>}
+      <div className="flex gap-2">
+        <Button size="xs" onClick={() => decide.mutate("accept")} disabled={decide.isPending || !text.trim()} data-testid="suggestion-accept">
+          Dodaj do uwag punktu
+        </Button>
+        <Button size="xs" variant="ghost" onClick={() => decide.mutate("reject")} disabled={decide.isPending} data-testid="suggestion-reject">
+          Odrzuć
+        </Button>
+      </div>
     </div>
   );
 }

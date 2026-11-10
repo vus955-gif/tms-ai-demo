@@ -95,6 +95,12 @@ addTimelineEntries([
     payload: { driverId: "d-wojcik", body: "Dzień dobry, jestem na MOP-ie przed Gdańskiem, robię przerwę. Wszystko ok." },
   },
   {
+    // Site knowledge (B3): what the driver says about the unloading place becomes a proposed note for that point.
+    atMin: 75,
+    type: "driver.message",
+    payload: { driverId: "d-nowak", body: "W Berlinie u Meble Wielkopolska rozładunek jest od tyłu hali, rampa 4. Brama główna zamknięta na stałe, wjazd od Industriestrasse." },
+  },
+  {
     atMin: 241,
     type: "driver.message",
     payload: { driverId: "d-kowalczyk", body: "Złapałem gumę, stoję na poboczu. Serwis mobilny będzie za ok. 1,5 h." },

@@ -604,6 +604,28 @@ export const salesSettings = pgTable("sales_settings", {
  * is the only key a client has, so it is globally unique and unguessable.
  */
 /**
+ * What drivers write about loading and unloading places ("wjazd od tyłu", "rampa 4 nieczynna"):
+ * a proposal for the point's notes. It reaches other drivers only after the dispatcher accepts it.
+ */
+export const pointNoteSuggestions = pgTable(
+  "point_note_suggestions",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    pointId: text("point_id").notNull(),
+    text: text("text").notNull(),
+    messageId: text("message_id").notNull(),
+    driverId: text("driver_id").notNull(),
+    /** Who worded the note: the model, or (without AI) the driver's whole message. */
+    source: text("source").$type<"ai" | "rules">().notNull(),
+    status: text("status").$type<"nowa" | "przyjeta" | "odrzucona">().notNull().default("nowa"),
+    createdSim: ts("created_sim").notNull(),
+    decidedSim: ts("decided_sim"),
+  },
+  (t) => [primaryKey({ columns: [t.sandboxId, t.id] }), index("point_note_suggestions_point_idx").on(t.sandboxId, t.pointId, t.status)],
+);
+
+/**
  * Link in the order SMS: the driver's page for one order ("Potwierdzam", CMR photo). The token is the
  * only key — the driver's phone has no demo-world cookie — and it opens just this order for this driver.
  */

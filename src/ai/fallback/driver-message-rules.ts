@@ -7,6 +7,10 @@ export type DriverMessageClassification = {
   priority: MessagePriority;
   confidence: number;
   suggested_replies: string[];
+  /** Lasting information about a loading/unloading place, worth passing to other drivers; null when there is none. */
+  site_note: string | null;
+  /** Which stop of the driver's order the note is about, when the message says so. */
+  site_stop: "zaladunek" | "rozladunek" | null;
 };
 
 const strip = (text: string) =>
@@ -31,6 +35,16 @@ const CONDITION = /\b(ale|tylko|pod warunkiem|chyba ze|jesli|jezeli|dopiero)\b/;
 const QUESTION_WORD = /\b(jaki|jaka|jakie|ktory|ktora|ktore|gdzie|kiedy|ile|czy|o ktorej|numer rampy)\b/;
 const SMALL_TALK = /\b(dzien dobry|czesc|witam|pozdrawiam|dzieki|dziekuje|parking|mop|przerwe|kawa|wszystko ok|jestem na)\b/;
 
+/** Words that usually mean "this is about the place itself", not about today's trouble. */
+const SITE = /\b(wjazd|wjezdzac|brama|bramy|brame|bramie|rampa|rampy|rampe|rampie|plac|placu|awizacj|portierni|ochron|domofon|szlaban)/;
+
+/** Without AI the note is the driver's own message, word for word — the dispatcher shortens it when accepting. */
+function siteNoteByRules(raw: string, text: string): string | null {
+  const body = raw.trim();
+  if (body.length < 30 || body.length > 300 || body.endsWith("?") || !SITE.test(text)) return null;
+  return body;
+}
+
 const REPLIES: Record<DriverMessageCategory, string[]> = {
   potwierdzenie: ["Dzięki, szerokiej drogi.", "Dzięki. Daj znać po załadunku."],
   odmowa: ["Rozumiem, szukam innego kierowcy.", "Zadzwoń do mnie, porozmawiamy o tym zleceniu."],
@@ -50,7 +64,18 @@ export function classifyByRules(raw: string, hasAttachment = false): DriverMessa
     confidence: number,
     summary: string,
     subtype: DriverMessageClassification["subtype"] = null,
-  ): DriverMessageClassification => ({ category, subtype, summary, priority, confidence, suggested_replies: REPLIES[category] });
+  ): DriverMessageClassification => ({
+    category,
+    subtype,
+    summary,
+    priority,
+    confidence,
+    suggested_replies: REPLIES[category],
+    // Only messages that are not an answer to an order, a road report or a document can be site knowledge:
+    // "ok, podjadę pod rampę" mentions a ramp but says nothing lasting about the place.
+    site_note: category === "luzne" || category === "niejasne" ? siteNoteByRules(raw, text) : null,
+    site_stop: null,
+  });
 
   if (hasAttachment || DOCUMENT.test(text)) return result("dokument", "normalny", 0.7, "Kierowca przesłał dokument lub zdjęcie.");
   if (REFUSAL.test(text)) return result("odmowa", "wysoki", text.length <= 120 ? 0.8 : 0.6, "Kierowca odmawia realizacji zlecenia.");

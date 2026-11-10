@@ -128,6 +128,7 @@ export function AppShell({ children, toolbar }: { children: ReactNode; toolbar?:
               "/sprzedaz": snapshot?.badges.sprzedaz,
               "/flota": snapshot?.badges.flota,
               "/przesylki": snapshot?.badges.przesylki,
+              "/klienci": snapshot?.badges.klienci,
             };
             const badge = badges[href] ?? 0;
             return (
