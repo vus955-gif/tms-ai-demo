@@ -36,6 +36,8 @@ describe("security headers", () => {
     const keys = (env: string) => securityHeaders({ NODE_ENV: env }).map((h) => h.key);
     expect(keys("production")).toContain("Strict-Transport-Security");
     expect(keys("development")).not.toContain("Strict-Transport-Security");
+    // Vercel sends HSTS itself; ours would only overwrite the platform's stricter one.
+    expect(securityHeaders({ NODE_ENV: "production", VERCEL: "1" }).map((h) => h.key)).not.toContain("Strict-Transport-Security");
     expect(keys("production")).toEqual(expect.arrayContaining(["Content-Security-Policy", "X-Content-Type-Options", "X-Frame-Options", "Referrer-Policy", "Permissions-Policy"]));
   });
 });

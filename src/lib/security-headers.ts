@@ -61,6 +61,7 @@ export function securityHeaders(env: Env): { key: string; value: string }[] {
     { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
   ];
   // Browsers ignore HSTS over plain http, but there is no reason to send it from a local server.
-  if (env.NODE_ENV === "production") headers.push({ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" });
+  // On Vercel the platform already sends its own (with "preload"); a second header here would replace it.
+  if (env.NODE_ENV === "production" && !env.VERCEL) headers.push({ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" });
   return headers;
 }
