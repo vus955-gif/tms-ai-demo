@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TMS: rozbudowa z 10.11.2026 i kierunki dalszych prac</title>
+<style>
+  :root {
+    --bg: #faf9f6; --surface: #ffffff; --surface-2: #f3f1ec; --ink: #1c1f24; --muted: #5d6471; --line: #e3e0d8;
+    --accent: #0f5c8c; --accent-soft: #e5eff6; --good: #1f7a4d; --good-soft: #e6f3eb; --warn: #8f5600; --warn-soft: #fbf0dc;
+    --bad: #a3302a; --bad-soft: #f8e5e3; --violet: #5b3fa6; --violet-soft: #eeeafa; --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #131519; --surface: #1a1d22; --surface-2: #20242a; --ink: #e6e8eb; --muted: #a1a8b3; --line: #2d3139;
+      --accent: #6db4e3; --accent-soft: #182a37; --good: #6fcf9a; --good-soft: #15281e; --warn: #f0b45a; --warn-soft: #2c2314;
+      --bad: #f08a83; --bad-soft: #2e1918; --violet: #b4a2f0; --violet-soft: #241f38;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; font-size: 17px; line-height: 1.65; }
+  .page { max-width: 54rem; margin: 0 auto; padding: 56px 24px 96px; }
+  @media (max-width: 600px) { .page { padding: 32px 16px 64px; } body { font-size: 16px; } }
+  h1, h2, h3 { line-height: 1.25; letter-spacing: -0.01em; }
+  h1 { font-size: 2.1rem; margin: .2em 0 .35em; }
+  h2 { font-size: 1.5rem; margin: 3rem 0 1rem; padding-top: 1.4rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.1rem; margin: 1.6rem 0 .5rem; }
+  p { margin: 0 0 1em; }
+  ul, ol { margin: 0 0 1em; padding-left: 1.3em; }
+  li { margin: .3em 0; }
+  a { color: var(--accent); }
+  code { font-family: "Cascadia Code", Consolas, monospace; font-size: .88em; background: var(--surface-2); padding: .1em .35em; border-radius: 5px; }
+  .lead { font-size: 1.1rem; color: var(--muted); }
+  .eyebrow { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 1.2rem 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+  .card b { display: block; font-size: 1.6rem; line-height: 1.2; }
+  .card span { font-size: .85rem; color: var(--muted); }
+  .box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; margin: 0 0 14px; }
+  .box h3 { margin-top: 0; }
+  .note { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0; margin: 0 0 1em; }
+  .warn { border-left-color: var(--warn); background: var(--warn-soft); }
+  .tablewrap { overflow-x: auto; margin: 0 0 1.2em; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; min-width: 620px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
+  .tag { display: inline-block; font-size: .75rem; font-weight: 600; padding: .1em .55em; border-radius: 999px; white-space: nowrap; }
+  .fakt { background: var(--good-soft); color: var(--good); }
+  .wniosek { background: var(--accent-soft); color: var(--accent); }
+  .niepewne { background: var(--warn-soft); color: var(--warn); }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 2.2em; margin: .5em 0; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: .1em; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: .8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .muted { color: var(--muted); }
+  footer { margin-top: 3rem; font-size: .85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="eyebrow">TMS z AI · demo · 10 listopada 2026</p>
+<h1>Rozbudowa z jednego dnia i kierunki dalszych prac</h1>
+<p class="lead">Co zostało zbudowane i wdrożone pod Twoją nieobecność, jak to sprawdzić w demo, jakie założenia przyjąłem bez pytania oraz co warto rozważyć dalej. Każda funkcja jest na produkcji: <a href="https://tms-ai-demo.vercel.app">tms-ai-demo.vercel.app</a>.</p>
+
+<div class="cards">
+  <div class="card"><b>15</b><span>commitów na <code>main</code>, każdy po testach</span></div>
+  <div class="card"><b>395</b><span>testów jednostkowych (było 323)</span></div>
+  <div class="card"><b>39</b><span>testów e2e w przeglądarce (było 28)</span></div>
+  <div class="card"><b>7</b><span>migracji bazy (0014–0020)</span></div>
+  <div class="card"><b>6</b><span>nowych funkcji AI, wszystkie z regułami awaryjnymi</span></div>
+</div>
+
+<div class="note">
+  <strong>Jak czytać ten dokument.</strong> Sekcja 1 to lista do Twoich testów. Sekcja 2 to moje założenia: każde możesz odwrócić. Sekcja 3 mówi uczciwie, czego nie sprawdziłem. Sekcja 4 to rozwiązania z zewnątrz, ze źródłami i z oznaczeniem pewności. Sekcja 5 to propozycja kolejności i pytania do Ciebie.
+</div>
+
+<h2>1. Co powstało i jak to sprawdzić</h2>
+<p>Kolejność jak w pracy. „Sprawdzone z AI” oznacza test na produkcji z prawdziwym modelem (Claude Haiku 5.5); testy automatyczne działają bez klucza, na regułach awaryjnych.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Etap</th><th>Co robi</th><th>Jak sprawdzić w demo</th><th>Sprawdzone</th></tr></thead>
+<tbody>
+<tr><td><strong>Higiena</strong></td><td>Next.js 16.4.6 (łatka na krytyczne podatności), nagłówki bezpieczeństwa z CSP, własne strony błędów i 404, CI w GitHub Actions.</td><td>Zielona odznaka CI w README. Błędny adres, np. <code>/nie-ma</code>, pokazuje polską stronę 404.</td><td>CI zielone, nagłówki na produkcji</td></tr>
+<tr><td><strong>Telefon</strong></td><td>Panel działa na wąskim ekranie: menu wysuwane, listy nad szczegółami.</td><td>Otwórz demo na telefonie albo zwęź okno poniżej 1024 px.</td><td>12 ekranów na 375 px (e2e)</td></tr>
+<tr><td><strong>Przewodnik</strong></td><td>Pięć kroków dla nowego gościa; odhaczają się, gdy gość je wykona.</td><td>Okno prywatne przeglądarki: przewodnik otwiera się sam w lewym dolnym rogu.</td><td>e2e i produkcja</td></tr>
+<tr><td><strong>A5</strong> eksport</td><td>Zamknięte zlecenia z danymi do faktury i eksport CSV pod polski Excel; wyeksportowane są oznaczane.</td><td>Zlecenia → ikona archiwum obok „Nowe zlecenie” → „Pobierz CSV”.</td><td>e2e pobiera i czyta plik</td></tr>
+<tr><td><strong>A6</strong> strona kierowcy</td><td>Link w SMS-ie ze zleceniem: strona na telefon z potwierdzeniem, odmową z powodem, nawigacją i zdjęciem CMR.</td><td>Telefon kierowcy → Jakub Grabowski → tempo 60× → kliknij link w SMS-ie (ok. 09:20).</td><td>e2e bez ciasteczka i produkcja</td></tr>
+<tr><td><strong>A4</strong> dokument serwisowy</td><td>Zdjęcie lub PDF czyta AI, kod dopasowuje pojazd po rejestracji i wylicza termin, człowiek zatwierdza.</td><td>Flota → „Dokument serwisowy” → przykładowy protokół tachografu EL 9K41 → „Zapisz w kartotece”.</td><td>z AI: 3 z 3 dokumentów zgodne z wzorcem</td></tr>
+<tr><td><strong>B3</strong> wiedza o punktach</td><td>Co kierowca pisze o miejscu („wjazd od tyłu”, „rampa 4”), trafia jako propozycja uwagi do punktu.</td><td>Tempo 60× do ok. 09:45 → przy „Klienci” pojawia się licznik → Meble Wielkopolska → punkt Berlin.</td><td>z AI: zdanie i właściwy postój</td></tr>
+<tr><td><strong>B4</strong> asystent szkód</td><td>Z adnotacji odbiorcy na CMR: rodzaj zastrzeżenia, lista kroków z terminami CMR, szkic maila do klienta.</td><td>Telefon kierowcy → Ewa Kamińska → po rozładunku ZL-1035 wyślij CMR „z adnotacją o szkodzie” → Dokumenty → „Przygotuj zgłoszenie szkody”.</td><td>z AI: „uszkodzenie, 2 palety”, mail bez przyznania winy</td></tr>
+<tr><td><strong>B2</strong> przekazanie zmiany</td><td>Zestawienie stanu z całego systemu i notatka dla następnej zmiany, pisana przez AI z tych faktów.</td><td>Menu → „Przekazanie zmiany” → „Przygotuj notatkę” → popraw → „Zapisz przekazanie”.</td><td>z AI: notatka z faktów</td></tr>
+<tr><td><strong>B1</strong> tłumacz</td><td>Kierowca czyta po polsku, ukraińsku albo rosyjsku: SMS-y i strona zlecenia z gotowych tłumaczeń, czat tłumaczony przez AI w obie strony.</td><td>Komunikator → Oksana Petrenko → napisz po polsku; odpowiedz z Telefonu kierowcy po ukraińsku.</td><td>z AI: oba kierunki, SMS i strona po ukraińsku</td></tr>
+<tr><td><strong>E</strong> ranking ofert</td><td>Profil klienta (waga ceny względem czasu) i procent dopasowania stawek agentów; AI opisuje ranking słowami.</td><td>Rola Handlowiec → wycena morska → po odpowiedziach agentów suwak profilu i „Wyjaśnij ranking”.</td><td>z AI: zmiana profilu odwraca kolejność, uzasadnienie zaczyna od pierwszej oferty</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Wspólna zasada wszystkich funkcji AI</h3>
+<p>„Algorytm liczy, AI rozmawia” została utrzymana wszędzie. Model przepisuje, klasyfikuje i formułuje; dopasowanie pojazdu, terminy, ranking, kroki i progi liczy kod. Każda funkcja ma bezpiecznik, który odrzuca odpowiedź modelu wychodzącą poza fakty:</p>
+<ul>
+  <li><strong>Tłumaczenie</strong> nie jest wysyłane, jeśli zgubiło numer zlecenia, godzinę albo liczbę.</li>
+  <li><strong>Mail o szkodzie</strong>, który przyjmuje odpowiedzialność albo obiecuje pieniądze, jest zastępowany szablonem.</li>
+  <li><strong>Notatka przekazania</strong> wymieniająca zlecenie spoza faktów jest odrzucana.</li>
+  <li><strong>Uzasadnienie rankingu</strong>, które zaczyna od innej oferty niż pierwsza z rankingu, jest odrzucane.</li>
+  <li><strong>Daty z dokumentu serwisowego</strong> są walidowane jak każde inne dane wejściowe.</li>
+</ul>
+
+<h2>2. Założenia przyjęte bez pytania</h2>
+<p>Do B1–B4 i E istniały tylko jednozdaniowe opisy w backlogu, więc projekt jest mój. Poniżej decyzje, które zmieniają zachowanie systemu i które warto, żebyś potwierdził albo odwrócił.</p>
+
+<div class="box">
+  <h3>Strona kierowcy (A6)</h3>
+  <ul>
+    <li>Potwierdzenie na stronie zmienia status bez udziału AI, jako aktor „kierowca”. Odpowiedź „OK” SMS-em działa jak dotąd.</li>
+    <li>Odmowa wymaga wyboru jednego z czterech powodów. Po potwierdzeniu odmowy na stronie już nie ma: zostaje telefon do spedycji.</li>
+    <li>Link przestaje działać po cofnięciu przydziału, odmowie lub anulowaniu i mówi wtedy tylko, że zlecenie odwołano.</li>
+    <li>Numer telefonu spedycji jest fikcyjny.</li>
+  </ul>
+</div>
+<div class="box">
+  <h3>Eksport do faktur (A5)</h3>
+  <ul>
+    <li>W pliku nie ma kwot, bo zlecenie nie ma jeszcze finansów (TODO D). Nie wyliczałem ich ze stawek za kilometr, żeby nie produkować cen, których nikt z klientem nie uzgodnił.</li>
+    <li>Scenariusz dostał sześć zamkniętych kursów z poprzednich dni, żeby eksport miał co pokazać od pierwszej minuty.</li>
+    <li>Ponowny eksport tego samego zlecenia jest możliwy (zgubiony plik) i przesuwa znacznik.</li>
+  </ul>
+</div>
+<div class="box">
+  <h3>Tłumacz (B1)</h3>
+  <ul>
+    <li>Dwóch kierowców demo zmieniło imię, nazwisko i identyfikator: Oksana Petrenko (ukraiński) i Siergiej Kozłow (rosyjski).</li>
+    <li>Wiadomość spedytora jest tłumaczona i wysyłana od razu, bez kroku podglądu. Uznałem, że podgląd tekstu, którego spedytor i tak nie przeczyta, tylko spowalnia rozmowę. W wątku zostają obie wersje.</li>
+    <li>Uwagi punktów i uwagi do zlecenia zostają po polsku także w ukraińskim i rosyjskim SMS-ie, z dopiskiem „(польською)”. Tłumaczenie tych pól to osobny krok.</li>
+  </ul>
+</div>
+<div class="box">
+  <h3>Asystent szkód (B4) i ranking ofert (E)</h3>
+  <ul>
+    <li>Terminy z Konwencji CMR pokazuję tylko przy przewozie międzynarodowym. Przy krajowym lista odsyła do Prawa przewozowego bez cytowania artykułów, bo tych nie zweryfikowałem.</li>
+    <li>Profil klienta to jedna liczba (waga ceny, reszta to czas) plus notatka. „Niezawodność agenta” nie wchodzi do rankingu: system nie ma jeszcze danych, z których dałoby się ją uczciwie policzyć.</li>
+    <li>Oferty w różnych walutach nie są porównywane cenowo: system nie ma kursów walut.</li>
+  </ul>
+</div>
+
+<h2>3. Co naprawiłem przy okazji i czego nie sprawdziłem</h2>
+<h3>Znalezione i naprawione</h3>
+<ul>
+  <li><strong>Niestabilny test Sprzedaży.</strong> Zachowanie fikcyjnych agentów losowało się z identyfikatorów innych przy każdym uruchomieniu; raz na jakiś czas żaden nie podawał stawki. Jeden przebieg CI przez to padł. Teraz losowanie zależy od ziarna świata.</li>
+  <li><strong>Losowe padanie testów przy starcie.</strong> Przy 59 plikach i 20 migracjach przygotowanie bazy przekraczało 10 s. Limit podniesiony do 30 s.</li>
+  <li><strong>Wyścig w teście floty.</strong> Test zmieniał stronę, zanim serwer potwierdził tempo 60×.</li>
+  <li><strong>Zły postój w wiedzy o punktach.</strong> Na produkcji AI przypisało uwagę „w Dreźnie” do załadunku. Kontekst nazywa teraz oba postoje wprost; przypadek jest w zestawie oceny.</li>
+  <li><strong>Notatka przekazania.</strong> „5 terminów floty” stało się „5 pojazdami”; model dostaje teraz gotowe zdania zamiast surowych pól.</li>
+</ul>
+
+<h3>Nie sprawdzone albo ograniczone</h3>
+<div class="note warn">
+<ul>
+  <li><strong>Tłumaczenia ukraińskie i rosyjskie</strong> napisałem razem z kodem. Przed użyciem z prawdziwymi kierowcami powinien je przeczytać ktoś, kto zna te języki.</li>
+  <li><strong><code>npm run eval:ai</code></strong> nie był uruchamiany: moje środowisko nie ma sieci do API Anthropic. Doszły do niego nowe zestawy (dokumenty serwisowe, wiedza o punktach z postojem), więc warto go puścić u siebie.</li>
+  <li><strong>Własny plik PDF</strong> w dokumencie serwisowym: sprawdzone jest rozpoznanie typu pliku i budowa zapytania, ale nie odczyt prawdziwego PDF-a przez model.</li>
+  <li><strong>Zdarzenia „zaległe”.</strong> Gdy nikt nie ogląda demo albo czas biegnie 60×, wiadomości botów są obsługiwane regułami, nie AI (tak było wcześniej, to ochrona kosztów). Dlatego w przyspieszonym demo uwaga o punkcie ma dopisek „bez AI”. Pełne AI widać przy pisaniu z Telefonu kierowcy.</li>
+  <li><strong>Ekran awarii całej aplikacji</strong> (<code>global-error</code>) przeszedł tylko kontrolę typów i build.</li>
+  <li><strong>16 podatności niskich i średnich</strong> zostało w narzędziach deweloperskich; w zależnościach produkcyjnych jest zero.</li>
+</ul>
+</div>
+
+<h2>4. Rozwiązania z zewnątrz, które warto rozważyć</h2>
+<p>Każdy punkt rozdziela to, co mówi źródło, od mojego wniosku dla TMS. Oznaczenia: <span class="tag fakt">fakt ze źródła</span> <span class="tag wniosek">mój wniosek</span> <span class="tag niepewne">do potwierdzenia</span>.</p>
+
+<div class="box">
+  <h3>KSeF zamiast samego CSV</h3>
+  <p><span class="tag fakt">fakt ze źródła</span> Krajowy System e-Faktur jest obowiązkowy etapami od 2026 r.: od 1 lutego dla największych podatników, od 1 kwietnia dla pozostałych czynnych podatników VAT; od 1 lutego obowiązuje struktura FA(3). <span class="tag niepewne">do potwierdzenia</span> Szczegóły dla najmniejszych firm źródła podają niespójnie.</p>
+  <p><span class="tag wniosek">mój wniosek</span> Eksport CSV z A5 jest dobry jako lista dla księgowości, ale „wystawienie faktury” z TODO D powinno od razu celować w plik XML zgodny z FA(3), walidowany schematem, bez wysyłki do prawdziwego KSeF w demo. To pokrywa się z Twoim planem nauki (dane, XML/XSD).</p>
+  <p class="muted">Źródło: <a href="https://ksef.podatki.gov.pl/informacje-ogolne-ksef-20/podstawy-prawne-oraz-kluczowe-terminy/">ksef.podatki.gov.pl, podstawy prawne i terminy</a>.</p>
+</div>
+
+<div class="box">
+  <h3>eFTI i elektroniczny list przewozowy</h3>
+  <p><span class="tag fakt">fakt ze źródła</span> Rozporządzenie eFTI (UE 2020/1056) stosuje się w całości od 9 lipca 2027 r.; organy państw członkowskich muszą wtedy przyjmować informacje przekazane elektronicznie przez certyfikowane platformy eFTI. <span class="tag niepewne">do potwierdzenia</span> Stanu polskich przepisów i e-CMR w Polsce nie udało mi się potwierdzić w źródłach.</p>
+  <p><span class="tag wniosek">mój wniosek</span> Nie budować teraz integracji, ale w TODO D trzymać dane przewozu jako rekord o stałych polach (nadawca, odbiorca, miejsca, towar, zastrzeżenia), a nie tylko jako zdjęcie. System już wyciąga te pola z CMR, więc koszt jest mały, a droga do platformy eFTI zostaje otwarta.</p>
+  <p class="muted">Źródła: <a href="https://transport.ec.europa.eu/transport-themes/logistics-and-multimodal-transport/efti-regulation_en">Komisja Europejska, eFTI</a>; <a href="https://trans.info/en/ecmr-in-2026-434860">trans.info, eCMR w 2026</a>.</p>
+</div>
+
+<div class="box">
+  <h3>Przejrzystość AI wobec odbiorców wiadomości</h3>
+  <p><span class="tag fakt">fakt ze źródła</span> Obowiązki przejrzystości z art. 50 unijnego aktu o AI stosuje się od 2 sierpnia 2026 r. i nie zostały przesunięte. <span class="tag niepewne">do potwierdzenia</span> Obowiązek oznaczania treści generowanych przez AI dla systemów już obecnych na rynku ma według części źródeł termin 2 grudnia 2026 r.; to wymaga sprawdzenia w Dzienniku Urzędowym.</p>
+  <p><span class="tag wniosek">mój wniosek</span> Dwa miejsca w TMS wysyłają tekst bez człowieka pośrodku: tłumaczenie czatu do kierowcy i automatyczny status przesyłki dla klienta. Tania ostrożność to dopisek w takich wiadomościach („tłumaczenie automatyczne”, „wiadomość automatyczna”). Czy przepis tego wymaga w tym przypadku, to pytanie do prawnika, nie do mnie.</p>
+  <p class="muted">Źródła: <a href="https://www.goodwinlaw.com/en/insights/publications/2026/08/alerts-technology-dpc-eu-ai-act-transparency-obligations-now-in-force">Goodwin, obowiązki przejrzystości w mocy</a>; <a href="https://www.houthoff.com/insights/news/ai-act-transparency-obligations-and-the-ai-omnibus-regulation/">Houthoff, art. 50 i Omnibus</a>.</p>
+</div>
+
+<div class="box">
+  <h3>Trasy liczone w locie (otwarta decyzja z backlogu)</h3>
+  <p><span class="tag fakt">fakt ze źródła</span> openrouteservice ma profil dla ciężarówek z ograniczeniami wysokości, masy i ładunków niebezpiecznych; silniki OSRM, GraphHopper i Valhalla można też hostować samodzielnie. <span class="tag niepewne">do potwierdzenia</span> Limity darmowych planów pochodzą z serwisów porównawczych, nie z cenników dostawców.</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Opcja</th><th>Plus</th><th>Minus</th></tr></thead>
+    <tbody>
+      <tr><td><strong>openrouteservice, usługa hostowana</strong> (rekomendacja)</td><td>Profil ciężarowy, zero własnego serwera, działa z Vercela.</td><td>Brak gwarancji dostępności; limit zapytań, więc wyniki trzeba zapisywać.</td></tr>
+      <tr><td>GraphHopper, plan płatny</td><td>Umowa i wsparcie.</td><td>Stały koszt miesięczny przy demo finansowanym z własnej kieszeni.</td></tr>
+      <tr><td>Własny OSRM lub Valhalla</td><td>Bez limitów i bez opłat za zapytanie.</td><td>Potrzebny serwer z danymi mapy; nie da się tego postawić na Vercelu Hobby.</td></tr>
+      <tr><td>Zostawić szacunek z linii prostej</td><td>Nic nie kosztuje, już działa i jest uczciwie oznaczone.</td><td>Mniej dokładne ETA dla nowych punktów.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="muted">Źródła: <a href="https://giscience.github.io/openrouteservice-workshop/getting_started/02_why.html">openrouteservice, opis profili</a>; <a href="https://www.geofabrik.de/en/data/routing.html">Geofabrik, silniki tras</a>.</p>
+</div>
+
+<div class="box">
+  <h3>Prawdziwe pozycje pojazdów: standard rFMS</h3>
+  <p><span class="tag fakt">fakt ze źródła</span> Producenci ciężarówek udostępniają dane pojazdów przez API między serwerami w formacie rFMS (tak opisuje to m.in. Scania); ACEA i COVESA pracują nad dalszym ujednoliceniem interfejsów.</p>
+  <p><span class="tag wniosek">mój wniosek</span> W dokumencie wdrożeniowym warto zapisać rFMS jako pierwszy adapter pozycji dla flot jednej marki, a dopiero potem integracje z dostawcami lokalizatorów. W demo nic się nie zmienia: pozycje zostają symulowane.</p>
+  <p class="muted">Źródła: <a href="https://scania.com/uk/en/home/services/connected-services/data-access.html">Scania, dostęp do danych</a>; <a href="https://www.fleetequipmentmag.com/covesa-acea-commercial-vehicle-api/">COVESA i ACEA</a>; <a href="https://en.wikipedia.org/wiki/FMS-Standard">FMS-Standard</a>.</p>
+</div>
+
+<div class="box">
+  <h3>Tachografy w busach: już uwzględnione</h3>
+  <p><span class="tag fakt">fakt ze źródła</span> Od 1 lipca 2026 r. pojazdy o masie powyżej 2,5 t do 3,5 t w międzynarodowym przewozie zarobkowym muszą mieć inteligentny tachograf drugiej generacji.</p>
+  <p><span class="tag wniosek">mój wniosek</span> Model w demo już to robi: busy międzynarodowe podlegają czasowi pracy i mają termin legalizacji tachografu. Nic do zmiany; warto to pokazać w rozmowie jako przykład wiedzy domenowej w kodzie.</p>
+  <p class="muted">Źródła: <a href="https://transports.public.lu/en/plus/faq/tachygraphe-transport-international-marchandises-01072026.html">Luksemburg, FAQ o tachografach od 1.07.2026</a>; <a href="https://trans.info/en/tachograph-deadline-2-495753">trans.info</a>.</p>
+</div>
+
+<h3>Pomysły z samego kodu, bez źródeł zewnętrznych</h3>
+<ul>
+  <li><strong>Historia zlecenia na karcie.</strong> Baza już zapisuje każdą zmianę statusu z autorem i powodem; brakuje tylko widoku osi czasu. Mały koszt, duży efekt „profesjonalnego systemu”.</li>
+  <li><strong>Pulpit wskaźników</strong>: terminowość, puste kilometry, wykorzystanie floty. Naturalnie łączy się z finansami z TODO D.</li>
+  <li><strong>Role z uprawnieniami</strong>: dziś przełącznik Spedytor/Handlowiec zmienia tylko menu.</li>
+  <li><strong>Tłumaczenie uwag punktów</strong> dla kierowców ukraińsko- i rosyjskojęzycznych, z zapisem w bazie, żeby nie tłumaczyć tego samego dwa razy.</li>
+  <li><strong>Zbieranie błędów z produkcji</strong> (np. Sentry albo logi Vercela z alertem): dziś o błędzie na produkcji dowiesz się tylko z ekranu użytkownika.</li>
+</ul>
+
+<h2>5. Proponowana kolejność i pytania do Ciebie</h2>
+<ol class="steps">
+  <li><strong>Twoje testy</strong> według sekcji 1 i uwagi. Najwięcej do oceny domenowej jest w A6, B4 i E.</li>
+  <li><strong>Przegląd tłumaczeń</strong> przez osobę znającą ukraiński i rosyjski.</li>
+  <li><strong>Historia zlecenia na karcie</strong>: mały etap, który mogę zrobić samodzielnie.</li>
+  <li><strong>TODO D razem</strong>: zlecenie spedycyjne z finansami i dokumentami, z fakturą w strukturze FA(3) i masowym testem dokumentów z Codeksu.</li>
+  <li><strong>Trasy w locie</strong> po Twojej decyzji z tabeli powyżej.</li>
+</ol>
+
+<h3>Pytania</h3>
+<ul>
+  <li>Czy tłumaczenie odpowiedzi spedytora ma iść od razu, czy wolisz krok podglądu przed wysłaniem?</li>
+  <li>Czy odmowa zlecenia na stronie kierowcy powinna wymagać powodu, czy wystarczy jedno kliknięcie?</li>
+  <li>Czy w eksporcie do faktur brakuje kolumn, których używa się u Ciebie w praktyce (np. numer CMR, stawka, waluta, termin płatności)?</li>
+  <li>Czy profil klienta jako jedna liczba „cena albo czas” wystarczy, czy z praktyki potrzebne są jeszcze inne kryteria?</li>
+  <li>Czy lista kroków przy szkodzie odpowiada temu, jak faktycznie postępuje się z ubezpieczycielem OCP?</li>
+</ul>
+
+<h2>Kto co zrobił</h2>
+<p>Zakres, kolejność, wybór języków i zgodę na wdrażanie dałeś Ty; kierunek całego projektu i wiedza domenowa, na której stoją te funkcje, też są Twoje. Projekt szczegółowy B1–B4 i E, kod, testy i weryfikację na produkcji wykonał agent (Claude) samodzielnie, bez przeglądu człowieka. Ocena użyteczności i poprawności domenowej jest dopiero przed Tobą.</p>
+
+<footer>Dokument przygotowany 10.11.2026. Fakty prawne i terminy pochodzą ze wskazanych źródeł i wymagają potwierdzenia przed decyzjami; nie jest to porada prawna ani podatkowa.</footer>
+</div>
+</body>
+</html>
