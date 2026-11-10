@@ -604,6 +604,32 @@ export const salesSettings = pgTable("sales_settings", {
  * is the only key a client has, so it is globally unique and unguessable.
  */
 /**
+ * A damage case opened from a consignee's remark on a CMR: what kind of reservation it is,
+ * the checklist with its ticked steps, and the draft e-mail to the client. One per document.
+ */
+export const damageCases = pgTable(
+  "damage_cases",
+  {
+    sandboxId: sandboxRef(),
+    id: text("id").notNull(),
+    documentId: text("document_id").notNull(),
+    orderId: text("order_id").notNull(),
+    kind: text("kind").$type<"uszkodzenie" | "brak" | "opoznienie" | "inne">().notNull(),
+    affected: text("affected"),
+    summary: text("summary").notNull(),
+    remark: text("remark").notNull(),
+    steps: jsonb("steps").$type<{ id: string; text: string }[]>().notNull(),
+    doneSteps: jsonb("done_steps").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    notes: jsonb("notes").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    draftMessageId: text("draft_message_id"),
+    source: text("source").$type<"ai" | "rules">().notNull(),
+    mailFrom: text("mail_from").$type<"ai" | "szablon">().notNull(),
+    createdSim: ts("created_sim").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.sandboxId, t.id] }), uniqueIndex("damage_cases_document_uq").on(t.sandboxId, t.documentId)],
+);
+
+/**
  * What drivers write about loading and unloading places ("wjazd od tyłu", "rampa 4 nieczynna"):
  * a proposal for the point's notes. It reaches other drivers only after the dispatcher accepts it.
  */

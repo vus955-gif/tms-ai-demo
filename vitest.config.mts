@@ -11,5 +11,8 @@ export default defineConfig({
     env: { PGLITE_DIR: "memory://" },
     exclude: ["e2e/**", "node_modules/**"],
     testTimeout: 20000,
+    // Each test file builds its own in-memory Postgres and applies every migration in beforeAll;
+    // with dozens of files starting at once that can take longer than the default 10 s.
+    hookTimeout: 30000,
   },
 });

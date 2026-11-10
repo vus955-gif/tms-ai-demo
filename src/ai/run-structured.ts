@@ -11,6 +11,7 @@ export type AiFunctionName =
   | "classifyDriverMessage"
   | "readCmr"
   | "readServiceDocument"
+  | "assessDamage"
   | "explainAlert"
   | "draftMessage"
   | "triageClientEmail"

@@ -16,6 +16,7 @@ import { HttpError } from "../http";
 import { sendToDriver, storeDriverInbound } from "../messages/gateway";
 import { scheduleProcessing } from "../messages/handlers";
 import { onDriverDocument, type UploadedImage } from "../messages/inbound";
+import { damageCasesFor, type DamageCaseView } from "./damage";
 import { onMovement } from "../monitoring/movement";
 import { transitionOrder } from "../orders/transition";
 import { registerEventHandler } from "../tick/registry";
@@ -315,6 +316,8 @@ export type DocumentView = {
   matchScore: number | null;
   candidates: { orderId: string; number: string; score: number; reasons: string[] }[];
   assignable: { id: string; number: string; label: string }[];
+  /** The damage case opened from the consignee's remark, if the dispatcher asked for one. */
+  damage: DamageCaseView | null;
 };
 
 export async function listDocuments(db: Executor, sandboxId: string): Promise<DocumentView[]> {
@@ -324,6 +327,7 @@ export async function listDocuments(db: Executor, sandboxId: string): Promise<Do
     db.select().from(orders).where(and(eq(orders.sandboxId, sandboxId), inArray(orders.status, ["ROZLADUNEK", "DO_ZAMKNIECIA", "ZAMKNIETE"]))),
   ]);
   const unloaded = ord.filter((o) => o.status === "ROZLADUNEK");
+  const damage = await damageCasesFor(db, sandboxId, docs.filter((d) => d.quality?.remarks).map((d) => d.id));
   return docs
     .sort((a, b) => b.createdSim.getTime() - a.createdSim.getTime())
     .map((d) => {
@@ -348,6 +352,7 @@ export async function listDocuments(db: Executor, sandboxId: string): Promise<Do
         assignable: unloaded
           .sort((a, b) => (a.driverId === d.driverId ? -1 : 0) - (b.driverId === d.driverId ? -1 : 0))
           .map((o) => ({ id: o.id, number: o.number, label: `${o.number}${o.driverId === d.driverId ? " (ten kierowca)" : ""}` })),
+        damage: damage.get(d.id) ?? null,
       };
     });
 }

@@ -11,6 +11,7 @@ import { getJson, postJson } from "@/lib/api";
 import { formatSimClock, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { DocumentView } from "@/server/documents/cmr";
+import { DamagePanel } from "./damage-panel";
 
 type Queue = "zamkniecie" | "weryfikacja" | "nieczytelne" | "archiwum";
 
@@ -209,6 +210,8 @@ function DocumentDetail({ doc, onDone }: { doc: DocumentView; onDone: () => void
             </ul>
           </section>
         )}
+
+        {q?.remarks && doc.matchedOrder && <DamagePanel documentId={doc.id} damage={doc.damage} onChanged={() => void queryClient.invalidateQueries({ queryKey: ["documents"] })} />}
 
         {doc.readBy === "ai" && (
           <section>
