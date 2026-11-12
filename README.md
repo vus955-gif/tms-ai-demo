@@ -121,7 +121,7 @@ npm run test:e2e       # Playwright: przepływy w przeglądarce
 npm run lint && npm run typecheck
 ```
 
-Testy e2e uruchamiają serwer w trybie reguł awaryjnych (bez klucza AI), żeby nie zależały od modelu ani od sieci. Jakość AI mierzy osobno `npm run eval:ai`.
+Testy e2e uruchamiają serwer w trybie reguł awaryjnych (bez klucza AI), żeby nie zależały od modelu ani od sieci. Jakość AI mierzy osobno `npm run eval:ai`. Lokalnie testy idą po kolei na serwerze deweloperskim (albo już uruchomionym); na CI (`CI=1`) na buildzie produkcyjnym, w trzech równoległych procesach i z bazą PGlite w pamięci.
 
 Przy każdym pushu na `main` i każdym pull requeście te same kroki uruchamia GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) razem z kontrolą podatności w zależnościach produkcyjnych (`npm audit --omit=dev`). CI nie potrzebuje żadnych sekretów. Zmiany wyłącznie w `docs/` i plikach `.md` nie uruchamiają ani CI, ani buildu na Vercelu.
 
