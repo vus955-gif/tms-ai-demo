@@ -3,7 +3,7 @@ import type { ContentBlockParam } from "@anthropic-ai/sdk/resources/messages";
 import type { ZodType } from "zod";
 import { aiLog } from "@/db/schema";
 import type { Executor } from "@/db/types";
-import { budgetBlock, recordSpend } from "./budget";
+import { budgetBlock, claimCall, recordSpend } from "./budget";
 import { getAiClient, type AiClient } from "./client";
 import { AI_MODEL, costUsd } from "./pricing";
 
@@ -115,6 +115,12 @@ export async function runStructured<T>(opts: RunStructuredOptions<T>): Promise<A
   const started = Date.now();
 
   for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    const overLimit = await claimCall(opts.db, opts.sandboxId, realNow);
+    if (overLimit) {
+      if (attempt === 1) return fallBack(overLimit);
+      lastReason = overLimit;
+      break;
+    }
     try {
       const response = await client.parse({
         model,
@@ -127,7 +133,7 @@ export async function runStructured<T>(opts: RunStructuredOptions<T>): Promise<A
       });
       inputTokens += response.inputTokens;
       outputTokens += response.outputTokens;
-      await recordSpend(opts.db, opts.sandboxId, realNow, costUsd(model, response.inputTokens, response.outputTokens));
+      await recordSpend(opts.db, realNow, costUsd(model, response.inputTokens, response.outputTokens));
       if (response.stopReason === "refusal") {
         lastReason = "refusal";
         lastError = "Model declined the request (stop_reason: refusal)";

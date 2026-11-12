@@ -127,6 +127,18 @@ describe("runStructured", () => {
     expect(client.calls).toHaveLength(1);
   });
 
+  it("lets through only what fits under the limit when requests come at once", async () => {
+    process.env.AI_CALLS_PER_IP_PER_HOUR = "2";
+    const client = fakeAiClient(Array.from({ length: 5 }, () => ok({ category: "tak" as const })));
+    const results = await Promise.all(Array.from({ length: 5 }, () => runStructured({ ...base(), client })));
+    expect(client.calls).toHaveLength(2);
+    expect(results.filter((r) => r.source === "ai")).toHaveLength(2);
+    expect(results.filter((r) => r.reason === "sandbox_limit")).toHaveLength(3);
+    // Claims that did not fit were given back: the window counts the calls actually made.
+    const [row] = await db.select().from(sandboxes).where(eq(sandboxes.id, sandbox.id));
+    expect(row.aiCallsInWindow).toBe(2);
+  });
+
   it("stops calling AI once the daily budget is spent", async () => {
     process.env.AI_DAILY_BUDGET_USD = "0.0001";
     const client = fakeAiClient([ok({ category: "tak" }, 5000, 500), ok({ category: "tak" })]);
