@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 export const FALLBACK_REASON_LABEL: Record<string, string> = {
   no_api_key: "Brak klucza API w tej instalacji — AI działa na prostych regułach.",
-  sandbox_limit: "Wykorzystano godzinny limit wywołań AI dla tego świata demo.",
+  sandbox_limit: "Wykorzystano godzinny limit wywołań AI z tego adresu IP (wspólny dla wszystkich światów demo otwartych z tego adresu).",
   daily_budget: "Wyczerpany dzienny budżet AI. AI wróci po północy UTC.",
   ai_error: "AI nie odpowiedziało poprawnie — użyto reguł awaryjnych.",
   refusal: "Model odmówił odpowiedzi — użyto reguł awaryjnych.",

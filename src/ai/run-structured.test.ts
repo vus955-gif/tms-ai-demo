@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { aiBudgetDaily, aiLog, sandboxes } from "@/db/schema";
 import type { Db } from "@/db/types";
-import { createSandbox, type SandboxRow } from "@/server/sandbox/repository";
+import { createSandbox, getOrCreateSandbox, resetSandbox, type SandboxRow } from "@/server/sandbox/repository";
 import { createTestDb } from "@/test/db";
 import { fakeAiClient, ok } from "@/test/fake-ai";
 import { costUsd } from "./pricing";
@@ -35,7 +35,8 @@ describe("runStructured", () => {
   });
   afterEach(() => {
     delete process.env.AI_DAILY_BUDGET_USD;
-    delete process.env.AI_CALLS_PER_SANDBOX_PER_HOUR;
+    delete process.env.AI_CALLS_PER_IP_PER_HOUR;
+    delete process.env.SANDBOXES_PER_IP_PER_DAY;
   });
 
   it("falls back without a client and says why", async () => {
@@ -83,8 +84,8 @@ describe("runStructured", () => {
     expect(result).toMatchObject({ source: "fallback", reason: "refusal" });
   });
 
-  it("stops calling AI once the world used its hourly allowance", async () => {
-    process.env.AI_CALLS_PER_SANDBOX_PER_HOUR = "1";
+  it("stops calling AI once the address used its hourly allowance", async () => {
+    process.env.AI_CALLS_PER_IP_PER_HOUR = "1";
     const client = fakeAiClient([ok({ category: "tak" }), ok({ category: "tak" })]);
     await runStructured({ ...base(), client });
     const second = await runStructured({ ...base(), client });
@@ -94,6 +95,36 @@ describe("runStructured", () => {
     const nextHour = new Date(realNow.getTime() + 61 * 60_000);
     const third = await runStructured({ ...base(), client, realNow: nextHour });
     expect(third.source).toBe("ai");
+  });
+
+  it("keeps counting when the visitor drops the cookie and gets a new world", async () => {
+    process.env.AI_CALLS_PER_IP_PER_HOUR = "1";
+    const client = fakeAiClient([ok({ category: "tak" }), ok({ category: "tak" })]);
+    await runStructured({ ...base(), client });
+    // No cookie: a brand-new world for the same address.
+    const { sandbox: fresh } = await getOrCreateSandbox(db, { cookieValue: undefined, ipHash: "ip", realNow });
+    expect(fresh.id).not.toBe(sandbox.id);
+    const second = await runStructured({ ...base(), sandboxId: fresh.id, client });
+    expect(second).toMatchObject({ source: "fallback", reason: "sandbox_limit" });
+    // The limit belongs to the address: another one still gets its calls.
+    const other = await createSandbox(db, { ipHash: "other-ip", realNow });
+    expect((await runStructured({ ...base(), sandboxId: other.id, client })).source).toBe("ai");
+    expect(client.calls).toHaveLength(2);
+  });
+
+  it("keeps counting when the address runs out of worlds and its oldest one is reset", async () => {
+    process.env.AI_CALLS_PER_IP_PER_HOUR = "1";
+    process.env.SANDBOXES_PER_IP_PER_DAY = "1";
+    const client = fakeAiClient([ok({ category: "tak" }), ok({ category: "tak" })]);
+    await runStructured({ ...base(), client });
+    // No cookie and no new world allowed: the oldest world of the address starts over.
+    const { sandbox: recycled } = await getOrCreateSandbox(db, { cookieValue: undefined, ipHash: "ip", realNow });
+    expect(recycled.id).toBe(sandbox.id);
+    expect(await runStructured({ ...base(), client })).toMatchObject({ source: "fallback", reason: "sandbox_limit" });
+    // The same for the "start over" button.
+    await resetSandbox(db, sandbox.id, realNow);
+    expect(await runStructured({ ...base(), client })).toMatchObject({ source: "fallback", reason: "sandbox_limit" });
+    expect(client.calls).toHaveLength(1);
   });
 
   it("stops calling AI once the daily budget is spent", async () => {
