@@ -148,7 +148,7 @@ Wszystkie zmienne są opcjonalne lokalnie; wzór jest w [`.env.example`](.env.ex
 | `ANTHROPIC_API_KEY` | Klucz API; bez niego tryb awaryjny | — |
 | `AI_DAILY_BUDGET_USD` | Dzienny limit kosztu AI dla całego demo | `2` |
 | `AI_CALLS_PER_IP_PER_HOUR` | Limit wywołań AI na adres IP i godzinę, wspólny dla wszystkich światów z tego adresu (usunięcie ciasteczka ani reset świata go nie zerują); dawna nazwa `AI_CALLS_PER_SANDBOX_PER_HOUR` nadal działa | `60` |
-| `AI_CMR_MODEL` | Model do zdjęć CMR | Haiku 5.5 |
+| `AI_CMR_MODEL` | Model do zdjęć CMR i dokumentów serwisowych; tylko model z ceną w [`src/ai/pricing.ts`](src/ai/pricing.ts), inny nie zostanie wywołany (tryb awaryjny) | Haiku 5.5 |
 | `APP_URL` | Publiczny adres aplikacji (linki śledzenia w szkicach maili) | `http://localhost:3000` |
 | `DEMO_PASSWORD` | Hasło do całego demo (link śledzenia dla klienta działa bez hasła) | brak |
 | `NEXT_PUBLIC_MAP_STYLE_URL` | Styl jasnej mapy | OpenFreeMap Positron |

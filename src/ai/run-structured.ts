@@ -5,7 +5,7 @@ import { aiLog } from "@/db/schema";
 import type { Executor } from "@/db/types";
 import { budgetBlock, claimCall, recordSpend } from "./budget";
 import { getAiClient, type AiClient } from "./client";
-import { AI_MODEL, costUsd } from "./pricing";
+import { AI_MODEL, costUsd, hasPrice } from "./pricing";
 
 export type AiFunctionName =
   | "classifyDriverMessage"
@@ -105,6 +105,10 @@ export async function runStructured<T>(opts: RunStructuredOptions<T>): Promise<A
   };
 
   if (!client) return fallBack(opts.fallbackReason ?? "no_api_key");
+  // Fail closed: a model with no price (e.g. a typo in AI_CMR_MODEL) would cost "0" and slip past the budget.
+  if (!hasPrice(model)) {
+    return fallBack("ai_error", { output: null, fallback: true, error: `Model "${model}" has no price in src/ai/pricing.ts — not called` });
+  }
   const blocked = await budgetBlock(opts.db, opts.sandboxId, realNow);
   if (blocked) return fallBack(blocked);
 

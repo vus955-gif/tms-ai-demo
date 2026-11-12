@@ -127,6 +127,16 @@ describe("runStructured", () => {
     expect(client.calls).toHaveLength(1);
   });
 
+  it("refuses a model without a known price instead of calling it for free", async () => {
+    // E.g. a typo in AI_CMR_MODEL: the cost would count as 0 and slip past the daily budget.
+    const client = fakeAiClient([ok({ category: "tak" })]);
+    const result = await runStructured({ ...base(), client, model: "claude-haiku-5-55" });
+    expect(result).toMatchObject({ source: "fallback", reason: "ai_error" });
+    expect(client.calls).toHaveLength(0);
+    const [entry] = await logs();
+    expect(entry.error).toContain("claude-haiku-5-55");
+  });
+
   it("lets through only what fits under the limit when requests come at once", async () => {
     process.env.AI_CALLS_PER_IP_PER_HOUR = "2";
     const client = fakeAiClient(Array.from({ length: 5 }, () => ok({ category: "tak" as const })));
