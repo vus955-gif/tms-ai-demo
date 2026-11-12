@@ -7,6 +7,7 @@ import {
   drivingAllowance,
   type DriverClock,
 } from "@/domain/driving-time";
+import { nextWeekStartMs } from "./clock";
 import { positionAt } from "./geo";
 import type { StoredRoute } from "./route-geometry";
 
@@ -106,6 +107,7 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
   const segments: ActivitySegment[] = [];
   const reports: Report[] = [];
   let nextReport = Math.floor((s.atMs - phase) / every) * every + phase + every;
+  let weekEndMs = nextWeekStartMs(s.atMs);
 
   const record = (type: DriverActivityType, startMs: number, endMs: number) => {
     if (endMs <= startMs) return;
@@ -259,6 +261,12 @@ export function advance(initial: SimState, toMs: number, env: SimEnv, opts: Adva
       s.atMs = until;
       record(s.mode === "waiting" ? waitType() : ACTIVITY[s.mode], from, until);
       if (s.modeUntilMs !== null && until >= s.modeUntilMs) finishTimedMode();
+    }
+
+    if (s.atMs >= weekEndMs) {
+      // The two 10-hour days are counted per fixed week, so a new week gives both back.
+      s.clock = { ...s.clock, extensionsUsed: 0 };
+      weekEndMs = nextWeekStartMs(s.atMs);
     }
 
     while (nextReport <= s.atMs) {

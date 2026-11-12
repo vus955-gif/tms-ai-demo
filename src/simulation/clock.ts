@@ -40,6 +40,13 @@ export function setSpeed(state: ClockState, speed: Speed, realNow: Date): ClockS
   return { ...state, simElapsedMs: elapsedAt(state, realNow), speed, realResumedAt: realNow };
 }
 
+/** Monday 00:00 Warsaw time after `ms`: the end of its week (Regulation 561/2006: Monday 00:00 – Sunday 24:00). */
+export function nextWeekStartMs(ms: number): number {
+  const local = new TZDate(ms, WARSAW);
+  const daysAhead = (8 - local.getDay()) % 7 || 7; // getDay(): 0 = Sunday
+  return new TZDate(local.getFullYear(), local.getMonth(), local.getDate() + daysAhead, 0, 0, WARSAW).getTime();
+}
+
 /** 08:30 Warsaw time on the latest weekday (Mon–Fri) not later than `realNow`'s Warsaw date. */
 export function simOriginFor(realNow: Date): Date {
   const local = new TZDate(realNow.getTime(), WARSAW);
