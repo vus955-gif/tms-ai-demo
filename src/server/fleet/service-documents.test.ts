@@ -9,7 +9,8 @@ import type { Db } from "@/db/types";
 import "@/server/bootstrap";
 import { serviceSample } from "@/simulation/scenario/service-samples";
 import { createTestDb } from "@/test/db";
-import { readDocumentUpload, readPhotoUpload } from "../messages/photo-upload";
+import { testPdf } from "@/test/pdf";
+import { MAX_PDF_PAGES, readDocumentUpload, readPhotoUpload } from "../messages/photo-upload";
 import { createSandbox, type SandboxRow } from "../sandbox/repository";
 import { runTick } from "../tick/engine";
 import { readFleetDocument, recordFleetTerm } from "./service-documents";
@@ -121,10 +122,23 @@ describe("A4: service document → AI → fleet file entry approved by a person"
       form.set("file", new File([typeof bytes === "string" ? bytes : new Uint8Array(bytes)], name));
       return new NextRequest("http://localhost:3000/api/fleet/documents", { method: "POST", body: form });
     };
-    const pdf = await readDocumentUpload(upload("%PDF-1.7 fikcyjna polisa", "polisa.jpg"));
+    const pdf = await readDocumentUpload(upload(Array.from(testPdf(2)), "polisa.jpg"));
     expect(pdf.uploaded.mediaType).toBe("application/pdf");
     expect((await readDocumentUpload(upload([0xff, 0xd8, 0xff, 0xe0], "skan.pdf"))).uploaded.mediaType).toBe("image/jpeg");
     await expect(readDocumentUpload(upload("zwykły tekst", "dokument.pdf"))).rejects.toMatchObject({ status: 415 });
     await expect(readPhotoUpload(upload("%PDF-1.7", "cmr.jpg"))).rejects.toMatchObject({ status: 415 });
+  });
+
+  it("refuses a PDF longer than a service document before it reaches the model", async () => {
+    const upload = (bytes: Uint8Array<ArrayBuffer>) => {
+      const form = new FormData();
+      form.set("file", new File([bytes], "owu.pdf"));
+      return new NextRequest("http://localhost:3000/api/fleet/documents", { method: "POST", body: form });
+    };
+    expect((await readDocumentUpload(upload(testPdf(MAX_PDF_PAGES)))).uploaded.mediaType).toBe("application/pdf");
+    await expect(readDocumentUpload(upload(testPdf(MAX_PDF_PAGES + 1)))).rejects.toMatchObject({ status: 413 });
+    await expect(readDocumentUpload(upload(testPdf(60, { objectStreams: true })))).rejects.toMatchObject({ status: 413 });
+    // A file that only looks like a PDF (no pages to be found): not sent to the model either.
+    await expect(readDocumentUpload(upload(new TextEncoder().encode("%PDF-1.7 fikcyjna polisa")))).rejects.toMatchObject({ status: 415 });
   });
 });
