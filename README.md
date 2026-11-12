@@ -127,7 +127,7 @@ Przy każdym pushu na `main` i każdym pull requeście te same kroki uruchamia G
 
 ## Bezpieczeństwo
 
-Każda odpowiedź ma nagłówki bezpieczeństwa ([`src/lib/security-headers.ts`](src/lib/security-headers.ts)): Content-Security-Policy (skrypty tylko z własnej domeny, połączenia tylko do aplikacji i hosta mapy, zakaz osadzania w ramkach), `nosniff`, `Referrer-Policy`, `Permissions-Policy` i HSTS na produkcji. Host stylu mapy jest dopuszczany automatycznie; jeśli własny styl pobiera kafelki z innego hosta, dopisz go w `CSP_EXTRA_ORIGINS`.
+Każda odpowiedź ma nagłówki bezpieczeństwa ([`src/lib/security-headers.ts`](src/lib/security-headers.ts)): Content-Security-Policy (skrypty z własnej domeny i skrypty wbudowane w stronę, żadnych obcych hostów skryptów, połączenia tylko do aplikacji i hosta mapy, zakaz wtyczek i osadzania w ramkach), `nosniff`, `Referrer-Policy`, `Permissions-Policy` i HSTS na produkcji (na Vercelu wysyła go platforma). Skrypty wbudowane są dozwolone (`'unsafe-inline'`), bo potrzebują ich skrypt motywu i start Next.js, a polityka z nonce wymusiłaby renderowanie każdej strony na żądanie; dlatego CSP nie chroni przed wstrzykniętym skryptem inline — tę rolę pełni React, który escapuje treść. Host stylu mapy jest dopuszczany automatycznie; jeśli własny styl pobiera kafelki z innego hosta, dopisz go w `CSP_EXTRA_ORIGINS`.
 
 ## Wdrożenie na Vercel
 
