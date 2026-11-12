@@ -1,9 +1,12 @@
 name: CI
 
+# A change that touches only documentation has nothing to lint, build or test.
 on:
   push:
     branches: [main]
+    paths-ignore: ["docs/**", "**/*.md"]
   pull_request:
+    paths-ignore: ["docs/**", "**/*.md"]
 
 # A newer push to a PR makes the older run pointless. On main every commit is deployed, so each one keeps
 # its own run: a group per commit, because a shared group would also drop runs still waiting in the queue.

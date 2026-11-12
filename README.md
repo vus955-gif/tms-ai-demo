@@ -123,7 +123,7 @@ npm run lint && npm run typecheck
 
 Testy e2e uruchamiają serwer w trybie reguł awaryjnych (bez klucza AI), żeby nie zależały od modelu ani od sieci. Jakość AI mierzy osobno `npm run eval:ai`.
 
-Przy każdym pushu i pull requeście te same kroki uruchamia GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) razem z kontrolą podatności w zależnościach produkcyjnych (`npm audit --omit=dev`). CI nie potrzebuje żadnych sekretów.
+Przy każdym pushu na `main` i każdym pull requeście te same kroki uruchamia GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) razem z kontrolą podatności w zależnościach produkcyjnych (`npm audit --omit=dev`). CI nie potrzebuje żadnych sekretów. Zmiany wyłącznie w `docs/` i plikach `.md` nie uruchamiają ani CI, ani buildu na Vercelu.
 
 ## Bezpieczeństwo
 
