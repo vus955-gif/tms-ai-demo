@@ -134,7 +134,7 @@ Każda odpowiedź ma nagłówki bezpieczeństwa ([`src/lib/security-headers.ts`]
 1. Zaimportuj repozytorium w Vercel (**Add New → Project**). Next.js zostanie wykryty automatycznie.
 2. Podłącz bazę: **Storage → Create Database → Neon**, połącz ją z projektem — integracja ustawi `DATABASE_URL`.
 3. Ustaw zmienne w **Settings → Environment Variables**: co najmniej `ANTHROPIC_API_KEY`, `SANDBOX_IP_SALT` i `APP_URL` (zob. [Konfiguracja](#konfiguracja)).
-4. **Deploy.** Polecenie budowania z `vercel.json` (`npm run db:migrate && npm run build`) samo tworzy i aktualizuje tabele w bazie.
+4. **Deploy.** Polecenie budowania z `vercel.json` przy wdrożeniu produkcyjnym najpierw uruchamia `npm run db:migrate`, więc samo tworzy i aktualizuje tabele w bazie. Podglądy (preview) migracji nie uruchamiają: jeśli dzielą `DATABASE_URL` z produkcją, kod z niescalonego PR nie zmieni schematu produkcyjnej bazy. Jeśli podglądy mają własną gałąź bazy Neon, a PR dodaje migrację, uruchom ją na tej gałęzi ręcznie (`DATABASE_URL=… npm run db:migrate`).
 
 `vercel.json` ustawia region funkcji na Frankfurt (`fra1`), obok bazy Neon w `eu-central-1`. Jeśli baza jest w innym regionie, zmień `regions` na najbliższy — inaczej każde zapytanie do bazy przelatuje między kontynentami. Bez `DATABASE_URL` aplikacja na Vercelu zatrzyma się z czytelnym komunikatem.
 
