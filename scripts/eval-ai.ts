@@ -29,8 +29,8 @@ import { points } from "../src/simulation/scenario/points";
 import { serviceSamples } from "../src/simulation/scenario/service-samples";
 import { createTestDb } from "../src/test/db";
 
-// The eval runs in its own in-memory world; lift the per-world hourly cap for it.
-process.env.AI_CALLS_PER_SANDBOX_PER_HOUR = "1000";
+// The eval runs in its own in-memory world; lift the hourly AI cap for it.
+process.env.AI_CALLS_PER_IP_PER_HOUR = "1000";
 
 type Row = { suite: string; id: string; expected: string; ai: string; rules: string; aiOk: boolean; rulesOk: boolean; note?: string };
 

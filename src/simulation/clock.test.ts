@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pauseClock, resumeClock, setSpeed, simNow, simOriginFor, type ClockState } from "./clock";
+import { nextWeekStartMs, pauseClock, resumeClock, setSpeed, simNow, simOriginFor, type ClockState } from "./clock";
 
 const MIN = 60_000;
 const origin = new Date("2026-10-12T06:30:00Z"); // 08:30 Warsaw (CEST)
@@ -72,5 +72,23 @@ describe("simOriginFor", () => {
   it("uses the Warsaw date, not the UTC date, near midnight", () => {
     // Saturday 2026-10-17 00:30 Warsaw is still Friday 22:30 UTC → Warsaw says Saturday → Friday
     expect(simOriginFor(new Date("2026-10-16T22:30:00Z"))).toEqual(new Date("2026-10-16T06:30:00Z"));
+  });
+});
+
+describe("nextWeekStartMs", () => {
+  it("is the coming Monday 00:00 Warsaw time", () => {
+    // Thursday 2026-11-12 14:00 Warsaw → Monday 2026-11-16 00:00 Warsaw (CET) = Sunday 23:00 UTC
+    expect(nextWeekStartMs(Date.parse("2026-11-12T13:00:00Z"))).toBe(Date.parse("2026-11-15T23:00:00Z"));
+    // Sunday 23:59 Warsaw still belongs to the week that ends a minute later.
+    expect(nextWeekStartMs(Date.parse("2026-11-15T22:59:00Z"))).toBe(Date.parse("2026-11-15T23:00:00Z"));
+  });
+
+  it("starts counting the next week from Monday 00:00 itself", () => {
+    expect(nextWeekStartMs(Date.parse("2026-11-15T23:00:00Z"))).toBe(Date.parse("2026-11-22T23:00:00Z"));
+  });
+
+  it("follows the change to winter time", () => {
+    // Thursday 2026-10-22 (CEST) → Monday 2026-10-26 00:00 Warsaw, already CET = Sunday 23:00 UTC
+    expect(nextWeekStartMs(Date.parse("2026-10-22T10:00:00Z"))).toBe(Date.parse("2026-10-25T23:00:00Z"));
   });
 });

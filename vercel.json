@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run db:migrate && npm run build",
+  "buildCommand": "if [ \"$VERCEL_ENV\" = production ]; then npm run db:migrate; fi && npm run build",
+  "ignoreCommand": "if git diff --quiet \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\" HEAD -- . ':(exclude)docs' ':(exclude)*.md'; then exit 0; else exit 1; fi",
   "regions": ["fra1"]
 }

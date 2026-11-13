@@ -199,3 +199,51 @@ describe("waiting and standing count as rest", () => {
     expect(advance(idle, H, env()).state.clock.continuousMin).toBe(0);
   });
 });
+
+describe("weekly allowance of 10-hour days", () => {
+  // Sunday 2026-11-15 23:00 Warsaw (CET, UTC+1); the week ends at Monday 00:00 Warsaw.
+  const sunday23 = Date.parse("2026-11-15T22:00:00Z");
+  const usedUp = (overrides: Partial<SimState> = {}): SimState => ({
+    ...driving(),
+    atMs: sunday23,
+    mode: "idle",
+    routeKey: null,
+    pointId: "B",
+    stops: [],
+    modeStartMs: sunday23,
+    clock: { continuousMin: 0, dailyMin: 0, splitFirstPart: false, extensionsUsed: 2 },
+    ...overrides,
+  });
+
+  it("keeps both extensions used until the week is over", () => {
+    expect(advance(usedUp(), sunday23 + 59 * MIN, env()).state.clock.extensionsUsed).toBe(2);
+  });
+
+  it("gives both extensions back at Monday 00:00", () => {
+    expect(advance(usedUp(), sunday23 + 61 * MIN, env()).state.clock.extensionsUsed).toBe(0);
+  });
+
+  it("gives them back when the boundary falls between two updates, too", () => {
+    const beforeMidnight = advance(usedUp(), sunday23 + 59 * MIN, env()).state;
+    expect(advance(beforeMidnight, sunday23 + 61 * MIN, env()).state.clock.extensionsUsed).toBe(0);
+  });
+
+  it("lets a driver with no extensions left drive 10 hours again in the new week", () => {
+    // Monday 00:00 Warsaw: rested, sets off on a 10-hour route with both extensions used last week.
+    const monday = sunday23 + H;
+    const start = driving({
+      atMs: sunday23 - 30 * MIN,
+      routeKey: "B__C",
+      stops: [stop("C", "delivery", 0, monday + 100 * H)],
+      clock: { continuousMin: 0, dailyMin: 0, splitFirstPart: false, extensionsUsed: 2 },
+      mode: "daily_rest",
+      modeUntilMs: monday,
+      resumeMode: "driving",
+      modeStartMs: monday - 11 * H,
+    });
+    const { segments } = advance(start, monday + 13 * H, env({ subjectTo561: true }));
+    const drivenMin = segments.filter((x) => x.type === "driving").reduce((sum, x) => sum + (x.endMs - x.startMs) / MIN, 0);
+    // 9 h would mean the old week's count still applies; the route needs 10 h, which the new week allows.
+    expect(drivenMin).toBeGreaterThan(9 * 60 + 1);
+  });
+});

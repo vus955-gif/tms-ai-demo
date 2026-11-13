@@ -37,9 +37,11 @@ function expiry(realNow: Date) {
   return new Date(realNow.getTime() + config.sandboxTtlHours * HOUR);
 }
 
+type AiWindow = Pick<SandboxRow, "aiWindowStart" | "aiCallsInWindow">;
+
 export async function createSandbox(
   db: Db,
-  opts: { ipHash: string; realNow: Date; id?: string; randomRun?: boolean },
+  opts: { ipHash: string; realNow: Date; id?: string; randomRun?: boolean; aiWindow?: AiWindow },
 ): Promise<SandboxRow> {
   const id = opts.id ?? randomUUID();
   const randomRun = opts.randomRun ?? false;
@@ -52,6 +54,7 @@ export async function createSandbox(
     randomRun,
     ipHash: opts.ipHash,
     ...freshClock(opts.realNow),
+    ...opts.aiWindow,
   };
   return db.transaction(async (tx) => {
     const [created] = await tx.insert(sandboxes).values(row).returning();
@@ -81,6 +84,8 @@ export async function resetSandbox(
     ipHash: existing.ipHash,
     realNow,
     randomRun: opts.randomRun ?? existing.randomRun,
+    // AI calls already made keep counting: starting over must not open a new hourly allowance.
+    aiWindow: { aiWindowStart: existing.aiWindowStart, aiCallsInWindow: existing.aiCallsInWindow },
   });
 }
 

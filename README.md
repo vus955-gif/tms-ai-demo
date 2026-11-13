@@ -121,20 +121,20 @@ npm run test:e2e       # Playwright: przepływy w przeglądarce
 npm run lint && npm run typecheck
 ```
 
-Testy e2e uruchamiają serwer w trybie reguł awaryjnych (bez klucza AI), żeby nie zależały od modelu ani od sieci. Jakość AI mierzy osobno `npm run eval:ai`.
+Testy e2e uruchamiają serwer w trybie reguł awaryjnych (bez klucza AI), żeby nie zależały od modelu ani od sieci. Jakość AI mierzy osobno `npm run eval:ai`. Lokalnie testy idą po kolei na serwerze deweloperskim (albo już uruchomionym); na CI (`CI=1`) na buildzie produkcyjnym, w trzech równoległych procesach i z bazą PGlite w pamięci.
 
-Przy każdym pushu i pull requeście te same kroki uruchamia GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) razem z kontrolą podatności w zależnościach produkcyjnych (`npm audit --omit=dev`). CI nie potrzebuje żadnych sekretów.
+Przy każdym pushu na `main` i każdym pull requeście te same kroki uruchamia GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) razem z kontrolą podatności w zależnościach produkcyjnych (`npm audit --omit=dev`). CI nie potrzebuje żadnych sekretów. Zmiany wyłącznie w `docs/` i plikach `.md` nie uruchamiają ani CI, ani buildu na Vercelu.
 
 ## Bezpieczeństwo
 
-Każda odpowiedź ma nagłówki bezpieczeństwa ([`src/lib/security-headers.ts`](src/lib/security-headers.ts)): Content-Security-Policy (skrypty tylko z własnej domeny, połączenia tylko do aplikacji i hosta mapy, zakaz osadzania w ramkach), `nosniff`, `Referrer-Policy`, `Permissions-Policy` i HSTS na produkcji. Host stylu mapy jest dopuszczany automatycznie; jeśli własny styl pobiera kafelki z innego hosta, dopisz go w `CSP_EXTRA_ORIGINS`.
+Każda odpowiedź ma nagłówki bezpieczeństwa ([`src/lib/security-headers.ts`](src/lib/security-headers.ts)): Content-Security-Policy (skrypty z własnej domeny i skrypty wbudowane w stronę, żadnych obcych hostów skryptów, połączenia tylko do aplikacji i hosta mapy, zakaz wtyczek i osadzania w ramkach), `nosniff`, `Referrer-Policy`, `Permissions-Policy` i HSTS na produkcji (na Vercelu wysyła go platforma). Skrypty wbudowane są dozwolone (`'unsafe-inline'`), bo potrzebują ich skrypt motywu i start Next.js, a polityka z nonce wymusiłaby renderowanie każdej strony na żądanie; dlatego CSP nie chroni przed wstrzykniętym skryptem inline — tę rolę pełni React, który escapuje treść. Host stylu mapy jest dopuszczany automatycznie; jeśli własny styl pobiera kafelki z innego hosta, dopisz go w `CSP_EXTRA_ORIGINS`.
 
 ## Wdrożenie na Vercel
 
 1. Zaimportuj repozytorium w Vercel (**Add New → Project**). Next.js zostanie wykryty automatycznie.
 2. Podłącz bazę: **Storage → Create Database → Neon**, połącz ją z projektem — integracja ustawi `DATABASE_URL`.
 3. Ustaw zmienne w **Settings → Environment Variables**: co najmniej `ANTHROPIC_API_KEY`, `SANDBOX_IP_SALT` i `APP_URL` (zob. [Konfiguracja](#konfiguracja)).
-4. **Deploy.** Polecenie budowania z `vercel.json` (`npm run db:migrate && npm run build`) samo tworzy i aktualizuje tabele w bazie.
+4. **Deploy.** Polecenie budowania z `vercel.json` przy wdrożeniu produkcyjnym najpierw uruchamia `npm run db:migrate`, więc samo tworzy i aktualizuje tabele w bazie. Podglądy (preview) migracji nie uruchamiają: jeśli dzielą `DATABASE_URL` z produkcją, kod z niescalonego PR nie zmieni schematu produkcyjnej bazy. Jeśli podglądy mają własną gałąź bazy Neon, a PR dodaje migrację, uruchom ją na tej gałęzi ręcznie (`DATABASE_URL=… npm run db:migrate`).
 
 `vercel.json` ustawia region funkcji na Frankfurt (`fra1`), obok bazy Neon w `eu-central-1`. Jeśli baza jest w innym regionie, zmień `regions` na najbliższy — inaczej każde zapytanie do bazy przelatuje między kontynentami. Bez `DATABASE_URL` aplikacja na Vercelu zatrzyma się z czytelnym komunikatem.
 
@@ -147,8 +147,8 @@ Wszystkie zmienne są opcjonalne lokalnie; wzór jest w [`.env.example`](.env.ex
 | `DATABASE_URL` | Postgres (Neon); puste = lokalny PGlite | — |
 | `ANTHROPIC_API_KEY` | Klucz API; bez niego tryb awaryjny | — |
 | `AI_DAILY_BUDGET_USD` | Dzienny limit kosztu AI dla całego demo | `2` |
-| `AI_CALLS_PER_SANDBOX_PER_HOUR` | Limit wywołań AI na świat i godzinę | `60` |
-| `AI_CMR_MODEL` | Model do zdjęć CMR | Haiku 5.5 |
+| `AI_CALLS_PER_IP_PER_HOUR` | Limit wywołań AI na adres IP i godzinę, wspólny dla wszystkich światów z tego adresu (usunięcie ciasteczka ani reset świata go nie zerują); dawna nazwa `AI_CALLS_PER_SANDBOX_PER_HOUR` nadal działa | `60` |
+| `AI_CMR_MODEL` | Model do zdjęć CMR i dokumentów serwisowych; tylko model z ceną w [`src/ai/pricing.ts`](src/ai/pricing.ts), inny nie zostanie wywołany (tryb awaryjny) | Haiku 5.5 |
 | `APP_URL` | Publiczny adres aplikacji (linki śledzenia w szkicach maili) | `http://localhost:3000` |
 | `DEMO_PASSWORD` | Hasło do całego demo (link śledzenia dla klienta działa bez hasła) | brak |
 | `NEXT_PUBLIC_MAP_STYLE_URL` | Styl jasnej mapy | OpenFreeMap Positron |

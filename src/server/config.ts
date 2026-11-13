@@ -20,8 +20,9 @@ export const config = {
   get aiDailyBudgetUsd() {
     return num("AI_DAILY_BUDGET_USD", 2);
   },
-  get aiCallsPerSandboxPerHour() {
-    return num("AI_CALLS_PER_SANDBOX_PER_HOUR", 60);
+  /** AI calls per hour from one IP address, summed over all its worlds. The older per-world name still works. */
+  get aiCallsPerIpPerHour() {
+    return num("AI_CALLS_PER_IP_PER_HOUR", num("AI_CALLS_PER_SANDBOX_PER_HOUR", 60));
   },
   /** Public address of the app, used in links sent to clients (tracking). */
   get appUrl() {

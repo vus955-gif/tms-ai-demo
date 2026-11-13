@@ -1,0 +1,33 @@
+# Weekly dependency updates, one grouped PR per ecosystem. A PR runs the same CI as any other change;
+# merging it to main deploys it, so read the CI result first.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Warsaw
+    open-pull-requests-limit: 5
+    groups:
+      # Patches and minor versions together; a major version gets a PR of its own.
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Types follow the Node version the app runs on (engines: 24.x), not the newest Node.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: chore(deps)
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Warsaw
+    groups:
+      github-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci(deps)

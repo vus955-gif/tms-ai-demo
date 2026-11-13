@@ -1,9 +1,15 @@
 import type { NextRequest } from "next/server";
 import { HttpError } from "../http";
 import type { UploadedImage } from "./inbound";
+import { countPdfPages } from "./pdf-pages";
 
 /** Below Vercel's 4.5 MB request limit and the API's per-image limit. */
 const MAX_BYTES = 4 * 1024 * 1024;
+/**
+ * The model reads every page of a PDF (text and an image of each page), so 4 MB of PDF could cost as much
+ * as a hundred photos. A service document takes a page or two.
+ */
+export const MAX_PDF_PAGES = 10;
 
 type ImageType = UploadedImage["mediaType"];
 export type UploadedDocument = { data: string; mediaType: ImageType | "application/pdf" };
@@ -32,7 +38,7 @@ async function readUpload(request: NextRequest, what: string) {
   if (!(file instanceof File)) throw new HttpError(400, "Dołącz plik.");
   if (file.size > MAX_BYTES) throw new HttpError(413, tooBig);
   const bytes = new Uint8Array(await file.arrayBuffer());
-  return { form, name: file.name, type: detectType(bytes), data: () => Buffer.from(bytes).toString("base64") };
+  return { form, name: file.name, type: detectType(bytes), bytes, data: () => Buffer.from(bytes).toString("base64") };
 }
 
 /**
@@ -49,5 +55,10 @@ export async function readPhotoUpload(request: NextRequest): Promise<{ form: For
 export async function readDocumentUpload(request: NextRequest): Promise<{ name: string; uploaded: UploadedDocument }> {
   const upload = await readUpload(request, "Plik");
   if (!upload.type) throw new HttpError(415, "Obsługiwane są zdjęcia JPEG, PNG, WebP oraz pliki PDF.");
+  if (upload.type === "application/pdf") {
+    const pages = countPdfPages(upload.bytes);
+    if (pages === 0) throw new HttpError(415, "Nie udało się odczytać tego PDF (np. jest zaszyfrowany). Wyślij zdjęcie dokumentu.");
+    if (pages > MAX_PDF_PAGES) throw new HttpError(413, `PDF ma ${pages} stron — wyślij najwyżej ${MAX_PDF_PAGES} (sam dokument, bez ogólnych warunków).`);
+  }
   return { name: upload.name, uploaded: { data: upload.data(), mediaType: upload.type } };
 }
