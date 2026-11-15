@@ -29,7 +29,9 @@ test.describe("A4 — dokument serwisowy w kartotece floty", () => {
     await dialog.getByTestId("service-doc-save").click();
     await expect(dialog.getByRole("alert")).toContainText("Ten termin już minął");
 
-    await dialog.getByLabel("Data wykonania").fill(day(-1));
+    // The demo clock starts at the last weekday (on a weekend up to 2 days behind the real date),
+    // so "yesterday" by the real calendar can be in the demo's future. Three days back is always past.
+    await dialog.getByLabel("Data wykonania").fill(day(-3));
     await dialog.getByLabel("Ważne do").fill(day(730));
     await dialog.getByLabel("Numer dokumentu").fill("TS/2026/11/0457");
     await dialog.getByTestId("service-doc-save").click();
